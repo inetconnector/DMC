@@ -13,6 +13,8 @@ Phase 8 reference stack is in place.
 - Phase 6 AHSMA patchset now applies cleanly to a fresh pinned `llama.cpp` clone
 - Upstream `llama.cpp` now builds with live AHSMA cache-refresh plumbing that
   reads real KV data and rebuilds the index from the cache
+- Upstream `llama.cpp` attention graph now consumes a live per-layer AHSMA
+  selection mask during graph construction
 
 ## Performance note
 - GPU selected attention is exact, but it is only faster than CPU once the
@@ -26,7 +28,7 @@ Phase 8 integration target:
 - CPU Selected-Block Attention reference
 - CUDA Selected-Block Attention reference
 - Numerical validation against dense attention
-- Wire the live AHSMA route into the actual graph-attention path
+- Wire the live AHSMA route into the final selected-block attention path
 
 Pinned upstream:
 ggml-org/llama.cpp

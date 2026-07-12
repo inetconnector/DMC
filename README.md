@@ -13,6 +13,8 @@ attention architecture targeting `llama.cpp` integration.
   a CUDA selected-attention reference, and a GPU llama.cpp-shaped integration contract.
 - The upstream `llama.cpp` clone in `upstream/llama.cpp` now also has live
   AHSMA cache-refresh plumbing that reads real KV cache data.
+- The upstream `llama.cpp` attention graph now also consumes a live per-layer
+  AHSMA selection mask, so the route path is wired into graph construction.
 
 ## Start Here
 
