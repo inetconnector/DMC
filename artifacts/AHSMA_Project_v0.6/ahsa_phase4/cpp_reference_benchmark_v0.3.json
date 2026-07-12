@@ -1,0 +1,9 @@
+{
+  "tokens": 8192,
+  "head_dim": 64,
+  "blocks": 128,
+  "index_build_ms": 0.277,
+  "fresh_route_us": 57.918,
+  "mean_active_tokens": 6144,
+  "cached_route_reused": true
+}

@@ -1,0 +1,18 @@
+{
+  "upstream_repository": "ggml-org/llama.cpp",
+  "upstream_commit": "e3546c7948e3af463d0b401e6421d5a4c2faf565",
+  "retrieved_date": "2026-07-12",
+  "retrieval_method": "GitHub connector (direct archive download unavailable in runtime)",
+  "inspected_files": [
+    "src/llama-graph.h",
+    "src/llama-graph.cpp",
+    "src/llama-kv-cache.h",
+    "src/llama-model-loader.cpp"
+  ],
+  "important_upstream_observations": [
+    "Graph code already supports specialized KV cache implementations.",
+    "llm_fused_op already contains LIGHTNING_INDEXER, providing a precedent for a retrieval/index fused operation.",
+    "llama_kv_cache exposes get_k_storage(layer), get_k/get_v views, and input/mask construction APIs.",
+    "The current integration should be implemented as an optional memory/index component, not as a replacement for the core cache."
+  ]
+}
