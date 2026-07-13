@@ -29,7 +29,7 @@ Why the fallback exists:
 - It is the 7B instruction-tuned GGUF variant from the official Qwen repo.
 - The model card documents long-context support up to 128K tokens.
 - It is small enough to be practical on a 16 GB VRAM laptop GPU.
-- The repository license is Apache 2.0.
+- The repository license is MIT.
 
 ## Existing local Ollama models
 

@@ -13,6 +13,7 @@ this repository.
   complexity.
 - The intended outcome is strong long-context performance with high reasoning
   quality.
+- The repository is licensed under MIT.
 - Nothing in this repository should be read as a patent clearance opinion or
   as a guarantee that the implementation is free to publish in every
   jurisdiction.
@@ -35,7 +36,8 @@ this repository.
 11. Read `docs/INSTANCE.md` for the current runtime instance definition.
 12. Read `docs/LLAMA_CPP_LAN.md` if you want the local llama.cpp web UI on
     your laptop and phone.
-13. Use `scripts/windows/prepare-dev.ps1` to validate and run the local setup.
+13. Review `LICENSE` before redistributing or forking the repository.
+14. Use `scripts/windows/prepare-dev.ps1` to validate and run the local setup.
 
 ## Goals
 
