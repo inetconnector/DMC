@@ -24,7 +24,7 @@ if (-not (Test-IsAdministrator)) {
     exit
 }
 
-$ruleName = "AHSMA llama.cpp LAN 8080"
+$ruleName = "DMC llama.cpp LAN 8080"
 
 if (Get-NetFirewallRule -DisplayName $ruleName -ErrorAction SilentlyContinue) {
     Remove-NetFirewallRule -DisplayName $ruleName

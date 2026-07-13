@@ -71,7 +71,7 @@ The script:
 - falls back to the Qwen GGUF download only if no local GGUF is found
 
 For a persistent background run on Windows, start the script with
-`-StayAlive`, or register it in Task Scheduler as `AHSMA-LlamaLAN`.
+`-StayAlive`, or register it in Task Scheduler as `DMC-LlamaLAN`.
 
 Example:
 
