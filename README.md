@@ -37,7 +37,8 @@ this repository.
 12. Read `docs/LLAMA_CPP_LAN.md` if you want the local llama.cpp web UI on
     your laptop and phone.
 13. Review `LICENSE` before redistributing or forking the repository.
-14. Use `scripts/windows/prepare-dev.ps1` to validate and run the local setup.
+14. Read `docs/RELEASE_NOTES.md` for the public release summary.
+15. Use `scripts/windows/prepare-dev.ps1` to validate and run the local setup.
 
 ## Goals
 
