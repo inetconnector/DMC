@@ -1,6 +1,0 @@
-command: g++ -std=c++17 -O2 -c llama-ahsma.cpp
-returncode: 0
-stdout:
-
-stderr:
-

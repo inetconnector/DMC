@@ -1,38 +1,41 @@
-# AHSMA
+# DMC
 
-Adaptive Hierarchical Sparse Memory Attention (AHSMA) is a speed-first long-context
-attention architecture targeting `llama.cpp` integration.
+Deterministic Multiresolution Context (DMC) is the active clean-room target for
+this repository.
 
 ## Current State
 
 - The project notes live in `docs/`.
-- The cleaned artifact snapshot from `AHSMA_Project_v0.6.zip` now lives in
-  `artifacts/AHSMA_Project_v0.6/`.
-- Phase 7 is the latest validated reference stage; Phase 8 is the next integration gate.
-- Phase 8 now has a bridge-oriented reference package, a CPU attention oracle,
-  a CUDA selected-attention reference, and a GPU llama.cpp-shaped integration contract.
-- The upstream `llama.cpp` clone in `upstream/llama.cpp` now also has live
-  AHSMA cache-refresh plumbing that reads real KV cache data.
-- The upstream `llama.cpp` attention graph now also consumes a live per-layer
-  AHSMA selection mask, so the route path is wired into graph construction.
+- The active design notes describe a deterministic multiresolution context
+  path, exact attention over selected spans, and conservative integration
+  boundaries.
+- The design emphasizes ultra-long context with minimal algorithmic
+  complexity.
+- The intended outcome is strong long-context performance with high reasoning
+  quality.
+- Nothing in this repository should be read as a patent clearance opinion or
+  as a guarantee that the implementation is free to publish in every
+  jurisdiction.
 
 ## Start Here
 
-1. Read `docs/STATE.md` for the current phase and next gate.
-2. Open `artifacts/AHSMA_Project_v0.6/README.md` for the imported artifact map.
-3. Use `artifacts/AHSMA_Project_v0.6/ahsa_phase4/cpp_reference` and
-   `artifacts/AHSMA_Project_v0.6/ahsa_phase7/kv_index_lifecycle` for the current
-   C++ reference implementations.
-4. Use `artifacts/AHSMA_Project_v0.6/ahsa_phase8/kv_cache_bridge` for the bridge
-   layer that turns selection into graph-friendly spans.
-5. Use `artifacts/AHSMA_Project_v0.6/ahsa_phase8/cpu_selected_attention` for the
-   exact CPU attention oracle.
-6. Use `artifacts/AHSMA_Project_v0.6/ahsa_phase8/gpu_selected_attention` for the
-   CUDA reference path that runs the selected attention on GPU.
-7. Use `artifacts/AHSMA_Project_v0.6/ahsa_phase8/gpu_llama_contract` for the
-   llama.cpp-shaped GPU contract that ties bridge and CUDA attention together.
-8. Use `artifacts/AHSMA_Project_v0.6/ahsa_phase8/llama_cpp_contract` for the
-   CPU adapter layer that ties bridge and oracle together in a llama.cpp-shaped form.
+1. Read `docs/STATE.md` for the active status and next steps.
+2. Read `docs/TARGET_STATE.md` for the concise capability target.
+3. Read `docs/LPS.md` for the project priorities.
+4. Read `docs/VALIDATION.md` for the measurement order and checks.
+5. Read `docs/PUBLICATION_READINESS.md` for the release posture and checklist.
+6. Read `docs/ARCHITECTURE.md` for the clean-room target architecture.
+7. Use `dmc/` for the Python reference implementation and `tests/` for the
+   active Python validation suite.
+8. Use `cpp/` for the C++ reference implementation and build contract.
+9. Read `docs/TOOLCHAIN_SETUP.md` for the exact Windows setup needed to run
+   `pytest` and the C++ build.
+10. The root `pytest` config is scoped to `tests/`, so `python -m pytest -q`
+    only runs the active suite.
+11. Read `docs/INSTANCE.md` for the current runtime instance definition.
+12. Read `docs/LLAMA_CPP_LAN.md` if you want the local llama.cpp web UI on
+    your laptop and phone.
+13. Use `scripts/windows/prepare-dev.ps1` to validate and run the local setup.
 
 ## Goals
 
@@ -40,7 +43,4 @@ attention architecture targeting `llama.cpp` integration.
 - Reduce long-context inference cost.
 - Keep the dense execution path unchanged unless explicitly enabled.
 - Produce reproducible benchmarks and open-source implementation.
-
-Python reference scripts under `artifacts/AHSMA_Project_v0.6/ahsa_phase2/code`
-and `artifacts/AHSMA_Project_v0.6/ahsa_phase3/code` require `torch` and `pytest`
-to run locally.
+- Keep the release narrative conservative and technically defensible.

@@ -1,34 +1,32 @@
 # STATE
 
-## Current phase
-Phase 8 reference stack is in place.
+## Current status
+The DMC reference stack is in place.
+See `docs/TARGET_STATE.md` for the concise capability target.
+See `docs/VALIDATION.md` for the measurement order and checks.
 
 ## What is now available
-- Phase 7 validated KV lifecycle reference
-- Phase 8 bridge-oriented KV cache reference with graph-input spans
-- Phase 8 CPU exact attention oracle with dense-vs-selected validation
-- Phase 8 CUDA selected-attention reference validated on RTX 3080 Laptop GPU
-- Phase 8 GPU llama.cpp-shaped contract validated on RTX 3080 Laptop GPU
-- Phase 8 llama.cpp-shaped integration contract
-- Phase 6 AHSMA patchset now applies cleanly to a fresh pinned `llama.cpp` clone
-- Upstream `llama.cpp` now builds with live AHSMA cache-refresh plumbing that
-  reads real KV data and rebuilds the index from the cache
-- Upstream `llama.cpp` attention graph now consumes a live per-layer AHSMA
-  selection mask during graph construction
+- Python DMC reference implementation
+- C++ DMC reference implementation
+- Exact attention oracle for full and selected token sets
+- Deterministic multiresolution span selection
+- Active Python and C++ tests
+- A target direction focused on both long-context capacity and quality
+- An explicit LPS priority order: long context, quality, speed
+
+## Release posture
+- The repository is not presented as patent cleared.
+- Publication requires final wording review and jurisdiction-specific legal review.
 
 ## Performance note
-- GPU selected attention is exact, but it is only faster than CPU once the
-  request is large enough to amortize kernel-launch overhead
-- On this machine, `1 query` still favors CPU, while `128 queries` strongly
-  favors GPU
+- Exact selected attention is fastest only after enough work amortizes overhead.
+- Tiny requests can still favor CPU, while larger batches can favor GPU.
+- Speed is important, but it follows long-context capability and quality.
 
-## Next phase
-Phase 8 integration target:
-- Hook KV lifecycle into `llama_kv_cache`
-- CPU Selected-Block Attention reference
-- CUDA Selected-Block Attention reference
-- Numerical validation against dense attention
-- Wire the live AHSMA route into the final selected-block attention path
+## Next steps
+- Extend validation coverage and add optional adapter layers.
+- Keep the public wording aligned with the active DMC code.
+- Prepare publication review material.
 
 Pinned upstream:
 ggml-org/llama.cpp

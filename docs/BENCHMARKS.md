@@ -9,3 +9,4 @@ Always report separately:
 - End-to-end prefill
 
 Do not present projected speedups as measured results.
+Do not use benchmarks as evidence of patent clearance or publishability.

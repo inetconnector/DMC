@@ -329,6 +329,9 @@ artifacts/**/build/
 # Local verification checkouts and CUDA junction
 upstream/
 cuda13/
+runtime/llama.cpp/
+runtime/huggingface/
+cpp/build/
 
 # Cake - Uncomment if you are using it
 # tools/**

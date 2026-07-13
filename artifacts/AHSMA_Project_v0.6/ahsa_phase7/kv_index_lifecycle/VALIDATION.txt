@@ -1,8 +1,0 @@
-Internal ctest changing into directory: /mnt/data/AHSMA_Project_v0.6/ahsa_phase7/kv_index_lifecycle/build
-Test project /mnt/data/AHSMA_Project_v0.6/ahsa_phase7/kv_index_lifecycle/build
-    Start 1: ahsma_kv_lifecycle_test
-1/1 Test #1: ahsma_kv_lifecycle_test ..........   Passed    0.07 sec
-
-[0;32m100% tests passed[0;0m, 0 tests failed[0;0m out of 1
-
-Total Test time (real) =   0.07 sec
