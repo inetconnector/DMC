@@ -18,6 +18,7 @@ if not exist "%RUN_SCRIPT%" (
 
 echo %* | findstr /I /C:"-DryRun" >nul
 if errorlevel 1 (
+  echo [status] preparing LAN access
   echo Preparing LAN access...
   "%POWERSHELL%" -NoLogo -NoProfile -ExecutionPolicy Bypass -File "%FIREWALL_SCRIPT%"
   if errorlevel 1 (
@@ -25,8 +26,10 @@ if errorlevel 1 (
     exit /b %errorlevel%
   )
 ) else (
-echo Dry run requested, skipping LAN firewall setup.
+  echo [status] dry run, skipping LAN firewall setup
+  echo Dry run requested, skipping LAN firewall setup.
 )
 
+echo [status] starting DMC for phone access
 echo Starting DMC for phone access...
 call "%RUN_SCRIPT%" %*
