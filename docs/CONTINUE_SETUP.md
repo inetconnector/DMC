@@ -32,6 +32,8 @@ That config points Continue at the active LAN instance:
 - The config enables tool use for agent-style workflows; if your Continue
   version or model does not support it cleanly, switch off agent mode or use a
   model with native tool calling.
+- For long coding sessions, start the server with `-Use64KContext`; use
+  `-Use128KContext` only for stress testing.
 
 ## Where to start
 

@@ -11,6 +11,9 @@ See `docs/VALIDATION.md` for the measurement order and checks.
 - Exact attention oracle for full and selected token sets
 - Deterministic multiresolution span selection
 - Active Python and C++ tests
+- Local `llama.cpp` LAN instance with `dmc-local` alias
+- Runtime presets for 32K, 64K, and experimental 128K context
+- Continue setup for local editor integration
 - A target direction focused on both long-context capacity and quality
 - An explicit LPS priority order: long context, quality, speed
 
@@ -19,13 +22,17 @@ See `docs/VALIDATION.md` for the measurement order and checks.
 - Publication requires final wording review and jurisdiction-specific legal review.
 
 ## Performance note
-- Exact selected attention is fastest only after enough work amortizes overhead.
+- Exact selected attention is fastest only after enough work amortizes
+  overhead.
 - Tiny requests can still favor CPU, while larger batches can favor GPU.
+- 32K is the conservative baseline, 64K is the practical stretch target, and
+  128K is experimental.
 - Speed is important, but it follows long-context capability and quality.
 
 ## Next steps
 - Extend validation coverage and add optional adapter layers.
 - Keep the public wording aligned with the active DMC code.
+- Keep the Continue integration aligned with the active local runtime.
 - Prepare publication review material.
 
 Pinned upstream:

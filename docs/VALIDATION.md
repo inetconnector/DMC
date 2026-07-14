@@ -11,6 +11,7 @@ The DMC stack should be evaluated in LPS order:
 - Verify deterministic selection on long sequences.
 - Verify selected spans remain valid at large positions.
 - Verify the dense-default path still works for baseline comparison.
+- Verify the launcher boots at 32K, 64K, and experimental 128K context.
 
 ## Quality Checks
 
@@ -18,6 +19,7 @@ The DMC stack should be evaluated in LPS order:
   set is selected.
 - Measure task quality on long-context benchmarks.
 - Confirm that quality remains stable as context length increases.
+- Verify the Continue editor integration can reach the local server.
 
 ## Speed Checks
 

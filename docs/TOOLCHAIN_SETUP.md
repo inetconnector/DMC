@@ -82,6 +82,16 @@ From the repo root, after the toolchains are installed:
 .\scripts\windows\prepare-dev.ps1 -InstallPythonDeps -BuildCpp -RunPyTests -RunCppTests
 ```
 
+To configure the local coding app and LAN runtime together:
+
+```powershell
+.\scripts\windows\setup-continue.ps1
+.\scripts\windows\start-llama-lan.ps1 -Use64KContext
+```
+
+Use `-Use128KContext` only when you specifically want to stress-test the
+larger runtime preset.
+
 ## What was missing on this machine
 
 - `python` was not available in `PATH`
