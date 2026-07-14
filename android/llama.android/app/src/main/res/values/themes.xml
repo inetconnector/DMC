@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <style name="Base.Theme.DmcAiChat" parent="Theme.Material3.Dark.NoActionBar">
+        <item name="android:windowBackground">@color/dialog_surface</item>
+        <item name="android:colorBackground">@color/dialog_surface</item>
+        <item name="colorSurface">@color/dialog_surface</item>
+        <item name="colorSurfaceVariant">@color/dialog_surface_variant</item>
+        <item name="colorOnSurface">@color/dialog_on_surface</item>
+        <item name="colorOnSurfaceVariant">@color/dialog_on_surface_variant</item>
+        <item name="colorPrimary">@color/dialog_primary</item>
+        <item name="colorOnPrimary">#05202A</item>
+        <item name="colorSecondary">@color/dialog_secondary</item>
+        <item name="colorError">@color/dialog_error</item>
+    </style>
+
+    <style name="Theme.DmcAiChat" parent="Base.Theme.DmcAiChat" />
+</resources>

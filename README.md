@@ -45,6 +45,21 @@ What it does:
 starts the same server.
 It prints the primary LAN IPv4 address that the phone can use.
 
+## Android APK
+
+The standalone Android app now lives in `android/llama.android/` and is
+checked in alongside the DMC stack.
+
+Use these helpers from the repository root:
+
+1. `build-android.bat` to build the APK on Windows.
+2. `install-android.bat` to build, install, and launch the app on a connected
+   device.
+
+The Android project is wired against the local `upstream/llama.cpp` checkout,
+so it keeps the imported model manager, download/import flows, and the local
+analysis features from the original app while staying in this repo.
+
 If you want to check the launch without starting the server, use:
 
 ```powershell
