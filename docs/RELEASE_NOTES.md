@@ -3,8 +3,8 @@
 ## Public release summary
 
 This repository now publishes the DMC reference stack as the active target.
-The historical AHSMA artifact archive has been removed from the main working
-tree and replaced by a cleaner, publication-oriented layout.
+The historical imported artifact archive has been removed from the main
+working tree and replaced by a cleaner, publication-oriented layout.
 
 ### What changed
 
