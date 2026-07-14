@@ -70,6 +70,15 @@ The script:
 - uses an already installed local Ollama GGUF first when one is available
 - falls back to the Qwen GGUF download only if no local GGUF is found
 
+To try a larger context window, add:
+
+```powershell
+.\scripts\windows\start-llama-lan.ps1 -Use64KContext
+```
+
+That raises the runtime context from 32K to 64K when the machine has enough
+memory headroom.
+
 For a persistent background run on Windows, start the script with
 `-StayAlive`, or register it in Task Scheduler as `DMC-LlamaLAN`.
 
@@ -104,6 +113,6 @@ heavier context check.
 
 ## Practical note
 
-For a 16 GB VRAM laptop GPU, 32K context is a reasonable first target. If your
-driver, GPU, or thermal limits are tighter, lower `-ContextSize` to 16384 and
-try again.
+For a 16 GB VRAM laptop GPU, 32K context is a reasonable first target. Try
+64K only if your GPU memory, driver, and thermal headroom are sufficient. If
+your limits are tighter, lower `-ContextSize` to 16384 and try again.

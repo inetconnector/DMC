@@ -332,6 +332,7 @@ cuda13/
 runtime/llama.cpp/
 runtime/huggingface/
 cpp/build/
+.codex-remote-attachments/
 
 # Cake - Uncomment if you are using it
 # tools/**

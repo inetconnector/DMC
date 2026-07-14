@@ -21,6 +21,7 @@ This repository uses the term `instance` for one concrete runtime setup:
 - Default source note: Ollama metadata reports a `context_length` of
   `1048576` for this blob
 - Fallback model source: `Qwen/Qwen2.5-7B-Instruct-GGUF:Q4_K_M`
+- Larger-context variant: start the launcher with `-Use64KContext`
 
 ## Why this matters
 

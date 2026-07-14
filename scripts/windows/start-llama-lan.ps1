@@ -10,6 +10,7 @@ param(
     [string]$CudaFlavor = "12.4",
     [int]$Port = 8080,
     [int]$ContextSize = 32768,
+    [switch]$Use64KContext,
     [int]$GpuLayers = 999,
     [int]$SmokeTestTokens = 4096,
     [switch]$StayAlive,
@@ -204,6 +205,10 @@ $env:HF_HOME = $CacheRoot
 $env:HUGGINGFACE_HUB_CACHE = (Join-Path $CacheRoot "hub")
 $env:XDG_CACHE_HOME = $CacheRoot
 
+if ($Use64KContext) {
+    $ContextSize = 65536
+}
+
 $modelArgs = @()
 if ($ModelPath) {
     $resolvedModel = [pscustomobject]@{
@@ -255,6 +260,9 @@ Write-Host "[alias] $Alias"
 Write-Host "[reasoning] $Reasoning"
 Write-Host "[port] $Port"
 Write-Host "[context] $ContextSize"
+if ($Use64KContext) {
+    Write-Host "[context-preset] 64k"
+}
 
 $proc = Start-Process -FilePath $serverExe `
     -ArgumentList $args `
