@@ -257,6 +257,7 @@ if ($DryRun) {
     }
 
     Write-Host "[dry-run] no server started"
+    Write-Host "[status] trying the largest available context first"
     Write-Host "[alias] $Alias"
     Write-Host "[reasoning] $Reasoning"
     Write-Host "[port] $Port"
@@ -346,6 +347,7 @@ foreach ($candidateContext in $contextCandidates) {
     Write-Host "[alias] $Alias"
     Write-Host "[reasoning] $Reasoning"
     Write-Host "[port] $Port"
+    Write-Host "[status] trying context $candidateContext"
     Write-Host "[context-attempt] $candidateContext"
     if ($candidateContext -eq 262144) {
         Write-Host "[context-preset] 256k-experimental"
@@ -371,6 +373,7 @@ foreach ($candidateContext in $contextCandidates) {
         break
     } catch {
         $lastError = $_
+        Write-Host "[status] fallback after $candidateContext failed"
         Write-Host "[retry] context $candidateContext failed; trying the next lower preset"
         if ($proc) {
             Stop-Process -Id $proc.Id -Force -ErrorAction SilentlyContinue
@@ -390,6 +393,7 @@ if (-not $selectedContextSize) {
 }
 
 Write-Host "[context] $selectedContextSize"
+Write-Host "[status] running with context $selectedContextSize"
 
 if ($SmokeTest) {
     $body = @{
