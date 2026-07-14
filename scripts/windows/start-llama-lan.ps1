@@ -11,6 +11,7 @@ param(
     [int]$Port = 8080,
     [int]$ContextSize = 32768,
     [switch]$Use64KContext,
+    [switch]$Use128KContext,
     [int]$GpuLayers = 999,
     [int]$SmokeTestTokens = 4096,
     [switch]$StayAlive,
@@ -208,6 +209,9 @@ $env:XDG_CACHE_HOME = $CacheRoot
 if ($Use64KContext) {
     $ContextSize = 65536
 }
+if ($Use128KContext) {
+    $ContextSize = 131072
+}
 
 $modelArgs = @()
 if ($ModelPath) {
@@ -262,6 +266,9 @@ Write-Host "[port] $Port"
 Write-Host "[context] $ContextSize"
 if ($Use64KContext) {
     Write-Host "[context-preset] 64k"
+}
+if ($Use128KContext) {
+    Write-Host "[context-preset] 128k-experimental"
 }
 
 $proc = Start-Process -FilePath $serverExe `

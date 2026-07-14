@@ -79,6 +79,15 @@ To try a larger context window, add:
 That raises the runtime context from 32K to 64K when the machine has enough
 memory headroom.
 
+For an experimental 128K run, use:
+
+```powershell
+.\scripts\windows\start-llama-lan.ps1 -Use128KContext
+```
+
+This is a stress test, but it starts successfully on this machine and should
+still be treated as experimental on a 16 GB VRAM laptop.
+
 For a persistent background run on Windows, start the script with
 `-StayAlive`, or register it in Task Scheduler as `DMC-LlamaLAN`.
 
@@ -116,3 +125,5 @@ heavier context check.
 For a 16 GB VRAM laptop GPU, 32K context is a reasonable first target. Try
 64K only if your GPU memory, driver, and thermal headroom are sufficient. If
 your limits are tighter, lower `-ContextSize` to 16384 and try again.
+Treat 128K as experimental even though it starts on this machine; confirm your
+own thermals, RAM, and latency before using it as a daily preset.
