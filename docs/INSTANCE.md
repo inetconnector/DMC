@@ -15,16 +15,17 @@ This repository uses the term `instance` for one concrete runtime setup:
 - Runtime: `llama.cpp` server
 - Host: `0.0.0.0`
 - Port: `8080`
-- Context: `131072` with `-Use128KContext` enabled; `32768` is the default
-  launcher context
+- Context: `32768` is the default launcher context; `65536`,
+  `131072`, and `262144` are available with `-Use64KContext`,
+  `-Use128KContext`, and `-Use256KContext`
 - Reasoning mode: `off`
 - Default model source: `hf.co/empero-ai/Qwythos-9B-Claude-Mythos-5-1M-GGUF:Q5_K_M`
 - Default source note: Ollama metadata reports a `context_length` of
   `1048576` for this blob
 - Fallback model source: `Qwen/Qwen2.5-7B-Instruct-GGUF:Q4_K_M`
 - Larger-context variant: start the launcher with `-Use64KContext`
-- Experimental larger-context variant: start the launcher with
-  `-Use128KContext`
+- Experimental larger-context variants: start the launcher with
+  `-Use128KContext` or `-Use256KContext`
 
 ## Why this matters
 

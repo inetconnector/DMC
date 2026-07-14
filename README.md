@@ -28,6 +28,27 @@ to validate than a more ad hoc retrieval system.
 - A phone-friendly LAN interface if you want to use the model from the same
   network.
 
+## Fast Start
+
+If you just want the chat UI, run `run.bat` from the repository root.
+If you want phone access on the same Wi-Fi, run `run-phone.bat` from the
+repository root.
+
+What it does:
+
+1. Starts the local `llama.cpp` server.
+2. Waits for the local API to be ready.
+3. Opens the browser UI at `http://127.0.0.1:8080/`.
+
+`run-phone.bat` also sets up the Windows firewall for the local network, then
+starts the same server with `-Use64KContext` by default.
+
+If you want to check the launch without starting the server, use:
+
+```powershell
+.\scripts\windows\start-llama-lan.ps1 -DryRun
+```
+
 ## Why It Matters
 
 - You can keep more project context without constantly repeating yourself.
@@ -54,13 +75,18 @@ to validate than a more ad hoc retrieval system.
    phone.
 4. Read `docs/CONTINUE_SETUP.md` if you want editor integration in VS Code or
    JetBrains.
-5. Use `scripts/windows/start-llama-lan.ps1` to start the local server.
-6. Use `-Use64KContext` for the practical larger-context preset.
-7. Use `-Use128KContext` only as an experiment.
-8. Read `docs/VALIDATION.md` if you want the test and benchmark order.
-9. Read `docs/PUBLICATION_READINESS.md` for the release posture and checklist.
-10. Use `dmc/` and `cpp/` if you want the reference implementations.
-11. Use `scripts/windows/prepare-dev.ps1` to validate and run the local setup.
+5. Use `run.bat` for the fastest out-of-the-box start.
+6. Use `run-phone.bat` if you want to reach the chat UI from a phone on the
+   same network.
+7. Use `scripts/windows/start-llama-lan.ps1` if you want to pass explicit
+   runtime options.
+8. Use `-Use64KContext` for the practical larger-context preset.
+9. Use `-Use128KContext` only as an experiment.
+10. Use `-Use256KContext` only on very large-memory systems.
+11. Read `docs/VALIDATION.md` if you want the test and benchmark order.
+12. Read `docs/PUBLICATION_READINESS.md` for the release posture and checklist.
+13. Use `dmc/` and `cpp/` if you want the reference implementations.
+14. Use `scripts/windows/prepare-dev.ps1` to validate and run the local setup.
 
 ## Goals
 

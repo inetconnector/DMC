@@ -91,6 +91,8 @@ To configure the local coding app and LAN runtime together:
 
 Use `-Use128KContext` only when you specifically want to stress-test the
 larger runtime preset.
+Use `-Use256KContext -DryRun` first if you only want to confirm that the new
+256K preset resolves correctly before launching the server.
 
 ## What was missing on this machine
 

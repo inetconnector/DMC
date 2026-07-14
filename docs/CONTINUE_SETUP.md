@@ -34,6 +34,8 @@ That config points Continue at the active LAN instance:
   model with native tool calling.
 - For long coding sessions, start the server with `-Use64KContext`; use
   `-Use128KContext` only for stress testing.
+- Use `-Use256KContext` only for very large-memory stress tests, and prefer
+  `-DryRun` first if you only want to verify the launcher arguments.
 
 ## Where to start
 

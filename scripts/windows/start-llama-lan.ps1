@@ -12,6 +12,8 @@ param(
     [int]$ContextSize = 32768,
     [switch]$Use64KContext,
     [switch]$Use128KContext,
+    [switch]$Use256KContext,
+    [switch]$DryRun,
     [int]$GpuLayers = 999,
     [int]$SmokeTestTokens = 4096,
     [switch]$StayAlive,
@@ -177,8 +179,79 @@ Question: repeat the first marker and the last marker exactly.
 "@
 }
 
+function Resolve-ContextSize {
+    param(
+        [int]$DefaultContextSize,
+        [switch]$Use64KContext,
+        [switch]$Use128KContext,
+        [switch]$Use256KContext
+    )
+
+    $selected = @()
+    if ($Use64KContext) {
+        $selected += 65536
+    }
+    if ($Use128KContext) {
+        $selected += 131072
+    }
+    if ($Use256KContext) {
+        $selected += 262144
+    }
+
+    if ($selected.Count -gt 1) {
+        throw "Choose only one of -Use64KContext, -Use128KContext, or -Use256KContext."
+    }
+
+    if ($selected.Count -eq 1) {
+        return [int]$selected[0]
+    }
+
+    return $DefaultContextSize
+}
+
 Ensure-Directory -Path $RuntimeRoot
 Ensure-Directory -Path $CacheRoot
+
+$ContextSize = Resolve-ContextSize `
+    -DefaultContextSize $ContextSize `
+    -Use64KContext:$Use64KContext `
+    -Use128KContext:$Use128KContext `
+    -Use256KContext:$Use256KContext
+
+$resolvedModel = $null
+if ($ModelPath) {
+    $resolvedModel = [pscustomobject]@{
+        Name = "explicit-local-model"
+        Path = (Resolve-Path $ModelPath).Path
+    }
+} else {
+    $resolvedModel = Resolve-LocalOllamaModelPath
+}
+
+if ($DryRun) {
+    if ($resolvedModel) {
+        Write-Host "[model-source] local gguf: $($resolvedModel.Name)"
+        Write-Host "[model-path] $($resolvedModel.Path)"
+    } else {
+        Write-Host "[model-source] hugging face: $ModelId"
+    }
+
+    Write-Host "[dry-run] no server started"
+    Write-Host "[alias] $Alias"
+    Write-Host "[reasoning] $Reasoning"
+    Write-Host "[port] $Port"
+    Write-Host "[context] $ContextSize"
+    if ($Use64KContext) {
+        Write-Host "[context-preset] 64k"
+    }
+    if ($Use128KContext) {
+        Write-Host "[context-preset] 128k-experimental"
+    }
+    if ($Use256KContext) {
+        Write-Host "[context-preset] 256k-experimental"
+    }
+    return
+}
 
 $downloadRoot = Join-Path $RuntimeRoot "downloads"
 $extractRoot = Join-Path $RuntimeRoot "release"
@@ -205,23 +278,7 @@ if (-not $serverExe) {
 $env:HF_HOME = $CacheRoot
 $env:HUGGINGFACE_HUB_CACHE = (Join-Path $CacheRoot "hub")
 $env:XDG_CACHE_HOME = $CacheRoot
-
-if ($Use64KContext) {
-    $ContextSize = 65536
-}
-if ($Use128KContext) {
-    $ContextSize = 131072
-}
-
 $modelArgs = @()
-if ($ModelPath) {
-    $resolvedModel = [pscustomobject]@{
-        Name = "explicit-local-model"
-        Path = (Resolve-Path $ModelPath).Path
-    }
-} else {
-    $resolvedModel = Resolve-LocalOllamaModelPath
-}
 
 if ($resolvedModel) {
     Write-Host "[model-source] local gguf: $($resolvedModel.Name)"
@@ -269,6 +326,9 @@ if ($Use64KContext) {
 }
 if ($Use128KContext) {
     Write-Host "[context-preset] 128k-experimental"
+}
+if ($Use256KContext) {
+    Write-Host "[context-preset] 256k-experimental"
 }
 
 $proc = Start-Process -FilePath $serverExe `

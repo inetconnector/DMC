@@ -11,7 +11,10 @@ The DMC stack should be evaluated in LPS order:
 - Verify deterministic selection on long sequences.
 - Verify selected spans remain valid at large positions.
 - Verify the dense-default path still works for baseline comparison.
-- Verify the launcher boots at 32K, 64K, and experimental 128K context.
+- Verify the launcher boots at 32K, 64K, and experimental 128K and 256K
+  context.
+- Use `-DryRun` to confirm the new 256K preset resolves correctly before a
+  full launch.
 
 ## Quality Checks
 

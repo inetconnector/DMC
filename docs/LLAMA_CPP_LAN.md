@@ -88,6 +88,17 @@ For an experimental 128K run, use:
 This is a stress test, but it starts successfully on this machine and should
 still be treated as experimental on a 16 GB VRAM laptop.
 
+For a 256K stress test, first verify the launch plan without starting the
+server:
+
+```powershell
+.\scripts\windows\start-llama-lan.ps1 -Use256KContext -DryRun
+```
+
+Then remove `-DryRun` if you want to try a real launch on a machine with much
+more memory headroom than a typical 16 GB VRAM laptop. On this machine, the
+256K launch also starts successfully.
+
 For a persistent background run on Windows, start the script with
 `-StayAlive`, or register it in Task Scheduler as `DMC-LlamaLAN`.
 
@@ -98,6 +109,16 @@ Example:
 ```
 
 ## Phone access
+
+For the shortest path from the repo root, run:
+
+```powershell
+run-phone.bat
+```
+
+That prepares Windows firewall access for the local network, starts the server,
+starts the server with `-Use64KContext`, and prints the LAN URLs the phone can
+use.
 
 After the server starts, open:
 
@@ -126,4 +147,6 @@ For a 16 GB VRAM laptop GPU, 32K context is a reasonable first target. Try
 64K only if your GPU memory, driver, and thermal headroom are sufficient. If
 your limits are tighter, lower `-ContextSize` to 16384 and try again.
 Treat 128K as experimental even though it starts on this machine; confirm your
-own thermals, RAM, and latency before using it as a daily preset.
+own thermals, RAM, and latency before using it as a daily preset. Treat 256K
+as a very heavy stress test that is likely to require substantially more
+memory than a 16 GB VRAM laptop can comfortably provide.
