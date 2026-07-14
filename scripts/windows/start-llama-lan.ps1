@@ -146,11 +146,15 @@ function Resolve-LocalOllamaModelPath {
 function Wait-ForServer {
     param(
         [Parameter(Mandatory = $true)][int]$Port,
+        [int]$ProcessId = 0,
         [int]$MaxAttempts = 90
     )
 
     $uri = "http://127.0.0.1:$Port/v1/models"
     for ($i = 0; $i -lt $MaxAttempts; $i++) {
+        if ($ProcessId -gt 0 -and -not (Get-Process -Id $ProcessId -ErrorAction SilentlyContinue)) {
+            throw "Server process exited before it became ready at $uri"
+        }
         try {
             Invoke-RestMethod -Uri $uri -Method Get -TimeoutSec 5 | Out-Null
             return
@@ -179,12 +183,13 @@ Question: repeat the first marker and the last marker exactly.
 "@
 }
 
-function Resolve-ContextSize {
+function Resolve-ContextCandidates {
     param(
         [int]$DefaultContextSize,
         [switch]$Use64KContext,
         [switch]$Use128KContext,
-        [switch]$Use256KContext
+        [switch]$Use256KContext,
+        [switch]$ExplicitContextRequested
     )
 
     $selected = @()
@@ -203,20 +208,35 @@ function Resolve-ContextSize {
     }
 
     if ($selected.Count -eq 1) {
-        return [int]$selected[0]
+        return ,([int]$selected[0])
     }
 
-    return $DefaultContextSize
+    if ($ExplicitContextRequested) {
+        return ,$DefaultContextSize
+    }
+
+    return @(
+        262144
+        131072
+        65536
+        32768
+    )
 }
 
 Ensure-Directory -Path $RuntimeRoot
 Ensure-Directory -Path $CacheRoot
 
-$ContextSize = Resolve-ContextSize `
+$explicitContextRequested = $Use64KContext -or `
+    $Use128KContext -or `
+    $Use256KContext -or `
+    ($ContextSize -ne 32768)
+
+$contextCandidates = Resolve-ContextCandidates `
     -DefaultContextSize $ContextSize `
     -Use64KContext:$Use64KContext `
     -Use128KContext:$Use128KContext `
-    -Use256KContext:$Use256KContext
+    -Use256KContext:$Use256KContext `
+    -ExplicitContextRequested:$explicitContextRequested
 
 $resolvedModel = $null
 if ($ModelPath) {
@@ -240,7 +260,8 @@ if ($DryRun) {
     Write-Host "[alias] $Alias"
     Write-Host "[reasoning] $Reasoning"
     Write-Host "[port] $Port"
-    Write-Host "[context] $ContextSize"
+    Write-Host "[context] $($contextCandidates[0])"
+    Write-Host "[context-fallback] $($contextCandidates -join ', ')"
     if ($Use64KContext) {
         Write-Host "[context-preset] 64k"
     }
@@ -289,59 +310,86 @@ if ($resolvedModel) {
     $modelArgs = @("-hf", $ModelId)
 }
 
-$stdoutLog = Join-Path $logRoot "llama-server.out.log"
-$stderrLog = Join-Path $logRoot "llama-server.err.log"
-
-$args = @()
-$args += $modelArgs
-$args += "--host"
-$args += "0.0.0.0"
-$args += "--port"
-$args += $Port
-$args += "--alias"
-$args += $Alias
-$args += "--tags"
-$args += $Tags
-$args += "--reasoning"
-$args += $Reasoning
-$args += "-c"
-$args += $ContextSize
-$args += "-ngl"
-$args += $GpuLayers
-
 if ($resolvedModel) {
     $selectedModelName = $Alias
 } else {
     $selectedModelName = $Alias
 }
 
-Write-Host "[start] $serverExe"
-Write-Host "[model] $selectedModelName"
-Write-Host "[alias] $Alias"
-Write-Host "[reasoning] $Reasoning"
-Write-Host "[port] $Port"
-Write-Host "[context] $ContextSize"
-if ($Use64KContext) {
-    Write-Host "[context-preset] 64k"
-}
-if ($Use128KContext) {
-    Write-Host "[context-preset] 128k-experimental"
-}
-if ($Use256KContext) {
-    Write-Host "[context-preset] 256k-experimental"
+$proc = $null
+$selectedContextSize = $null
+$lastError = $null
+
+foreach ($candidateContext in $contextCandidates) {
+    $stdoutLog = Join-Path $logRoot "llama-server-$candidateContext.out.log"
+    $stderrLog = Join-Path $logRoot "llama-server-$candidateContext.err.log"
+
+    $args = @()
+    $args += $modelArgs
+    $args += "--host"
+    $args += "0.0.0.0"
+    $args += "--port"
+    $args += $Port
+    $args += "--alias"
+    $args += $Alias
+    $args += "--tags"
+    $args += $Tags
+    $args += "--reasoning"
+    $Reasoning
+    $args += "-c"
+    $args += $candidateContext
+    $args += "-ngl"
+    $args += $GpuLayers
+
+    Write-Host "[start] $serverExe"
+    Write-Host "[model] $selectedModelName"
+    Write-Host "[alias] $Alias"
+    Write-Host "[reasoning] $Reasoning"
+    Write-Host "[port] $Port"
+    Write-Host "[context-attempt] $candidateContext"
+    if ($candidateContext -eq 262144) {
+        Write-Host "[context-preset] 256k-experimental"
+    } elseif ($candidateContext -eq 131072) {
+        Write-Host "[context-preset] 128k-experimental"
+    } elseif ($candidateContext -eq 65536) {
+        Write-Host "[context-preset] 64k"
+    }
+
+    try {
+        $proc = Start-Process -FilePath $serverExe `
+            -ArgumentList $args `
+            -WorkingDirectory (Split-Path $serverExe) `
+            -WindowStyle Hidden `
+            -PassThru `
+            -RedirectStandardOutput $stdoutLog `
+            -RedirectStandardError $stderrLog
+
+        Write-Host "[pid] $($proc.Id)"
+
+        Wait-ForServer -Port $Port -ProcessId $proc.Id
+        $selectedContextSize = $candidateContext
+        break
+    } catch {
+        $lastError = $_
+        Write-Host "[retry] context $candidateContext failed; trying the next lower preset"
+        if ($proc) {
+            Stop-Process -Id $proc.Id -Force -ErrorAction SilentlyContinue
+            Wait-Process -Id $proc.Id -ErrorAction SilentlyContinue
+            $proc = $null
+        }
+        Start-Sleep -Seconds 2
+    }
 }
 
-$proc = Start-Process -FilePath $serverExe `
-    -ArgumentList $args `
-    -WorkingDirectory (Split-Path $serverExe) `
-    -WindowStyle Hidden `
-    -PassThru `
-    -RedirectStandardOutput $stdoutLog `
-    -RedirectStandardError $stderrLog
+if (-not $selectedContextSize) {
+    if ($lastError) {
+        throw $lastError
+    }
 
-Write-Host "[pid] $($proc.Id)"
+    throw "Could not start llama-server with any context preset."
+}
 
-Wait-ForServer -Port $Port
+Write-Host "[context] $selectedContextSize"
 
 if ($SmokeTest) {
     $body = @{

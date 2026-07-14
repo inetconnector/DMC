@@ -13,6 +13,7 @@ See `docs/VALIDATION.md` for the measurement order and checks.
 - Active Python and C++ tests
 - Local `llama.cpp` LAN instance with `dmc-local` alias
 - Runtime presets for 32K, 64K, and experimental 128K and 256K context
+- Automatic fallback from the largest working runtime preset down to 32K
 - Continue setup for local editor integration
 - A target direction focused on both long-context capacity and quality
 - An explicit LPS priority order: long context, quality, speed
@@ -26,7 +27,8 @@ See `docs/VALIDATION.md` for the measurement order and checks.
   overhead.
 - Tiny requests can still favor CPU, while larger batches can favor GPU.
 - 32K is the conservative baseline, 64K is the practical stretch target, and
-  128K and 256K are experimental.
+  128K and 256K are experimental. The launcher now tries the largest working
+  preset first and falls back automatically.
 - Speed is important, but it follows long-context capability and quality.
 
 ## Next steps

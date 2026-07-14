@@ -38,10 +38,11 @@ What it does:
 
 1. Starts the local `llama.cpp` server.
 2. Waits for the local API to be ready.
-3. Opens the browser UI at `http://127.0.0.1:8080/`.
+3. Tries the largest context that starts successfully.
+4. Opens the browser UI at `http://127.0.0.1:8080/`.
 
 `run-phone.bat` also sets up the Windows firewall for the local network, then
-starts the same server with `-Use64KContext` by default.
+starts the same server.
 
 If you want to check the launch without starting the server, use:
 
@@ -80,13 +81,12 @@ If you want to check the launch without starting the server, use:
    same network.
 7. Use `scripts/windows/start-llama-lan.ps1` if you want to pass explicit
    runtime options.
-8. Use `-Use64KContext` for the practical larger-context preset.
-9. Use `-Use128KContext` only as an experiment.
-10. Use `-Use256KContext` only on very large-memory systems.
-11. Read `docs/VALIDATION.md` if you want the test and benchmark order.
-12. Read `docs/PUBLICATION_READINESS.md` for the release posture and checklist.
-13. Use `dmc/` and `cpp/` if you want the reference implementations.
-14. Use `scripts/windows/prepare-dev.ps1` to validate and run the local setup.
+8. Use `-Use64KContext`, `-Use128KContext`, or `-Use256KContext` only when you
+   want to force a specific preset.
+9. Read `docs/VALIDATION.md` if you want the test and benchmark order.
+10. Read `docs/PUBLICATION_READINESS.md` for the release posture and checklist.
+11. Use `dmc/` and `cpp/` if you want the reference implementations.
+12. Use `scripts/windows/prepare-dev.ps1` to validate and run the local setup.
 
 ## Goals
 

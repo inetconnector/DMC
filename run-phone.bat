@@ -25,13 +25,8 @@ if errorlevel 1 (
     exit /b %errorlevel%
   )
 ) else (
-  echo Dry run requested, skipping LAN firewall setup.
+echo Dry run requested, skipping LAN firewall setup.
 )
 
 echo Starting DMC for phone access...
-echo %* | findstr /I /C:"-Use64KContext" /C:"-Use128KContext" /C:"-Use256KContext" /C:"-ContextSize" >nul
-if errorlevel 1 (
-  call "%RUN_SCRIPT%" -Use64KContext %*
-) else (
-  call "%RUN_SCRIPT%" %*
-)
+call "%RUN_SCRIPT%" %*

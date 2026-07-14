@@ -16,6 +16,8 @@ working tree and replaced by a cleaner, publication-oriented layout.
 - Added 64K and experimental 128K and 256K runtime context presets.
 - Added a launcher dry-run mode for verifying context selection without
   starting the server.
+- Added automatic fallback from the largest working runtime preset down to
+  32K.
 - Added publication-readiness guidance and conservative legal wording.
 - Added a repository license and release metadata.
 - Removed the imported historical archive from the public project surface.

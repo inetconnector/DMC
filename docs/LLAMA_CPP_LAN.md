@@ -97,7 +97,8 @@ server:
 
 Then remove `-DryRun` if you want to try a real launch on a machine with much
 more memory headroom than a typical 16 GB VRAM laptop. On this machine, the
-256K launch also starts successfully.
+256K launch also starts successfully, and the launcher will automatically fall
+back to lower presets if a larger one fails.
 
 For a persistent background run on Windows, start the script with
 `-StayAlive`, or register it in Task Scheduler as `DMC-LlamaLAN`.
@@ -117,8 +118,8 @@ run-phone.bat
 ```
 
 That prepares Windows firewall access for the local network, starts the server,
-starts the server with `-Use64KContext`, and prints the LAN URLs the phone can
-use.
+tries the largest working context automatically, and prints the LAN URLs the
+phone can use.
 
 After the server starts, open:
 
