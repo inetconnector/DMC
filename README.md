@@ -38,7 +38,9 @@ this repository.
     your laptop and phone.
 13. Review `LICENSE` before redistributing or forking the repository.
 14. Read `docs/RELEASE_NOTES.md` for the public release summary.
-15. Use `scripts/windows/prepare-dev.ps1` to validate and run the local setup.
+15. Read `docs/CONTINUE_SETUP.md` if you want the Continue coding app wired to
+    the local model.
+16. Use `scripts/windows/prepare-dev.ps1` to validate and run the local setup.
 
 ## Goals
 
