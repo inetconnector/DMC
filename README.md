@@ -43,6 +43,7 @@ What it does:
 
 `run-phone.bat` also sets up the Windows firewall for the local network, then
 starts the same server.
+It prints the primary LAN IPv4 address that the phone can use.
 
 If you want to check the launch without starting the server, use:
 

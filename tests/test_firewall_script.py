@@ -6,4 +6,5 @@ def test_firewall_script_uses_local_subnet_and_prints_lan_ips():
 
     assert 'LocalSubnet' in script
     assert 'Get-LanIPv4Addresses' in script
+    assert 'Wireless80211' in script
     assert 'Open on phone: http://$ip`:8080/' in script

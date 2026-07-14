@@ -11,18 +11,9 @@ function Test-IsAdministrator {
 }
 
 if (-not (Test-IsAdministrator)) {
-    $powershellExe = Join-Path $PSHOME "powershell.exe"
-    $args = @(
-        "-NoProfile"
-        "-ExecutionPolicy"
-        "Bypass"
-        "-File"
-        "`"$PSCommandPath`""
-        "-RemoteSubnet"
-        $RemoteSubnet
-    )
-    Start-Process -FilePath $powershellExe -Verb RunAs -ArgumentList $args
-    exit
+    Write-Host "Firewall setup skipped: administrator rights are required."
+    Write-Host "Run this script from an elevated PowerShell if you want the LAN rule."
+    exit 0
 }
 
 $ruleName = "DMC llama.cpp LAN 8080"
@@ -41,11 +32,30 @@ New-NetFirewallRule `
     -RemoteAddress $RemoteSubnet | Out-Null
 
 function Get-LanIPv4Addresses {
-    (& ipconfig) |
-        Select-String -Pattern '(\d{1,3}\.){3}\d{1,3}' |
-        ForEach-Object { $_.Matches[0].Value } |
-        Where-Object { $_ -ne "127.0.0.1" -and $_ -notlike "169.254*" } |
-        Select-Object -Unique
+    [System.Net.NetworkInformation.NetworkInterface]::GetAllNetworkInterfaces() |
+        Where-Object {
+            $_.OperationalStatus -eq [System.Net.NetworkInformation.OperationalStatus]::Up -and
+            $_.NetworkInterfaceType -in @(
+                [System.Net.NetworkInformation.NetworkInterfaceType]::Wireless80211,
+                [System.Net.NetworkInformation.NetworkInterfaceType]::Ethernet
+            ) -and
+            $_.Description -notmatch 'Hyper-V|WSL|Virtual|Loopback|Miniport|WAN'
+        } |
+        ForEach-Object {
+            $properties = $_.GetIPProperties()
+            if (-not $properties.GatewayAddresses) {
+                return
+            }
+
+            $properties.UnicastAddresses |
+                Where-Object {
+                    $_.Address.AddressFamily -eq [System.Net.Sockets.AddressFamily]::InterNetwork -and
+                    $_.Address.IPAddressToString -notin @("127.0.0.1") -and
+                    $_.Address.IPAddressToString -notlike "169.254*"
+                } |
+                ForEach-Object { $_.Address.IPAddressToString }
+        } |
+        Sort-Object -Unique
 }
 
 Write-Host "Firewall rule created: $ruleName"

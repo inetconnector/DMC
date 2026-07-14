@@ -22,8 +22,7 @@ if errorlevel 1 (
   echo Preparing LAN access...
   "%POWERSHELL%" -NoLogo -NoProfile -ExecutionPolicy Bypass -File "%FIREWALL_SCRIPT%"
   if errorlevel 1 (
-    echo LAN setup failed.
-    exit /b %errorlevel%
+    echo LAN setup failed, continuing without firewall setup.
   )
 ) else (
   echo [status] dry run, skipping LAN firewall setup
@@ -33,3 +32,8 @@ if errorlevel 1 (
 echo [status] starting DMC for phone access
 echo Starting DMC for phone access...
 call "%RUN_SCRIPT%" %*
+if errorlevel 1 (
+  exit /b %errorlevel%
+)
+
+exit /b 0

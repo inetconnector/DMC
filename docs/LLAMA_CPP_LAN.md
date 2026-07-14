@@ -119,7 +119,8 @@ run-phone.bat
 
 That prepares Windows firewall access for the local network, starts the server,
 tries the largest working context automatically, and prints the LAN URLs the
-phone can use.
+phone can use. It prints the primary LAN IPv4 address that is actually
+reachable from the phone.
 
 After the server starts, open:
 

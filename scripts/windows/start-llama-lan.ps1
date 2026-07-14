@@ -183,6 +183,51 @@ Question: repeat the first marker and the last marker exactly.
 "@
 }
 
+function Convert-ToCommandLineArgument {
+    param([Parameter(Mandatory = $true)][string]$Value)
+
+    if ($Value -match '[\s"]') {
+        return '"' + ($Value -replace '"', '\"') + '"'
+    }
+
+    return $Value
+}
+
+function Join-CommandLineArguments {
+    param([Parameter(Mandatory = $true)][string[]]$Arguments)
+
+    return ($Arguments | ForEach-Object {
+        Convert-ToCommandLineArgument -Value $_
+    }) -join ' '
+}
+
+function Get-ActiveLanIPv4Addresses {
+    [System.Net.NetworkInformation.NetworkInterface]::GetAllNetworkInterfaces() |
+        Where-Object {
+            $_.OperationalStatus -eq [System.Net.NetworkInformation.OperationalStatus]::Up -and
+            $_.NetworkInterfaceType -in @(
+                [System.Net.NetworkInformation.NetworkInterfaceType]::Wireless80211,
+                [System.Net.NetworkInformation.NetworkInterfaceType]::Ethernet
+            ) -and
+            $_.Description -notmatch 'Hyper-V|WSL|Virtual|Loopback|Miniport|WAN'
+        } |
+        ForEach-Object {
+            $properties = $_.GetIPProperties()
+            if (-not $properties.GatewayAddresses) {
+                return
+            }
+
+            $properties.UnicastAddresses |
+                Where-Object {
+                    $_.Address.AddressFamily -eq [System.Net.Sockets.AddressFamily]::InterNetwork -and
+                    $_.Address.IPAddressToString -notin @("127.0.0.1") -and
+                    $_.Address.IPAddressToString -notlike "169.254*"
+                } |
+                ForEach-Object { $_.Address.IPAddressToString }
+        } |
+        Sort-Object -Unique
+}
+
 function Resolve-ContextCandidates {
     param(
         [int]$DefaultContextSize,
@@ -336,7 +381,7 @@ foreach ($candidateContext in $contextCandidates) {
     $args += "--tags"
     $args += $Tags
     $args += "--reasoning"
-    $Reasoning
+    $args += $Reasoning
     $args += "-c"
     $args += $candidateContext
     $args += "-ngl"
@@ -358,13 +403,18 @@ foreach ($candidateContext in $contextCandidates) {
     }
 
     try {
-        $proc = Start-Process -FilePath $serverExe `
-            -ArgumentList $args `
-            -WorkingDirectory (Split-Path $serverExe) `
-            -WindowStyle Hidden `
-            -PassThru `
-            -RedirectStandardOutput $stdoutLog `
-            -RedirectStandardError $stderrLog
+        $psi = New-Object System.Diagnostics.ProcessStartInfo
+        $psi.FileName = $serverExe
+        $psi.WorkingDirectory = (Split-Path $serverExe)
+        $psi.UseShellExecute = $false
+        $psi.CreateNoWindow = $true
+        $psi.Arguments = (Join-CommandLineArguments -Arguments $args)
+
+        $proc = New-Object System.Diagnostics.Process
+        $proc.StartInfo = $psi
+        if (-not $proc.Start()) {
+            throw "Could not start llama-server for context $candidateContext."
+        }
 
         Write-Host "[pid] $($proc.Id)"
 
@@ -426,11 +476,7 @@ if ($SmokeTest) {
     }
 }
 
-$lanIps = (& ipconfig) |
-    Select-String -Pattern '(\d{1,3}\.){3}\d{1,3}' |
-    ForEach-Object { $_.Matches[0].Value } |
-    Where-Object { $_ -ne "127.0.0.1" -and $_ -notlike "169.254*" } |
-    Select-Object -Unique
+$lanIps = Get-ActiveLanIPv4Addresses
 
 Write-Host "Open on the laptop: http://127.0.0.1:$Port/"
 foreach ($ip in $lanIps) {

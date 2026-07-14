@@ -26,3 +26,4 @@ if not errorlevel 1 (
 
 echo Opening chat UI: %LOCAL_URL%
 start "" "%LOCAL_URL%"
+exit /b 0
