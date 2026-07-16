@@ -24,6 +24,7 @@ import android.os.Bundle
 import android.os.Environment
 import android.os.Handler
 import android.os.Looper
+import android.os.SystemClock
 import android.provider.OpenableColumns
 import android.util.Log
 import android.graphics.Color
@@ -40,6 +41,7 @@ import android.widget.ArrayAdapter
 import android.widget.TextView
 import android.webkit.ValueCallback
 import android.webkit.WebChromeClient
+import android.webkit.ConsoleMessage
 import android.webkit.JavascriptInterface
 import android.webkit.WebSettings
 import android.webkit.WebResourceRequest
@@ -57,22 +59,34 @@ import androidx.core.view.updatePadding
 import androidx.lifecycle.lifecycleScope
 import com.arm.aichat.AiChat
 import com.arm.aichat.InferenceEngine
+import com.arm.aichat.gguf.GgufMetadata
+import com.arm.aichat.gguf.GgufMetadataReader
 import com.arm.aichat.isModelLoaded
 import com.arm.aichat.UnsupportedArchitectureException
 import fi.iki.elonen.NanoHTTPD
+import fi.iki.elonen.NanoHTTPD.Response
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.cancel
+import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
+import java.io.BufferedWriter
 import org.json.JSONArray
 import org.json.JSONObject
 import java.io.File
 import java.io.FileInputStream
 import java.io.FileOutputStream
 import java.io.InputStream
+import java.io.OutputStreamWriter
+import java.io.PipedInputStream
+import java.io.PipedOutputStream
 import java.net.BindException
 import java.net.HttpURLConnection
 import java.net.URL
@@ -123,7 +137,12 @@ class MainActivity : AppCompatActivity() {
     private var localServersStarted = false
 
     private val engineMutex = Mutex()
+    private val chatServerScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     private var modelPath: String? = null
+    @Volatile
+    private var modelChatTemplate: String = ""
+    @Volatile
+    private var modelCapabilities: ModelCapabilities = ModelCapabilities()
     private var filePickerCallback: ValueCallback<Array<Uri>>? = null
     private var pendingFileChooserParams: WebChromeClient.FileChooserParams? = null
     private var pendingCameraCaptureUri: Uri? = null
@@ -219,6 +238,8 @@ class MainActivity : AppCompatActivity() {
                 launch(Dispatchers.Main) {
                     loadChatUi()
                 }
+            } catch (cancel: CancellationException) {
+                Log.i(TAG, "Startup cancelled")
             } catch (t: Throwable) {
                 Log.e(TAG, "Startup failed", t)
                 launch(Dispatchers.Main) {
@@ -242,7 +263,10 @@ class MainActivity : AppCompatActivity() {
             port = port,
             webRootResolver = { applicationContext.assets },
             getModelName = { activeModelName() },
-            onChatCompletion = { body -> handleCompletion(body) },
+            getChatTemplate = { modelChatTemplate },
+            getModalities = { modelCapabilities.modalities },
+            getContextWindowSize = { engine.contextWindowSize() },
+            onChatCompletion = { body, stream -> handleCompletion(body, stream) },
             artifactsRootResolver = { File(filesDir, "generated-artifacts").apply { mkdirs() } }
         )
     }
@@ -295,7 +319,11 @@ class MainActivity : AppCompatActivity() {
 
             try {
                 server.start()
-                waitForServerHealth(port)
+                chatServerScope.launch {
+                    runCatching { waitForServerHealth(port) }
+                        .onSuccess { Log.i(TAG, "Server '$name' is healthy on port $port") }
+                        .onFailure { Log.w(TAG, "Server '$name' started on $port but health check did not confirm readiness", it) }
+                }
                 return port
             } catch (t: Throwable) {
                 lastError = t
@@ -321,14 +349,14 @@ class MainActivity : AppCompatActivity() {
         throw IllegalStateException("No usable port found for server '$name'", lastError)
     }
 
-    private fun waitForServerHealth(port: Int, timeoutMs: Long = 3500L) {
+    private fun waitForServerHealth(port: Int, timeoutMs: Long = 15000L) {
         val deadline = System.currentTimeMillis() + timeoutMs
         var lastError: String? = null
         while (System.currentTimeMillis() < deadline) {
             val ok = runCatching {
                 val conn = (URL("http://127.0.0.1:$port/health").openConnection() as HttpURLConnection).apply {
-                    connectTimeout = 300
-                    readTimeout = 400
+                    connectTimeout = 750
+                    readTimeout = 1000
                     requestMethod = "GET"
                     instanceFollowRedirects = false
                 }
@@ -353,6 +381,7 @@ class MainActivity : AppCompatActivity() {
         runCatching { apiServer.stop() }
         runCatching { analysisServer.stop() }
         runCatching { engine.destroy() }
+        chatServerScope.cancel()
         localServersStarted = false
         super.onDestroy()
     }
@@ -393,6 +422,16 @@ class MainActivity : AppCompatActivity() {
             }
         }
         webView.webChromeClient = object : WebChromeClient() {
+            override fun onConsoleMessage(consoleMessage: ConsoleMessage?): Boolean {
+                if (consoleMessage != null) {
+                    Log.i(
+                        TAG,
+                        "WebConsole[${consoleMessage.messageLevel()}] ${consoleMessage.sourceId()}:${consoleMessage.lineNumber()} ${consoleMessage.message()}"
+                    )
+                }
+                return super.onConsoleMessage(consoleMessage)
+            }
+
             override fun onShowFileChooser(
                 webView: WebView?,
                 filePathCallback: ValueCallback<Array<Uri>>?,
@@ -597,12 +636,15 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun startNativeDictationFlow() {
+        Log.i(TAG, "Starting native dictation flow")
         if (!SpeechRecognizer.isRecognitionAvailable(this)) {
+            Log.w(TAG, "SpeechRecognizer is not available on this device")
             return
         }
 
         val permission = ContextCompat.checkSelfPermission(this, android.Manifest.permission.RECORD_AUDIO)
         if (permission != PackageManager.PERMISSION_GRANTED) {
+            Log.i(TAG, "Requesting RECORD_AUDIO permission for dictation")
             pendingDictationStart = true
             ActivityCompat.requestPermissions(
                 this,
@@ -616,6 +658,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun launchSpeechRecognizerIntent() {
+        Log.i(TAG, "Launching speech recognizer intent")
         val intent = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
             putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
             putExtra(RecognizerIntent.EXTRA_LANGUAGE, Locale.getDefault().toLanguageTag())
@@ -842,6 +885,10 @@ class MainActivity : AppCompatActivity() {
         progress: ImportProgressDialog?,
         deleteOnFailure: Boolean = false
     ): Boolean {
+        if (error is CancellationException) {
+            throw error
+        }
+
         markModelAsFailed(modelFile)
         withContext(Dispatchers.Main) {
             progress?.close()
@@ -873,6 +920,9 @@ class MainActivity : AppCompatActivity() {
                         runCatching { engine.cleanUp() }
                         engine.loadModel(previousModelPath)
                     }
+                    val runtimeInfo = refreshCurrentModelInfo(previousModelFile)
+                    modelChatTemplate = runtimeInfo.chatTemplate
+                    modelCapabilities = runtimeInfo.capabilities
                     modelPath = previousModelPath
                     persistPreferredModel(previousModelFile)
                     clearModelFailure(previousModelFile)
@@ -916,6 +966,8 @@ class MainActivity : AppCompatActivity() {
         }
 
         return try {
+            modelChatTemplate = ""
+            modelCapabilities = ModelCapabilities()
             engineMutex.withLock {
                 try {
                     engine.loadModel(modelFile.absolutePath)
@@ -945,12 +997,10 @@ class MainActivity : AppCompatActivity() {
             modelPath = modelFile.absolutePath
             persistPreferredModel(modelFile)
             clearModelFailure(modelFile)
-
-            runCatching {
-                startLocalServers()
-            }.onFailure {
-                Log.e(TAG, "Local servers could not be started cleanly; keeping model loaded.", it)
-            }
+            val runtimeInfo = refreshCurrentModelInfo(modelFile)
+            modelChatTemplate = runtimeInfo.chatTemplate
+            modelCapabilities = runtimeInfo.capabilities
+            startLocalServers()
 
             if (refreshUi) {
                 withContext(Dispatchers.Main) {
@@ -964,6 +1014,9 @@ class MainActivity : AppCompatActivity() {
             }
             true
         } catch (t: Throwable) {
+            if (t is CancellationException) {
+                throw t
+            }
             handleModelActivationFailure(modelFile, previousModelPath, t, progress, deleteOnFailure)
         }
     }
@@ -974,6 +1027,15 @@ class MainActivity : AppCompatActivity() {
 
         if (loadableModels.isNotEmpty()) {
             return ensureModelLoaded()
+        }
+
+        val retryModel = listLocalModelFiles().firstOrNull()
+        if (retryModel != null) {
+            Log.w(
+                TAG,
+                "All local models are marked failed; retrying ${retryModel.name} once to recover from a transient startup failure."
+            )
+            return activateLocalModel(retryModel, refreshUi = false)
         }
 
         withContext(Dispatchers.Main) {
@@ -1026,7 +1088,7 @@ class MainActivity : AppCompatActivity() {
 
     private fun showModelDownloadDialog() {
         val deviceRamBytes = getDeviceTotalMemoryBytes()
-        val presets = buildModelDownloadPresets(deviceRamBytes)
+        val presets = buildModelDownloadPresets(deviceRamBytes).filter { it.enabled }
         val dialogView = LayoutInflater.from(this).inflate(R.layout.dialog_model_download, null, false)
         val subtitleView = dialogView.findViewById<TextView>(R.id.modelDownloadSubtitle)
         val deviceInfoView = dialogView.findViewById<TextView>(R.id.modelDownloadDeviceInfo)
@@ -1048,13 +1110,6 @@ class MainActivity : AppCompatActivity() {
             android.R.id.text1,
             presets
         ) {
-            override fun areAllItemsEnabled(): Boolean = false
-
-            override fun isEnabled(position: Int): Boolean {
-                val item = getItem(position) ?: return false
-                return item.enabled
-            }
-
             override fun getView(position: Int, convertView: android.view.View?, parent: android.view.ViewGroup): android.view.View {
                 val view = super.getView(position, convertView, parent)
                 val item = getItem(position) ?: return view
@@ -1062,10 +1117,6 @@ class MainActivity : AppCompatActivity() {
                 val text2 = view.findViewById<TextView>(android.R.id.text2)
                 text1.text = item.label
                 text2.text = item.subtitle
-                val enabled = item.enabled
-                view.alpha = if (enabled) 1f else 0.38f
-                text1.isEnabled = enabled
-                text2.isEnabled = enabled
                 return view
             }
         }
@@ -1076,15 +1127,9 @@ class MainActivity : AppCompatActivity() {
         listView.isVerticalScrollBarEnabled = false
         listView.onItemClickListener = AdapterView.OnItemClickListener { _, _, position, _ ->
             val preset = presets.getOrNull(position) ?: return@OnItemClickListener
-            if (!preset.enabled) return@OnItemClickListener
-            if (preset.customUrl) {
-                dialog?.dismiss()
-                showCustomUrlDialog()
-            } else {
-                dialog?.dismiss()
-                lifecycleScope.launch(Dispatchers.IO) {
-                    downloadAndLoadModel(preset.source)
-                }
+            dialog?.dismiss()
+            lifecycleScope.launch(Dispatchers.IO) {
+                downloadAndLoadModel(preset.source)
             }
         }
 
@@ -1093,6 +1138,9 @@ class MainActivity : AppCompatActivity() {
             .setView(dialogView)
             .setPositiveButton(getString(R.string.dialog_model_switcher_import)) { _, _ ->
                 pickModelLauncher.launch(arrayOf("*/*"))
+            }
+            .setNeutralButton(getString(R.string.dialog_custom_url_button)) { _, _ ->
+                showCustomUrlDialog()
             }
             .setNegativeButton(getString(R.string.dialog_cancel), null)
             .create()
@@ -1373,6 +1421,9 @@ class MainActivity : AppCompatActivity() {
                 progress.close()
             }
         } catch (t: Throwable) {
+            if (t is CancellationException) {
+                throw t
+            }
             runCatching { targetFile?.delete() }
             withContext(Dispatchers.Main) {
                 progress.close()
@@ -1390,6 +1441,19 @@ class MainActivity : AppCompatActivity() {
         val raw = Uri.parse(url).lastPathSegment ?: "model-${System.currentTimeMillis()}.gguf"
         val clean = raw.substringAfterLast('/').ifBlank { "model-${System.currentTimeMillis()}.gguf" }
         return if (clean.lowercase(Locale.ROOT).endsWith(".gguf")) clean else "$clean.gguf"
+    }
+
+    private fun isSamsungGalaxyS25Family(): Boolean {
+        if (!Build.MANUFACTURER.equals("samsung", ignoreCase = true)) {
+            return false
+        }
+
+        val model = Build.MODEL.trim().uppercase(Locale.ROOT)
+        return model.startsWith("SM-S931") || model.startsWith("SM-S936") || model.startsWith("SM-S938")
+    }
+
+    private fun isSplitGgufFileName(fileName: String): Boolean {
+        return Regex(""".*-\d{5}-of-\d{5}\.gguf$""", RegexOption.IGNORE_CASE).matches(fileName)
     }
 
     private fun getDeviceTotalMemoryBytes(): Long {
@@ -1420,80 +1484,71 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun buildModelDownloadPresets(deviceRamBytes: Long): List<ModelDownloadPreset> {
-        val isSufficientFor12B = deviceRamBytes >= 16L * 1024L * 1024L * 1024L
-        val isSufficientForE4B = deviceRamBytes >= 8L * 1024L * 1024L * 1024L
+        val gigabyte = 1024L * 1024L * 1024L
+        val isTwelveGbOrLess = deviceRamBytes <= 12L * gigabyte
+        val isSixteenGbOrMore = deviceRamBytes >= 16L * gigabyte
         val presets = listOf(
             ModelDownloadPreset(
                 label = getString(R.string.model_preset_gemma4_e2b),
                 subtitle = getString(R.string.model_preset_gemma4_e2b_subtitle),
-                source = "https://huggingface.co/google/gemma-4-E2B-it-qat-q4_0-gguf",
-                minimumMemoryBytes = 6L * 1024L * 1024L * 1024L,
-                recommended = !isSufficientForE4B,
+                source = "https://huggingface.co/google/gemma-4-E2B-it-qat-q4_0-gguf/resolve/main/gemma-4-E2B_q4_0-it.gguf?download=1",
+                minimumMemoryBytes = 6L * gigabyte,
+                recommended = isTwelveGbOrLess,
                 customUrl = false,
                 familyKey = "gemma-4"
             ),
             ModelDownloadPreset(
                 label = getString(R.string.model_preset_gemma4_e4b),
                 subtitle = getString(R.string.model_preset_gemma4_e4b_subtitle),
-                source = "https://huggingface.co/google/gemma-4-E4B-it-qat-q4_0-gguf",
-                minimumMemoryBytes = 8L * 1024L * 1024L * 1024L,
-                recommended = isSufficientForE4B && !isSufficientFor12B,
+                source = "https://huggingface.co/google/gemma-4-E4B-it-qat-q4_0-gguf/resolve/main/gemma-4-E4B_q4_0-it.gguf?download=1",
+                minimumMemoryBytes = 8L * gigabyte,
+                recommended = isSixteenGbOrMore,
                 customUrl = false,
                 familyKey = "gemma-4"
             ),
             ModelDownloadPreset(
                 label = getString(R.string.model_preset_gemma4_12b),
                 subtitle = getString(R.string.model_preset_gemma4_12b_subtitle),
-                source = "https://huggingface.co/google/gemma-4-12B-it-qat-q4_0-gguf",
-                minimumMemoryBytes = 16L * 1024L * 1024L * 1024L,
-                recommended = isSufficientFor12B,
+                source = "https://huggingface.co/google/gemma-4-12B-it-qat-q4_0-gguf/resolve/main/gemma-4-12b-it-qat-q4_0.gguf?download=1",
+                minimumMemoryBytes = 16L * gigabyte,
+                recommended = false,
                 customUrl = false,
                 familyKey = "gemma-4"
             ),
             ModelDownloadPreset(
                 label = getString(R.string.model_preset_gemma),
                 subtitle = getString(R.string.model_preset_gemma_subtitle),
-                source = "https://huggingface.co/bartowski/google_gemma-3-4b-it-GGUF/resolve/main/google_gemma-3-4b-it-Q4_K_M.gguf",
-                minimumMemoryBytes = 4L * 1024L * 1024L * 1024L,
+                source = "https://huggingface.co/bartowski/google_gemma-3-4b-it-GGUF/resolve/main/google_gemma-3-4b-it-Q4_K_M.gguf?download=1",
+                minimumMemoryBytes = 4L * gigabyte,
                 recommended = false,
                 customUrl = false,
                 familyKey = "gemma-3"
             ),
             ModelDownloadPreset(
-                label = getString(R.string.model_preset_qwen),
-                subtitle = getString(R.string.model_preset_qwen_subtitle),
-                source = "https://huggingface.co/Qwen/Qwen2.5-7B-Instruct-GGUF/resolve/main/qwen2.5-7b-instruct-q4_k_m.gguf",
-                minimumMemoryBytes = 8L * 1024L * 1024L * 1024L,
-                recommended = false,
-                customUrl = false,
-                familyKey = "qwen"
-            ),
-            ModelDownloadPreset(
                 label = getString(R.string.model_preset_llama),
                 subtitle = getString(R.string.model_preset_llama_subtitle),
-                source = "https://huggingface.co/bartowski/Llama-3.1-8B-Instruct-GGUF/resolve/main/Llama-3.1-8B-Instruct-Q4_K_M.gguf",
-                minimumMemoryBytes = 8L * 1024L * 1024L * 1024L,
+                source = "https://huggingface.co/bartowski/Meta-Llama-3.1-8B-Instruct-GGUF/resolve/main/Meta-Llama-3.1-8B-Instruct-Q4_K_M.gguf?download=1",
+                minimumMemoryBytes = 12L * gigabyte,
                 recommended = false,
                 customUrl = false,
                 familyKey = "llama-3.1"
             ),
-            ModelDownloadPreset(
-                label = getString(R.string.model_preset_custom),
-                subtitle = getString(R.string.model_preset_custom_subtitle),
-                source = "",
-                minimumMemoryBytes = 0L,
-                recommended = false,
-                customUrl = true
-            )
         )
 
         return presets.map { preset ->
-            val enabled = preset.customUrl || deviceRamBytes >= preset.minimumMemoryBytes
+            val enabled = deviceRamBytes >= preset.minimumMemoryBytes
             preset.copy(enabled = enabled)
         }.sortedWith(
-            compareByDescending<ModelDownloadPreset> { it.recommended && it.enabled }
-                .thenByDescending { it.enabled }
-                .thenBy { it.customUrl }
+            compareByDescending<ModelDownloadPreset> { it.recommended }
+                .thenBy {
+                    when (it.familyKey) {
+                        "gemma-4" -> 0
+                        "gemma-3" -> 1
+                        "llama-3.1" -> 2
+                        else -> 3
+                    }
+                }
+                .thenBy { it.minimumMemoryBytes }
                 .thenBy { it.label }
         )
     }
@@ -1530,7 +1585,12 @@ class MainActivity : AppCompatActivity() {
             )
         }
 
-        val selected = candidates
+        val selectableCandidates = candidates.filterNot { isSplitGgufFileName(it.fileName) }
+        if (selectableCandidates.isEmpty()) {
+            throw IllegalStateException("No single-file GGUF found in Hugging Face repo: $repoId")
+        }
+
+        val selected = selectableCandidates
             .sortedWith(
                 compareByDescending<ResolvedModelCandidate> { it.size }
                     .thenByDescending { it.fileName.contains("q4_0", ignoreCase = true) }
@@ -1649,6 +1709,9 @@ class MainActivity : AppCompatActivity() {
                 progress.close()
             }
         } catch (t: Throwable) {
+            if (t is CancellationException) {
+                throw t
+            }
             Log.e(TAG, "Model import failed for uri=$uri", t)
             withContext(Dispatchers.Main) {
                 progress.close()
@@ -1704,6 +1767,155 @@ class MainActivity : AppCompatActivity() {
         return modelPath?.let { File(it).nameWithoutExtension } ?: "local-model"
     }
 
+    private suspend fun refreshCurrentModelInfo(modelFile: File): ModelRuntimeInfo = withContext(Dispatchers.IO) {
+        val reader = GgufMetadataReader.create(
+            skipKeys = setOf(
+                "tokenizer.ggml.scores",
+                "tokenizer.ggml.tokens",
+                "tokenizer.ggml.token_type"
+            )
+        )
+
+        val metadata = runCatching {
+            modelFile.inputStream().buffered().use { input ->
+                reader.readStructuredMetadata(input)
+            }
+        }.onFailure {
+            Log.w(TAG, "Failed to read GGUF metadata from ${modelFile.name}", it)
+        }.getOrNull()
+
+        ModelRuntimeInfo(
+            chatTemplate = metadata?.tokenizer?.chatTemplate.orEmpty().trim(),
+            capabilities = resolveModelCapabilities(modelFile, metadata)
+        )
+    }
+
+    private fun resolveModelCapabilities(modelFile: File, metadata: GgufMetadata?): ModelCapabilities {
+        val architecture = metadata?.architecture?.architecture.orEmpty().trim().lowercase(Locale.ROOT)
+        val modelName = metadata?.basic?.name?.takeIf { it.isNotBlank() } ?: modelFile.nameWithoutExtension
+        val sizeLabel = metadata?.basic?.sizeLabel.orEmpty()
+        val chatTemplate = metadata?.tokenizer?.chatTemplate.orEmpty()
+
+        val normalizedSignals = buildList {
+            add(architecture)
+            add(modelName)
+            add(modelFile.name)
+            add(sizeLabel)
+            add(chatTemplate)
+        }
+            .joinToString(" ")
+            .lowercase(Locale.ROOT)
+            .replace(Regex("[^a-z0-9]+"), " ")
+
+        fun containsAny(vararg needles: String): Boolean {
+            return needles.any { needle ->
+                val normalizedNeedle = needle.lowercase(Locale.ROOT).replace(Regex("[^a-z0-9]+"), " ")
+                normalizedNeedle.isNotBlank() && normalizedSignals.contains(normalizedNeedle)
+            }
+        }
+
+        val gemma3Signals = containsAny("gemma-3", "gemma3")
+        val gemma3HasOneB = containsAny("1b", "gemma-3-1b", "gemma3-1b", "gemma-3 1b", "gemma3 1b")
+
+        val supportsVision = when {
+            architecture == "gemma3" -> !gemma3HasOneB
+            gemma3Signals -> !gemma3HasOneB
+            architecture in setOf(
+                "gemma3n",
+                "gemma4",
+                "llama4",
+                "qwen2vl",
+                "qwen3vl",
+                "qwen3vlmoe",
+                "hunyuanvl",
+                "cogvlm",
+                "paddleocr",
+                "deepseekocr",
+                "glm4v",
+                "glm4vmoe",
+                "moondream",
+                "pixtral",
+                "smolvlm",
+                "internvl",
+                "llava",
+                "mobilevlm",
+                "minicpmv"
+            ) -> true
+            containsAny(
+                "gemma-4",
+                "gemma4",
+                "gemma-3n",
+                "gemma3n",
+                "llama-4",
+                "llama4",
+                "qwen2-vl",
+                "qwen25vl",
+                "qwen2.5-vl",
+                "qwen3-vl",
+                "qwen2.5-omni",
+                "qwen25omni",
+                "qwen3-omni",
+                "ultravox",
+                "voxtral",
+                "hunyuan-vl",
+                "cogvlm",
+                "paddleocr",
+                "deepseek-ocr",
+                "glm-4v",
+                "glm4v",
+                "moondream",
+                "pixtral",
+                "smolvlm",
+                "internvl",
+                "llava",
+                "mobilevlm",
+                "minicpmv",
+                "granite-vision",
+                "granitevision"
+            ) -> true
+            else -> false
+        }
+
+        val supportsAudio = when {
+            architecture in setOf("gemma4", "gemma3n", "qwen25omni", "qwen3omni", "ultravox", "voxtral") -> true
+            containsAny(
+                "gemma-4",
+                "gemma4",
+                "gemma-3n",
+                "gemma3n",
+                "qwen2.5-omni",
+                "qwen25omni",
+                "qwen3-omni",
+                "qwen3omni",
+                "ultravox",
+                "voxtral"
+            ) -> true
+            else -> false
+        }
+
+        return ModelCapabilities(
+            modalities = ModelModalities(
+                vision = supportsVision,
+                audio = supportsAudio,
+                video = false
+            )
+        )
+    }
+
+    private fun resolveEnableThinking(body: JSONObject): Boolean {
+        val templateKwargs = body.optJSONObject("chat_template_kwargs")
+        when (val explicit = templateKwargs?.opt("enable_thinking")) {
+            is Boolean -> return explicit
+            is String -> {
+                when (explicit.trim().lowercase(Locale.ROOT)) {
+                    "true" -> return true
+                    "false" -> return false
+                }
+            }
+        }
+        return body.optBoolean("enable_thinking", false)
+    }
+
     private enum class ArtifactFormat(val extension: String, val mimeType: String) {
         PDF("pdf", "application/pdf"),
         DOCX("docx", "application/vnd.openxmlformats-officedocument.wordprocessingml.document"),
@@ -1722,24 +1934,183 @@ class MainActivity : AppCompatActivity() {
         val sourceText: String
     )
 
-    private fun handleCompletion(body: JSONObject): JSONObject {
-        val stream = body.optBoolean("stream", true)
+    private data class ChatCompletionRequest(
+        val stream: Boolean,
+        val prompt: String,
+        val predictLength: Int,
+        val artifactReply: String?,
+        val enableThinking: Boolean
+    )
+
+    private fun handleCompletion(body: JSONObject, stream: Boolean): Response {
         val messages = body.optJSONArray("messages") ?: JSONArray()
         val prompt = extractLastUserMessage(messages)
             .ifBlank { extractAttachmentContextFallback(messages) }
         val predictLength = resolvePredictLength(body)
         val artifactReply = maybeCreateArtifactsReply(messages, prompt)
-        val text = stripModelTags(artifactReply ?: runBlocking {
-            engineMutex.withLock {
-                engine.sendUserPrompt(prompt, predictLength).toList().joinToString("")
+        if (predictLength == 0 && artifactReply == null) {
+            Log.i(TAG, "Zero-token chat request received; skipping generation and preserving the KV cache state")
+            return if (stream) {
+                zeroTokenStreamResponse()
+            } else {
+                jsonResponse(createChatCompletionJson(""))
             }
-        })
+        }
+        val enableThinking = resolveEnableThinking(body)
+        Log.i(
+            TAG,
+            "Chat request received: stream=$stream messages=${messages.length()} promptChars=${prompt.length} predictLength=$predictLength enableThinking=$enableThinking artifactReply=${artifactReply != null}"
+        )
+        if (prompt.isBlank() && artifactReply == null) {
+            Log.w(TAG, "Chat request resolved to an empty prompt; falling back to raw user text is not possible")
+        }
+        val request = ChatCompletionRequest(
+            stream = stream,
+            prompt = prompt,
+            predictLength = predictLength,
+            artifactReply = artifactReply,
+            enableThinking = enableThinking
+        )
 
-        return if (stream) {
-            // stream is handled by LocalApiServer; here we return final payload shape only
-            JSONObject().put("content", text)
+        return if (request.stream) {
+            streamChatCompletion(request)
         } else {
-            createChatCompletionJson(text)
+            val text = stripModelTags(generateCompletionText(request))
+            Log.i(TAG, "Chat response generated: chars=${text.length}")
+            jsonResponse(createChatCompletionJson(text))
+        }
+    }
+
+    private fun zeroTokenStreamResponse(): Response {
+        val id = "chatcmpl-${UUID.randomUUID()}"
+        val sse = buildString {
+            append("data: ")
+            append(createChatCompletionChunkJson(id, includeRole = true).toString())
+            append("\n\n")
+            append("data: ")
+            append(createChatCompletionChunkJson(id, finishReason = "stop").toString())
+            append("\n\n")
+            append("data: [DONE]\n\n")
+        }
+
+        return NanoHTTPD.newFixedLengthResponse(Response.Status.OK, "text/event-stream", sse).apply {
+            addHeader("Cache-Control", "no-cache")
+            addHeader("Connection", "keep-alive")
+        }
+    }
+
+    private fun generateCompletionText(request: ChatCompletionRequest): String {
+        request.artifactReply?.let { return it }
+        if (request.predictLength == 0) {
+            return ""
+        }
+        return runBlocking {
+            engineMutex.withLock {
+                engine.sendUserPrompt(request.prompt, request.predictLength, request.enableThinking).toList().joinToString("")
+            }
+        }
+    }
+
+    private fun streamChatCompletion(request: ChatCompletionRequest): Response {
+        val id = "chatcmpl-${UUID.randomUUID()}"
+        val input = PipedInputStream(64 * 1024)
+        val output = PipedOutputStream(input)
+        val streamStartedAtMs = SystemClock.elapsedRealtime()
+
+        chatServerScope.launch {
+            var emittedChars = 0
+            var emittedPieces = 0
+            BufferedWriter(OutputStreamWriter(output, StandardCharsets.UTF_8)).use { writer ->
+                fun sendChunk(json: JSONObject) {
+                    writer.write("data: ")
+                    writer.write(json.toString())
+                    writer.write("\n\n")
+                    writer.flush()
+                }
+
+                fun buildStreamingTimings(): JSONObject? {
+                    if (emittedPieces <= 0) {
+                        return null
+                    }
+                    val elapsedMs = (SystemClock.elapsedRealtime() - streamStartedAtMs).coerceAtLeast(1L)
+                    return JSONObject()
+                        .put("prompt_n", 0)
+                        .put("prompt_ms", 0)
+                        .put("predicted_n", emittedPieces)
+                        .put("predicted_ms", elapsedMs)
+                        .put("cache_n", 0)
+                }
+
+                try {
+                    sendChunk(createChatCompletionChunkJson(id, includeRole = true))
+
+                    if (request.artifactReply != null) {
+                        val text = stripModelTags(request.artifactReply, trimWhitespace = false)
+                        if (text.isNotEmpty()) {
+                            emittedChars += text.length
+                            emittedPieces += 1
+                            sendChunk(
+                                createChatCompletionChunkJson(
+                                    id,
+                                    deltaContent = text,
+                                    timings = buildStreamingTimings()
+                                )
+                            )
+                        }
+                    } else {
+                        engineMutex.withLock {
+                            engine.sendUserPrompt(request.prompt, request.predictLength, request.enableThinking)
+                                .collect { utf8token ->
+                                    val visibleToken = stripModelTags(utf8token, trimWhitespace = false)
+                                    if (visibleToken.isNotEmpty()) {
+                                        emittedChars += visibleToken.length
+                                        emittedPieces += 1
+                                        sendChunk(
+                                            createChatCompletionChunkJson(
+                                                id,
+                                                deltaContent = visibleToken,
+                                                timings = buildStreamingTimings()
+                                            )
+                                        )
+                                    }
+                                }
+                        }
+                    }
+
+                    sendChunk(
+                        createChatCompletionChunkJson(
+                            id,
+                            finishReason = "stop",
+                            timings = buildStreamingTimings()
+                        )
+                    )
+                    writer.write("data: [DONE]\n\n")
+                    writer.flush()
+                    Log.i(TAG, "Chat response streamed: chars=$emittedChars")
+                } catch (t: Throwable) {
+                    if (t is CancellationException) {
+                        throw t
+                    }
+                    Log.e(TAG, "Chat stream failed", t)
+                    runCatching {
+                        sendChunk(
+                            createChatCompletionChunkJson(
+                                id,
+                                deltaContent = "Fehler beim Generieren der Antwort."
+                            )
+                        )
+                        writer.write("data: [DONE]\n\n")
+                        writer.flush()
+                    }
+                }
+            }
+            runCatching { output.close() }
+            runCatching { input.close() }
+        }
+
+        return NanoHTTPD.newChunkedResponse(Response.Status.OK, "text/event-stream", input).apply {
+            addHeader("Cache-Control", "no-cache")
+            addHeader("Connection", "keep-alive")
         }
     }
 
@@ -2087,17 +2458,26 @@ class MainActivity : AppCompatActivity() {
 
     /**
      * Accept both OpenAI-style `max_tokens` and llama.cpp-style `n_predict`.
-     * If unlimited/invalid is requested (<= 0), use a generous local default
-     * so long document answers (PDF/DOCX context) are not cut off at 512.
+     * Treat missing values as a request for a local default, but preserve
+     * explicit zero so cache-warming requests can skip generation entirely.
      */
     private fun resolvePredictLength(body: JSONObject): Int {
+        val hasMaxCompletionTokens = body.has("max_completion_tokens")
+        val hasMaxTokens = body.has("max_tokens")
+        val hasNPredict = body.has("n_predict")
         val candidate = when {
-            body.has("max_tokens") -> body.optInt("max_tokens", 0)
-            body.has("n_predict") -> body.optInt("n_predict", 0)
+            hasMaxCompletionTokens -> body.optInt("max_completion_tokens", 0)
+            hasMaxTokens -> body.optInt("max_tokens", 0)
+            hasNPredict -> body.optInt("n_predict", 0)
             else -> 0
         }
-        val fallback = 2048
-        return if (candidate <= 0) fallback else candidate.coerceIn(1, 4096)
+        val fallback = InferenceEngine.DEFAULT_PREDICT_LENGTH
+        return when {
+            candidate > 0 -> candidate.coerceIn(1, 4096)
+            candidate < 0 -> -1
+            hasMaxCompletionTokens || hasMaxTokens || hasNPredict -> 0
+            else -> fallback
+        }
     }
 
     private fun createChatCompletionJson(content: String): JSONObject {
@@ -2117,6 +2497,46 @@ class MainActivity : AppCompatActivity() {
                 )
             )
             .put("usage", JSONObject().put("prompt_tokens", 0).put("completion_tokens", 0).put("total_tokens", 0))
+    }
+
+    private fun jsonResponse(obj: Any): Response {
+        return NanoHTTPD.newFixedLengthResponse(Response.Status.OK, "application/json", obj.toString())
+    }
+
+    private fun createChatCompletionChunkJson(
+        id: String,
+        deltaContent: String? = null,
+        finishReason: String? = null,
+        includeRole: Boolean = false,
+        timings: JSONObject? = null
+    ): JSONObject {
+        val delta = JSONObject()
+        if (includeRole) {
+            delta.put("role", "assistant")
+        }
+        if (deltaContent != null) {
+            delta.put("content", deltaContent)
+        }
+
+        return JSONObject()
+            .put("id", id)
+            .put("object", "chat.completion.chunk")
+            .put("created", System.currentTimeMillis() / 1000)
+            .put("model", activeModelName())
+            .put(
+                "choices",
+                JSONArray().put(
+                    JSONObject()
+                        .put("index", 0)
+                        .put("delta", delta)
+                        .put("finish_reason", finishReason ?: JSONObject.NULL)
+                )
+            )
+            .apply {
+                if (timings != null) {
+                    put("timings", timings)
+                }
+            }
     }
 
     private fun extractLastUserMessage(messages: JSONArray): String {
@@ -2224,7 +2644,7 @@ private class ImportProgressDialog(activity: AppCompatActivity) {
     }
 }
 
-private fun stripModelTags(input: String): String {
+private fun stripModelTags(input: String, trimWhitespace: Boolean = true): String {
     var text = input
 
     val blockPatterns = listOf(
@@ -2241,24 +2661,59 @@ private fun stripModelTags(input: String): String {
         Regex("(?m)^\\s*<channel\\|>\\s*"),
         Regex("(?m)^\\s*<think>\\s*"),
         Regex("(?m)^\\s*</think>\\s*"),
-        Regex("(?m)^\\s*Thinking Process:\\s*")
+        Regex("(?m)^\\s*Thinking Process:\\s*"),
+        Regex("<unused\\d+>"),
+        Regex("\\[unused\\d+\\]")
     )
     for (pattern in tokenPatterns) {
         text = pattern.replace(text, "")
     }
 
-    return text.trim()
+    return if (trimWhitespace) text.trim() else text
+}
+
+private data class ModelRuntimeInfo(
+    val chatTemplate: String = "",
+    val capabilities: ModelCapabilities = ModelCapabilities()
+)
+
+private data class ModelCapabilities(
+    val modalities: ModelModalities = ModelModalities()
+)
+
+private data class ModelModalities(
+    val vision: Boolean = false,
+    val audio: Boolean = false,
+    val video: Boolean = false
+) {
+    fun toJson(): JSONObject = JSONObject()
+        .put("vision", vision)
+        .put("audio", audio)
+        .put("video", video)
+
+    fun toInputModalities(): JSONArray {
+        return JSONArray().apply {
+            put("text")
+            if (vision) put("image")
+            if (audio) put("audio")
+            if (video) put("video")
+        }
+    }
 }
 
 private class LocalApiServer(
     port: Int,
     private val webRootResolver: () -> android.content.res.AssetManager,
     private val getModelName: () -> String,
-    private val onChatCompletion: (JSONObject) -> JSONObject,
+    private val getChatTemplate: () -> String,
+    private val getModalities: () -> ModelModalities,
+    private val getContextWindowSize: () -> Int,
+    private val onChatCompletion: (JSONObject, Boolean) -> Response,
     private val artifactsRootResolver: () -> File
 ) : NanoHTTPD("127.0.0.1", port) {
     override fun serve(session: IHTTPSession): Response {
         return try {
+            Log.i("LocalApiServer", "serve ${session.method} ${session.uri}")
             when {
                 session.uri == "/health" && session.method == Method.GET -> jsonResponse(
                     JSONObject()
@@ -2268,31 +2723,39 @@ private class LocalApiServer(
                 )
 
                 session.uri == "/v1/models" && session.method == Method.GET -> jsonResponse(
-                    JSONObject()
-                        .put("object", "list")
-                        .put(
-                            "data",
-                            JSONArray().put(
-                                JSONObject()
-                                    .put("id", getModelName())
-                                    .put("object", "model")
-                                    .put("owned_by", "local")
+                    run {
+                        val modalities = getModalities()
+                        JSONObject()
+                            .put("object", "list")
+                            .put(
+                                "data",
+                                JSONArray().put(
+                                    JSONObject()
+                                        .put("id", getModelName())
+                                        .put("object", "model")
+                                        .put("owned_by", "local")
+                                        .put("modalities", modalities.toJson())
+                                        .put(
+                                            "architecture",
+                                            JSONObject()
+                                                .put("input_modalities", modalities.toInputModalities())
+                                                .put("output_modalities", JSONArray().put("text"))
+                                        )
+                                )
                             )
-                        )
+                    }
                 )
 
                 session.uri == "/props" && session.method == Method.GET -> jsonResponse(
                     JSONObject()
                         .put("model_path", getModelName())
-                        .put("chat_template", "")
+                        // Keep the upstream Android contract: the native engine owns
+                        // the chat formatting, so the WebUI must not inject a partial
+                        // template here and risk double-formatting the prompt.
+                        .put("chat_template", getChatTemplate())
                         .put("total_slots", 1)
-                        .put("default_generation_settings", JSONObject().put("n_ctx", 4096))
-                        .put(
-                            "modalities",
-                            JSONObject()
-                                .put("vision", false)
-                                .put("audio", false)
-                        )
+                        .put("default_generation_settings", JSONObject().put("n_ctx", getContextWindowSize().coerceAtLeast(1)))
+                        .put("modalities", getModalities().toJson())
                 )
 
                 session.uri == "/slots" && session.method == Method.GET -> jsonResponse(
@@ -2301,15 +2764,10 @@ private class LocalApiServer(
 
                 session.uri == "/v1/chat/completions" && session.method == Method.POST -> {
                     val body = parseBodyJson(session)
-                    val stream = body.optBoolean("stream", true)
-                    val completion = onChatCompletion(body)
-
-                    if (!stream) {
-                        jsonResponse(completion)
-                    } else {
-                        val text = completion.optString("content")
-                        sseResponse(text, getModelName())
-                    }
+                    val stream = body.optBoolean("stream", false)
+                    val messagesCount = body.optJSONArray("messages")?.length() ?: 0
+                    Log.i("LocalApiServer", "POST /v1/chat/completions stream=$stream messages=$messagesCount")
+                    onChatCompletion(body, stream)
                 }
 
                 session.uri == "/tools" && session.method == Method.GET -> {
@@ -2379,49 +2837,6 @@ private class LocalApiServer(
         response.addHeader("Content-Disposition", "attachment; filename=\"${candidate.name}\"")
         response.addHeader("Cache-Control", "no-store")
         return response
-    }
-
-    private fun sseResponse(text: String, model: String): Response {
-        val visibleText = stripModelTags(text)
-        val id = "chatcmpl-${UUID.randomUUID()}"
-        val chunk = JSONObject()
-            .put("id", id)
-            .put("object", "chat.completion.chunk")
-            .put("created", System.currentTimeMillis() / 1000)
-            .put("model", model)
-            .put(
-                "choices",
-                JSONArray().put(
-                    JSONObject()
-                        .put("index", 0)
-                        .put("delta", JSONObject().put("content", visibleText))
-                        .put("finish_reason", JSONObject.NULL)
-                )
-            )
-        val done = JSONObject()
-            .put("id", id)
-            .put("object", "chat.completion.chunk")
-            .put("created", System.currentTimeMillis() / 1000)
-            .put("model", model)
-            .put(
-                "choices",
-                JSONArray().put(
-                    JSONObject()
-                        .put("index", 0)
-                        .put("delta", JSONObject())
-                        .put("finish_reason", "stop")
-                )
-            )
-
-        val sse = buildString {
-            append("data: ").append(chunk.toString()).append("\n\n")
-            append("data: ").append(done.toString()).append("\n\n")
-            append("data: [DONE]\n\n")
-        }
-        val resp = newFixedLengthResponse(Response.Status.OK, "text/event-stream", sse)
-        resp.addHeader("Cache-Control", "no-cache")
-        resp.addHeader("Connection", "keep-alive")
-        return resp
     }
 
     private fun jsonResponse(obj: Any): Response {
@@ -2538,7 +2953,6 @@ private class LocalAnalysisServer(
         val estimatedTokens = maxOf(1, ceil(characters / 4.0).toInt())
         val keyPoints = extractKeyPoints(fileName, detectedKind, normalized)
         val keywords = extractKeywords(normalized)
-        val chunks = buildTextChunks(normalized)
         val summary = keyPoints.firstOrNull() ?: appContext.getString(R.string.analysis_file_analyzed, fileName)
 
         val keyPointsJson = JSONArray()
@@ -2546,18 +2960,6 @@ private class LocalAnalysisServer(
 
         val keywordsJson = JSONArray()
         keywords.forEach { keywordsJson.put(it) }
-
-        val chunksJson = JSONArray()
-        chunks.forEachIndexed { index, chunk ->
-            chunksJson.put(
-                JSONObject()
-                    .put("id", "chunk-${index + 1}")
-                    .put("title", "Section ${index + 1}")
-                    .put("text", chunk)
-                    .put("keywords", JSONArray(extractKeywords(chunk)))
-                    .put("characters", chunk.length)
-            )
-        }
 
         val metadata = JSONObject()
             .put("size", fileSize)
@@ -2571,7 +2973,6 @@ private class LocalAnalysisServer(
             .put("keywords", keywordsJson)
             .put("characters", characters)
             .put("estimatedTokens", estimatedTokens)
-            .put("chunks", chunksJson)
             .put("metadata", metadata)
             .put("tables", JSONArray())
             .put("rawText", normalized)
@@ -2619,31 +3020,6 @@ private class LocalAnalysisServer(
             .sortedByDescending { it.value }
             .take(12)
             .map { it.key }
-    }
-
-    private fun buildTextChunks(text: String): List<String> {
-        if (text.isBlank()) {
-            return emptyList()
-        }
-
-        val chunkSize = 1300
-        val overlap = 140
-        val chunks = mutableListOf<String>()
-        var cursor = 0
-
-        while (cursor < text.length && chunks.size < 8) {
-            val end = minOf(text.length, cursor + chunkSize)
-            val chunk = text.substring(cursor, end).trim()
-            if (chunk.isNotEmpty()) {
-                chunks += chunk
-            }
-            if (end >= text.length) {
-                break
-            }
-            cursor = end - overlap
-        }
-
-        return chunks
     }
 
     private fun analyzeImage(file: File): String {

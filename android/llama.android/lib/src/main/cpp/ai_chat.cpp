@@ -1,5 +1,6 @@
 #include <android/log.h>
 #include <jni.h>
+#include <algorithm>
 #include <iomanip>
 #include <cmath>
 #include <cstring>
@@ -22,20 +23,6 @@ static std::string join(const std::vector<T> &values, const std::string &delim) 
     return str.str();
 }
 
-static bool is_backend_registry_named(ggml_backend_dev_t dev, const char * expected_name) {
-    if (!dev || !expected_name) {
-        return false;
-    }
-
-    ggml_backend_reg_t reg = ggml_backend_dev_backend_reg(dev);
-    if (!reg) {
-        return false;
-    }
-
-    const char * actual_name = ggml_backend_reg_name(reg);
-    return actual_name != nullptr && std::strcmp(actual_name, expected_name) == 0;
-}
-
 static std::string list_non_cpu_backends() {
     std::vector<std::string> backends;
     for (size_t i = 0; i < ggml_backend_reg_count(); i++) {
@@ -52,31 +39,14 @@ static std::string list_non_cpu_backends() {
     return backends.empty() ? "CPU" : join(backends, ",");
 }
 
-static std::vector<ggml_backend_dev_t> preferred_model_devices() {
-    std::vector<ggml_backend_dev_t> opencl_devices;
-
-    for (size_t i = 0; i < ggml_backend_dev_count(); ++i) {
-        auto * dev = ggml_backend_dev_get(i);
-        if (!dev || ggml_backend_dev_type(dev) == GGML_BACKEND_DEVICE_TYPE_CPU) {
-            continue;
-        }
-
-        if (is_backend_registry_named(dev, "OpenCL")) {
-            opencl_devices.push_back(dev);
-        }
-    }
-
-    return opencl_devices;
-}
-
 /**
  * LLama resources: context, model, batch and sampler
  */
 constexpr int   N_THREADS_MIN           = 2;
-constexpr int   N_THREADS_MAX           = 4;
-constexpr int   N_THREADS_HEADROOM      = 2;
+constexpr int   N_THREADS_MAX           = 6;
+constexpr int   N_THREADS_HEADROOM      = 1;
 
-constexpr int   DEFAULT_CONTEXT_SIZE    = 8192;
+constexpr int   MIN_CONTEXT_SIZE        = 4096;
 constexpr int   OVERFLOW_HEADROOM       = 4;
 constexpr int   BATCH_SIZE              = 512;
 constexpr float DEFAULT_SAMPLER_TEMP    = 0.3f;
@@ -86,6 +56,7 @@ static llama_context                    * g_context;
 static llama_batch                        g_batch;
 static common_chat_templates_ptr          g_chat_templates;
 static common_sampler                   * g_sampler;
+static bool                               g_enable_thinking = false;
 static bool                               g_batch_initialized = false;
 
 static std::string trim_copy(const std::string &text) {
@@ -95,6 +66,51 @@ static std::string trim_copy(const std::string &text) {
     }
     const auto last = text.find_last_not_of(" \t\r\n");
     return text.substr(first, last - first + 1);
+}
+
+static int runtime_context_window_size(const llama_context *context) {
+    if (context == nullptr) {
+        return 0;
+    }
+    return static_cast<int>(llama_n_ctx(context));
+}
+
+static int runtime_context_limit(const llama_context *context) {
+    return std::max(0, runtime_context_window_size(context) - OVERFLOW_HEADROOM);
+}
+
+static std::vector<int> build_context_candidates(llama_model *model, int requested_n_ctx) {
+    std::vector<int> candidates;
+    if (model == nullptr) {
+        return candidates;
+    }
+
+    const int trained_context_size = std::max(0, llama_model_n_ctx_train(model));
+    const int initial_context = std::max(requested_n_ctx > 0 ? requested_n_ctx : trained_context_size, MIN_CONTEXT_SIZE);
+
+    auto add_candidate = [&](const int candidate) {
+        if (candidate < MIN_CONTEXT_SIZE) {
+            return;
+        }
+        if (std::find(candidates.begin(), candidates.end(), candidate) == candidates.end()) {
+            candidates.push_back(candidate);
+        }
+    };
+
+    add_candidate(initial_context);
+    add_candidate(trained_context_size);
+
+    for (size_t i = 0; i < candidates.size(); ++i) {
+        const int candidate = candidates[i];
+        if (candidate <= MIN_CONTEXT_SIZE) {
+            continue;
+        }
+
+        const int next_candidate = std::max(MIN_CONTEXT_SIZE, candidate / 2);
+        add_candidate(next_candidate);
+    }
+
+    return candidates;
 }
 
 static std::string strip_model_tags(std::string text) {
@@ -114,6 +130,20 @@ static std::string strip_model_tags(std::string text) {
     remove_block("<think>", "</think>");
     remove_block("<|think|>", "</|think|>");
 
+    auto remove_unused_token = [&](const std::string &prefix, const char closing_char) {
+        size_t start = 0;
+        while ((start = text.find(prefix, start)) != std::string::npos) {
+            const size_t end = text.find(closing_char, start + prefix.size());
+            if (end == std::string::npos) {
+                text.erase(start);
+                break;
+            }
+            text.erase(start, end - start + 1);
+        }
+    };
+    remove_unused_token("<unused", '>');
+    remove_unused_token("[unused", ']');
+
     const char *tokens_to_remove[] = {
         "<|channel>thought",
         "<channel|>",
@@ -129,6 +159,37 @@ static std::string strip_model_tags(std::string text) {
     }
 
     return trim_copy(text);
+}
+
+static bool is_hidden_output_piece(const llama_token token, const std::string &piece) {
+    if (g_model != nullptr) {
+        const auto *vocab = llama_model_get_vocab(g_model);
+        if (vocab != nullptr && (llama_vocab_get_attr(vocab, token) & LLAMA_TOKEN_ATTR_UNUSED) != 0) {
+            return true;
+        }
+    }
+
+    if (piece.rfind("<unused", 0) == 0 || piece.rfind("[unused", 0) == 0) {
+        return true;
+    }
+
+    const char *hidden_pieces[] = {
+        "<|channel>thought",
+        "<channel|>",
+        "<think>",
+        "</think>",
+        "<|think|>",
+        "</|think|>",
+        "Thinking Process:"
+    };
+
+    for (const char *hidden_piece : hidden_pieces) {
+        if (piece == hidden_piece) {
+            return true;
+        }
+    }
+
+    return false;
 }
 
 extern "C"
@@ -153,16 +214,9 @@ extern "C"
 JNIEXPORT jint JNICALL
 Java_com_arm_aichat_internal_InferenceEngineImpl_load(JNIEnv *env, jobject, jstring jmodel_path) {
     llama_model_params model_params = llama_model_default_params();
-    model_params.n_gpu_layers = 99;
-    model_params.split_mode = LLAMA_SPLIT_MODE_LAYER;
-    auto opencl_devices = preferred_model_devices();
-    if (!opencl_devices.empty()) {
-        opencl_devices.push_back(nullptr);
-        model_params.devices = opencl_devices.data();
-        LOGi("OpenCL backend detected; preferring %zu OpenCL device(s) for model offload.", opencl_devices.size() - 1);
-    } else {
-        LOGi("No OpenCL device detected; using llama.cpp default device selection.");
-    }
+    model_params.n_gpu_layers = 0;
+    model_params.split_mode = LLAMA_SPLIT_MODE_NONE;
+    LOGi("CPU-only mode: model offload disabled.");
 
     const auto *model_path = env->GetStringUTFChars(jmodel_path, 0);
     LOGd("%s: Loading model from: \n%s\n", __func__, model_path);
@@ -176,35 +230,53 @@ Java_com_arm_aichat_internal_InferenceEngineImpl_load(JNIEnv *env, jobject, jstr
     return 0;
 }
 
-static llama_context *init_context(llama_model *model, const int n_ctx = DEFAULT_CONTEXT_SIZE) {
+static llama_context *init_context(llama_model *model, const int requested_n_ctx = 0) {
     if (!model) {
         LOGe("%s: model cannot be null", __func__);
         return nullptr;
     }
 
     // Multi-threading setup
-    const int n_threads = std::max(N_THREADS_MIN, std::min(N_THREADS_MAX,
-                                                     (int) sysconf(_SC_NPROCESSORS_ONLN) -
-                                                     N_THREADS_HEADROOM));
-    LOGi("%s: Using %d threads", __func__, n_threads);
+    const int online_cpus = std::max(1, (int) sysconf(_SC_NPROCESSORS_ONLN));
+    const int n_threads = std::max(N_THREADS_MIN, std::min(N_THREADS_MAX, online_cpus - N_THREADS_HEADROOM));
+    const int n_threads_batch = std::min(N_THREADS_MAX, n_threads + 1);
+    LOGi("%s: Using %d threads (%d for batch processing)", __func__, n_threads, n_threads_batch);
 
-    // Context parameters setup
-    llama_context_params ctx_params = llama_context_default_params();
     const int trained_context_size = llama_model_n_ctx_train(model);
-    if (n_ctx > trained_context_size) {
-        LOGw("%s: Model was trained with only %d context size! Enforcing %d context size...",
-             __func__, trained_context_size, n_ctx);
+    const auto candidates = build_context_candidates(model, requested_n_ctx);
+    if (candidates.empty()) {
+        LOGe("%s: no viable context candidates available", __func__);
+        return nullptr;
     }
-    ctx_params.n_ctx = n_ctx;
-    ctx_params.n_batch = BATCH_SIZE;
-    ctx_params.n_ubatch = BATCH_SIZE;
-    ctx_params.n_threads = n_threads;
-    ctx_params.n_threads_batch = n_threads;
-    auto *context = llama_init_from_model(g_model, ctx_params);
-    if (context == nullptr) {
-        LOGe("%s: llama_new_context_with_model() returned null)", __func__);
+
+    for (const int n_ctx : candidates) {
+        // Context parameters setup
+        llama_context_params ctx_params = llama_context_default_params();
+        if (trained_context_size > 0 && n_ctx > trained_context_size) {
+            LOGw("%s: trying %d context tokens while the model reports %d trained context tokens",
+                 __func__, n_ctx, trained_context_size);
+        }
+        LOGi("%s: trying context window %d", __func__, n_ctx);
+        ctx_params.n_ctx = n_ctx;
+        ctx_params.n_batch = BATCH_SIZE;
+        ctx_params.n_ubatch = BATCH_SIZE;
+        ctx_params.n_threads = n_threads;
+        ctx_params.n_threads_batch = n_threads_batch;
+        ctx_params.flash_attn_type = LLAMA_FLASH_ATTN_TYPE_ENABLED;
+        ctx_params.offload_kqv = false;
+        ctx_params.op_offload = false;
+
+        auto *context = llama_init_from_model(model, ctx_params);
+        if (context != nullptr) {
+            LOGi("%s: selected context window %d", __func__, runtime_context_window_size(context));
+            return context;
+        }
+
+        LOGw("%s: context window %d failed; trying a smaller fallback", __func__, n_ctx);
     }
-    return context;
+
+    LOGe("%s: failed to initialize any usable context window", __func__);
+    return nullptr;
 }
 
 static common_sampler *new_sampler(float temp) {
@@ -226,6 +298,14 @@ Java_com_arm_aichat_internal_InferenceEngineImpl_prepare(JNIEnv * /*env*/, jobje
     return 0;
 }
 
+extern "C"
+JNIEXPORT jint JNICALL
+Java_com_arm_aichat_internal_InferenceEngineImpl_setEnableThinking(JNIEnv * /*env*/, jobject /*unused*/, jboolean enableThinking) {
+    g_enable_thinking = enableThinking == JNI_TRUE;
+    LOGi("%s: enable_thinking=%s", __func__, g_enable_thinking ? "true" : "false");
+    return 0;
+}
+
 static std::string get_backend() {
     return list_non_cpu_backends();
 }
@@ -234,6 +314,12 @@ extern "C"
 JNIEXPORT jstring JNICALL
 Java_com_arm_aichat_internal_InferenceEngineImpl_systemInfo(JNIEnv *env, jobject /*unused*/) {
     return env->NewStringUTF(llama_print_system_info());
+}
+
+extern "C"
+JNIEXPORT jint JNICALL
+Java_com_arm_aichat_internal_InferenceEngineImpl_nativeContextWindowSize(JNIEnv * /*env*/, jobject /*unused*/) {
+    return static_cast<jint>(runtime_context_window_size(g_context));
 }
 
 extern "C"
@@ -356,44 +442,46 @@ static std::vector<common_chat_msg> chat_msgs;
 static llama_pos system_prompt_position;
 static llama_pos current_position;
 
-static void reset_long_term_states(const bool clear_kv_cache = true) {
-    chat_msgs.clear();
-    system_prompt_position = 0;
-    current_position = 0;
-
-    if (clear_kv_cache && g_context)
-        llama_memory_clear(llama_get_memory(g_context), false);
-}
-
-/**
- * TODO-hyin: implement sliding-window version as a better alternative
- *
- * Context shifting by discarding the older half of the tokens appended after system prompt:
- * - take the [system_prompt_position] first tokens from the original prompt
- * - take half of the last (system_prompt_position - system_prompt_position) tokens
- * - recompute the logits in batches
- */
-static void shift_context() {
-    if (!g_context) {
-        LOGw("%s: Skipping context shift because the llama context is not ready", __func__);
-        return;
-    }
-    const int n_discard = (current_position - system_prompt_position) / 2;
-    LOGi("%s: Discarding %d tokens", __func__, n_discard);
-    llama_memory_seq_rm(llama_get_memory(g_context), 0, system_prompt_position, system_prompt_position + n_discard);
-    llama_memory_seq_add(llama_get_memory(g_context), 0, system_prompt_position + n_discard, current_position, -n_discard);
-    current_position -= n_discard;
-    LOGi("%s: Context shifting done! Current position: %d", __func__, current_position);
-}
-
-static std::string chat_add_and_format(const std::string &role, const std::string &content) {
+static std::string format_chat_message(const std::string &role, const std::string &content) {
     common_chat_msg new_msg;
     new_msg.role = role;
     new_msg.content = content;
-    const bool has_chat_template = common_chat_templates_was_explicit(g_chat_templates.get());
+
+    if (!g_chat_templates) {
+        chat_msgs.push_back(new_msg);
+        return content;
+    }
+
+    const bool use_jinja = common_chat_templates_was_explicit(g_chat_templates.get());
+
     try {
-        auto formatted = common_chat_format_single(
-                g_chat_templates.get(), chat_msgs, new_msg, role == ROLE_USER, /* use_jinja */ has_chat_template);
+        common_chat_templates_inputs inputs;
+        inputs.use_jinja = use_jinja;
+        if (g_model != nullptr) {
+            const auto *vocab = llama_model_get_vocab(g_model);
+            if (vocab != nullptr) {
+                inputs.add_bos = llama_vocab_get_add_bos(vocab);
+                inputs.add_eos = llama_vocab_get_add_eos(vocab);
+            }
+        }
+        inputs.enable_thinking = g_enable_thinking;
+        inputs.chat_template_kwargs["enable_thinking"] = g_enable_thinking ? "true" : "false";
+
+        std::string fmt_past;
+        if (!chat_msgs.empty()) {
+            inputs.messages = chat_msgs;
+            inputs.add_generation_prompt = false;
+            fmt_past = common_chat_templates_apply(g_chat_templates.get(), inputs).prompt;
+        }
+
+        inputs.messages.push_back(new_msg);
+        inputs.add_generation_prompt = role == ROLE_USER;
+        const auto fmt_new = common_chat_templates_apply(g_chat_templates.get(), inputs).prompt;
+        std::string formatted;
+        if (role == ROLE_USER && !fmt_past.empty() && fmt_past.back() == '\n') {
+            formatted = "\n";
+        }
+        formatted += fmt_new.substr(fmt_past.size(), fmt_new.size() - fmt_past.size());
         chat_msgs.push_back(new_msg);
         LOGi("%s: Formatted and added %s message: \n%s\n", __func__, role.c_str(), formatted.c_str());
         return formatted;
@@ -403,6 +491,15 @@ static std::string chat_add_and_format(const std::string &role, const std::strin
         chat_msgs.push_back(new_msg);
         return content;
     }
+}
+
+static void reset_long_term_states(const bool clear_kv_cache = true) {
+    chat_msgs.clear();
+    system_prompt_position = 0;
+    current_position = 0;
+
+    if (clear_kv_cache && g_context)
+        llama_memory_clear(llama_get_memory(g_context), false);
 }
 
 /**
@@ -434,10 +531,12 @@ static int decode_tokens_in_batches(
         common_batch_clear(batch);
         LOGv("%s: Preparing a batch size of %d starting at: %d", __func__, cur_batch_size, i);
 
-        // Shift context if current batch cannot fit into the context
-        if (start_pos + i + cur_batch_size >= DEFAULT_CONTEXT_SIZE - OVERFLOW_HEADROOM) {
-            LOGw("%s: Current batch won't fit into context! Shifting...", __func__);
-            shift_context();
+        const int context_limit = runtime_context_limit(context);
+        // Keep the native window strict on mobile: no recursive context shifting.
+        if (start_pos + i + cur_batch_size > context_limit) {
+            LOGe("%s: Current batch exceeds context window at position %d (limit %d)",
+                 __func__, start_pos + i + cur_batch_size - 1, context_limit - 1);
+            return 1;
         }
 
         // Add tokens to the batch with proper positions
@@ -480,7 +579,7 @@ Java_com_arm_aichat_internal_InferenceEngineImpl_processSystemPrompt(
         const bool has_chat_template = common_chat_templates_was_explicit(g_chat_templates.get());
         std::string formatted_system_prompt(system_prompt_text);
         if (has_chat_template) {
-            formatted_system_prompt = chat_add_and_format(ROLE_SYSTEM, system_prompt_text);
+            formatted_system_prompt = format_chat_message(ROLE_SYSTEM, system_prompt_text);
         }
 
         // Tokenize system prompt
@@ -491,7 +590,7 @@ Java_com_arm_aichat_internal_InferenceEngineImpl_processSystemPrompt(
         }
 
         // Handle context overflow
-        const int max_batch_size = DEFAULT_CONTEXT_SIZE - OVERFLOW_HEADROOM;
+        const int max_batch_size = runtime_context_limit(g_context);
         if ((int) system_tokens.size() > max_batch_size) {
             LOGe("%s: System prompt too long for context! %d tokens, max: %d",
                  __func__, (int) system_tokens.size(), max_batch_size);
@@ -535,7 +634,7 @@ Java_com_arm_aichat_internal_InferenceEngineImpl_processUserPrompt(
         const bool has_chat_template = common_chat_templates_was_explicit(g_chat_templates.get());
         std::string formatted_user_prompt(user_prompt_text);
         if (has_chat_template) {
-            formatted_user_prompt = chat_add_and_format(ROLE_USER, user_prompt_text);
+            formatted_user_prompt = format_chat_message(ROLE_USER, user_prompt_text);
         }
 
         // Decode formatted user prompts
@@ -544,12 +643,16 @@ Java_com_arm_aichat_internal_InferenceEngineImpl_processUserPrompt(
             LOGv("token: `%s`\t -> `%d`", common_token_to_piece(g_context, id).c_str(), id);
         }
 
-        // Ensure user prompt doesn't exceed the context size by truncating if necessary.
+        // Ensure user prompt doesn't exceed the remaining context window by truncating if necessary.
         const int user_prompt_size = (int) user_tokens.size();
-        const int max_batch_size = DEFAULT_CONTEXT_SIZE - OVERFLOW_HEADROOM;
-        if (user_prompt_size > max_batch_size) {
-            const int skipped_tokens = user_prompt_size - max_batch_size;
-            user_tokens.resize(max_batch_size);
+        const int available_context = std::max(0, runtime_context_limit(g_context) - (int) current_position);
+        if (available_context == 0) {
+            LOGe("%s: No context remaining for user prompt", __func__);
+            return 1;
+        }
+        if (user_prompt_size > available_context) {
+            const int skipped_tokens = user_prompt_size - available_context;
+            user_tokens.resize(available_context);
             LOGw("%s: User prompt too long! Skipped %d tokens!", __func__, skipped_tokens);
         }
 
@@ -559,11 +662,14 @@ Java_com_arm_aichat_internal_InferenceEngineImpl_processUserPrompt(
             return 2;
         }
 
-        // Update position based on the actual tokens that were decoded.
-        // The previous logic added the prompt length twice, which could keep
-        // generation running much longer than intended on long prompts.
+        // Update the generation stop position without exceeding the native window.
         current_position += (int) user_tokens.size();
-        stop_generation_position = current_position + n_predict;
+        const llama_pos generation_limit = runtime_context_limit(g_context);
+        if (n_predict < 0) {
+            stop_generation_position = generation_limit;
+        } else {
+            stop_generation_position = std::min(current_position + n_predict, generation_limit);
+        }
         return 0;
     } catch (const std::exception &e) {
         LOGe("%s: failed: %s", __func__, e.what());
@@ -611,10 +717,11 @@ Java_com_arm_aichat_internal_InferenceEngineImpl_generateNextToken(
         JNIEnv *env,
         jobject /*unused*/
 ) {
-    // Infinite text generation via context shifting
-    if (current_position >= DEFAULT_CONTEXT_SIZE - OVERFLOW_HEADROOM) {
-        LOGw("%s: Context full! Shifting...", __func__);
-        shift_context();
+    // Stop generation once the fixed mobile context window is full.
+    const int context_limit = runtime_context_limit(g_context);
+    if (current_position >= context_limit) {
+        LOGw("%s: Context full; stopping generation at position %d", __func__, current_position);
+        return nullptr;
     }
 
     // Stop if reaching the marked position
@@ -641,12 +748,16 @@ Java_com_arm_aichat_internal_InferenceEngineImpl_generateNextToken(
     // Stop if next token is EOG
     if (llama_vocab_is_eog(llama_model_get_vocab(g_model), new_token_id)) {
         LOGd("id: %d,\tIS EOG!\nSTOP.", new_token_id);
-        chat_add_and_format(ROLE_ASSISTANT, strip_model_tags(assistant_ss.str()));
+        format_chat_message(ROLE_ASSISTANT, strip_model_tags(assistant_ss.str()));
         return nullptr;
     }
 
     // If not EOG, convert to text
     auto new_token_chars = common_token_to_piece(g_context, new_token_id);
+    if (is_hidden_output_piece(new_token_id, new_token_chars)) {
+        LOGv("id: %d,\thidden piece: `%s`", new_token_id, new_token_chars.c_str());
+        return env->NewStringUTF("");
+    }
     cached_token_chars += new_token_chars;
 
     // Create and return a valid UTF-8 Java string
@@ -677,6 +788,7 @@ Java_com_arm_aichat_internal_InferenceEngineImpl_unload(JNIEnv * /*unused*/, job
         common_sampler_free(g_sampler);
         g_sampler = nullptr;
     }
+    g_enable_thinking = false;
     g_chat_templates.reset();
     if (g_batch_initialized) {
         llama_batch_free(g_batch);

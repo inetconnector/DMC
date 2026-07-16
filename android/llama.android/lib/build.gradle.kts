@@ -33,6 +33,13 @@ android {
                 arguments += "-DGGML_CPU_ALL_VARIANTS=OFF"
                 arguments += "-DGGML_CPU_KLEIDIAI=OFF"
                 arguments += "-DGGML_LLAMAFILE=OFF"
+                arguments += "-DAI_CHAT_PREFER_OPENCL=OFF"
+                arguments += "-DAI_CHAT_PREFER_VULKAN=OFF"
+
+                val hostToolchainFile = providers.gradleProperty("aiChatHostToolchainFile").orNull
+                if (!hostToolchainFile.isNullOrBlank()) {
+                    arguments += "-DGGML_VULKAN_SHADERS_GEN_TOOLCHAIN=$hostToolchainFile"
+                }
             }
         }
         aarMetadata {
