@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="dialog_surface">#0B1220</color>
+    <color name="dialog_surface_variant">#111827</color>
+    <color name="dialog_surface_variant_highlight">#162132</color>
+    <color name="dialog_outline">#243244</color>
+    <color name="dialog_primary">#67E8F9</color>
+    <color name="dialog_secondary">#A7F3D0</color>
+    <color name="dialog_error">#F87171</color>
+    <color name="dialog_on_surface">#E5E7EB</color>
+    <color name="dialog_on_surface_variant">#94A3B8</color>
+    <color name="black">#FF000000</color>
+    <color name="white">#FFFFFFFF</color>
+</resources>

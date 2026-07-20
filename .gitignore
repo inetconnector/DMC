@@ -323,6 +323,10 @@ __pycache__/
 AHSMA_Project_v0.6.zip
 _zip_extract/
 
+# Local Node package store and standalone APK exports
+.pnpm-store/
+AHSMA-debug.apk
+
 # Local build trees inside the imported artifact snapshot
 artifacts/**/build/
 
