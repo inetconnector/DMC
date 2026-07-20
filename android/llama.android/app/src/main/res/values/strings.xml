@@ -1,5 +1,5 @@
 <resources>
-    <string name="app_name">DMC AI Chat</string>
+    <string name="app_name">DMC</string>
     <string name="dictation_prompt">Speak now</string>
     <string name="error_no_gguf_in_models_dir">No GGUF model found in app models directory: %1$s</string>
     <string name="error_no_mobile_gguf">No mobile GGUF found (max 5 GiB). Please use a smaller model such as Gemma 4 E2B/E4B Q4_0 or a 3B/4B Q4_K_M model.</string>
@@ -46,7 +46,11 @@
     <string name="dialog_model_switcher_message">Only locally installed GGUF files are shown here. Tap one to switch, or download/import another model to add it to the list.</string>
     <string name="dialog_model_switcher_choose">Import model</string>
     <string name="dialog_model_switcher_import">Import file</string>
-    <string name="dialog_model_switcher_hint">Tap a model to switch. Use the delete icon to remove it.</string>
+    <string name="dialog_model_transfer_button">Import / Export</string>
+    <string name="dialog_model_transfer_title">Import / Export models</string>
+    <string name="dialog_model_transfer_import">Import models</string>
+    <string name="dialog_model_transfer_export">Export models</string>
+    <string name="dialog_model_switcher_hint">Tap a model to switch. Use the delete icon to remove it. Use Import / Export to back up or restore models.</string>
     <string name="dialog_model_switcher_installed_count">Installed models: %1$d</string>
     <string name="dialog_model_switcher_problem_only_message">No loadable models are available right now. Unavailable models are listed below so you can remove them.</string>
     <string name="dialog_model_switcher_current_label">Current</string>
@@ -67,6 +71,15 @@
     <string name="dialog_model_problem_message">"%1$s" failed to load last time. It may be incomplete or incompatible. You can retry or remove it from the device.</string>
     <string name="dialog_model_problem_retry">Retry load</string>
     <string name="dialog_model_problem_delete">Remove model</string>
+    <string name="dialog_model_starting_message">Loading model...</string>
+    <string name="dialog_model_resuming_message">Resuming download...</string>
+    <string name="dialog_model_export_title">Export models</string>
+    <string name="dialog_model_export_message">Writing model backup...</string>
+    <string name="dialog_model_export_no_models">No local models are installed yet, so there is nothing to export.</string>
+    <string name="dialog_model_export_failed_title">Export failed</string>
+    <string name="error_no_gguf_in_archive">The selected archive does not contain any GGUF model files.</string>
+    <string name="model_import_archive_message">Importing archive...</string>
+    <string name="model_import_archive_extract_message">Extracting archive...</string>
     <string name="error_model_too_large">Model is too large for stable mobile inference (over 5 GiB).</string>
     <string name="error_redirect_failed">Redirect failed</string>
     <string name="error_read_model_file">Could not read model file</string>

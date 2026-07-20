@@ -22,6 +22,12 @@
 
 -keep class com.arm.aichat.* { *; }
 -keep class com.arm.aichat.gguf.* { *; }
+-keepclassmembers class com.inetconnector.dmc.MainActivity$AndroidSpeechBridge {
+    @android.webkit.JavascriptInterface <methods>;
+}
+-keepclassmembers class com.inetconnector.dmc.MainActivity$AndroidModelBridge {
+    @android.webkit.JavascriptInterface <methods>;
+}
 
 -assumenosideeffects class android.util.Log {
     public static int v(...);

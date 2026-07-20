@@ -775,6 +775,72 @@ Java_com_arm_aichat_internal_InferenceEngineImpl_generateNextToken(
     return result;
 }
 
+extern "C"
+JNIEXPORT jint JNICALL
+Java_com_arm_aichat_internal_InferenceEngineImpl_warmupModel(JNIEnv *env, jobject /*unused*/) {
+    if (g_model == nullptr || g_context == nullptr || !g_batch_initialized || g_sampler == nullptr) {
+        LOGw("%s: warmup skipped because the model is not ready", __func__);
+        return 1;
+    }
+
+    const bool previous_enable_thinking = g_enable_thinking;
+    auto restore_runtime_state = [&]() -> bool {
+        reset_long_term_states();
+        reset_short_term_states();
+
+        common_sampler *replacement_sampler = new_sampler(DEFAULT_SAMPLER_TEMP);
+        if (!replacement_sampler) {
+            LOGe("%s: failed to recreate sampler after warmup", __func__);
+            g_enable_thinking = previous_enable_thinking;
+            return false;
+        }
+
+        if (g_sampler) {
+            common_sampler_free(g_sampler);
+        }
+        g_sampler = replacement_sampler;
+        g_enable_thinking = previous_enable_thinking;
+        return true;
+    };
+
+    try {
+        LOGi("%s: Starting model warmup", __func__);
+        g_enable_thinking = false;
+
+        reset_long_term_states();
+        reset_short_term_states();
+
+        jstring warmup_prompt = env->NewStringUTF("Warmup");
+        if (warmup_prompt == nullptr) {
+            LOGe("%s: failed to allocate warmup prompt", __func__);
+            return restore_runtime_state() ? 0 : 2;
+        }
+
+        const jint process_result =
+            Java_com_arm_aichat_internal_InferenceEngineImpl_processUserPrompt(env, nullptr, warmup_prompt, 1);
+        env->DeleteLocalRef(warmup_prompt);
+
+        if (process_result != 0) {
+            LOGw("%s: warmup prompt processing returned %d", __func__, process_result);
+        } else {
+            jstring token = Java_com_arm_aichat_internal_InferenceEngineImpl_generateNextToken(env, nullptr);
+            if (token != nullptr) {
+                env->DeleteLocalRef(token);
+            }
+        }
+
+        if (!restore_runtime_state()) {
+            return 3;
+        }
+
+        LOGi("%s: Model warmup complete", __func__);
+        return 0;
+    } catch (const std::exception &e) {
+        LOGe("%s: warmup failed: %s", __func__, e.what());
+        return restore_runtime_state() ? 0 : 4;
+    }
+}
+
 
 extern "C"
 JNIEXPORT void JNICALL

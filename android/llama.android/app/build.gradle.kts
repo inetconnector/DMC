@@ -3,22 +3,48 @@ plugins {
     alias(libs.plugins.jetbrains.kotlin.android)
 }
 
+val releaseStoreFilePath = providers.gradleProperty("dmcReleaseStoreFile").orNull
+    ?: System.getenv("DMC_RELEASE_STORE_FILE")
+val releaseStorePassword = providers.gradleProperty("dmcReleaseStorePassword").orNull
+    ?: System.getenv("DMC_RELEASE_STORE_PASSWORD")
+val releaseKeyAlias = providers.gradleProperty("dmcReleaseKeyAlias").orNull
+    ?: System.getenv("DMC_RELEASE_KEY_ALIAS")
+val releaseKeyPassword = providers.gradleProperty("dmcReleaseKeyPassword").orNull
+    ?: System.getenv("DMC_RELEASE_KEY_PASSWORD")
+val releaseSigningReady =
+    !releaseStoreFilePath.isNullOrBlank() &&
+        !releaseStorePassword.isNullOrBlank() &&
+        !releaseKeyAlias.isNullOrBlank() &&
+        !releaseKeyPassword.isNullOrBlank() &&
+        file(releaseStoreFilePath).exists()
+
 android {
-    namespace = "com.inetconnector.aichat"
+    namespace = "com.inetconnector.dmc"
     compileSdk = 36
 
     defaultConfig {
-        applicationId = "com.inetconnector.aichat"
+        applicationId = "com.inetconnector.dmc"
 
         minSdk = 33
         targetSdk = 36
 
         versionCode = 1
-        versionName = "1.0"
+        versionName = "1.0.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables {
             useSupportLibrary = true
+        }
+    }
+
+    if (releaseSigningReady) {
+        signingConfigs {
+            create("release") {
+                storeFile = file(releaseStoreFilePath!!)
+                storePassword = releaseStorePassword
+                keyAlias = releaseKeyAlias
+                keyPassword = releaseKeyPassword
+            }
         }
     }
 
@@ -38,6 +64,9 @@ android {
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
+            if (releaseSigningReady) {
+                signingConfig = signingConfigs.getByName("release")
+            }
         }
     }
     compileOptions {
@@ -49,6 +78,18 @@ android {
         getByName("main") {
             assets.srcDir(layout.buildDirectory.dir("generated/webuiAssets"))
         }
+    }
+
+    packaging {
+        jniLibs {
+            useLegacyPackaging = true
+        }
+    }
+
+    aaptOptions {
+        // Keep SvelteKit's "_app" asset tree. Android's default ignore pattern drops
+        // directories starting with "_" which would strip the JS bundle from the APK.
+        ignoreAssetsPattern = "!.svn:!.git:!.ds_store:!*.scc:.*:!CVS:!thumbs.db:!picasa.ini:!*~"
     }
 }
 

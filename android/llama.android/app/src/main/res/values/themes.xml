@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
 
-    <style name="Base.Theme.DmcAiChat" parent="Theme.Material3.Dark.NoActionBar">
+    <style name="Base.Theme.Dmc" parent="Theme.Material3.Dark.NoActionBar">
         <item name="android:windowBackground">@color/dialog_surface</item>
         <item name="android:colorBackground">@color/dialog_surface</item>
         <item name="colorSurface">@color/dialog_surface</item>
@@ -14,5 +14,5 @@
         <item name="colorError">@color/dialog_error</item>
     </style>
 
-    <style name="Theme.DmcAiChat" parent="Base.Theme.DmcAiChat" />
+    <style name="Theme.Dmc" parent="Base.Theme.Dmc" />
 </resources>

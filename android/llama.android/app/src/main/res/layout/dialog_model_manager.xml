@@ -100,7 +100,7 @@
                 android:maxLines="1"
                 android:minHeight="52dp"
                 android:textSize="13sp"
-                android:text="@string/dialog_model_switcher_import" />
+                android:text="@string/dialog_model_transfer_button" />
 
             <Button
                 android:id="@+id/modelManagerDownloadButton"

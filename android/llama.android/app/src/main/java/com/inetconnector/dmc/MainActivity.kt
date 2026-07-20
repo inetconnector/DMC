@@ -1,4 +1,4 @@
-package com.inetconnector.aichat
+package com.inetconnector.dmc
 
 import android.annotation.SuppressLint
 import android.app.ActivityManager
@@ -30,6 +30,7 @@ import android.util.Log
 import android.graphics.Color
 import android.widget.EditText
 import android.view.LayoutInflater
+import android.view.View
 import android.widget.AdapterView
 import android.widget.BaseAdapter
 import android.widget.Button
@@ -90,9 +91,11 @@ import java.io.PipedOutputStream
 import java.net.BindException
 import java.net.HttpURLConnection
 import java.net.URL
+import java.net.URLDecoder
 import java.nio.charset.StandardCharsets
 import java.util.Locale
 import java.util.UUID
+import java.util.zip.Deflater
 import java.util.zip.ZipEntry
 import java.util.zip.ZipFile
 import java.util.zip.ZipInputStream
@@ -108,9 +111,11 @@ import com.google.mlkit.vision.text.TextRecognition
 import com.google.mlkit.vision.text.latin.TextRecognizerOptions
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
+import java.util.concurrent.locks.ReentrantLock
 import kotlin.math.ceil
 import kotlin.math.max
 import kotlin.math.roundToInt
+import kotlinx.coroutines.Job
 
 class MainActivity : AppCompatActivity() {
     companion object {
@@ -125,6 +130,7 @@ class MainActivity : AppCompatActivity() {
         private const val TAG = "MainActivity"
     }
     private lateinit var webView: WebView
+    private lateinit var startupSplash: View
     private lateinit var engine: InferenceEngine
     private lateinit var apiServer: LocalApiServer
     private lateinit var analysisServer: LocalAnalysisServer
@@ -138,6 +144,7 @@ class MainActivity : AppCompatActivity() {
 
     private val engineMutex = Mutex()
     private val chatServerScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+    private val streamRegistry = StreamSessionRegistry()
     private var modelPath: String? = null
     @Volatile
     private var modelChatTemplate: String = ""
@@ -147,6 +154,7 @@ class MainActivity : AppCompatActivity() {
     private var pendingFileChooserParams: WebChromeClient.FileChooserParams? = null
     private var pendingCameraCaptureUri: Uri? = null
     private var pendingDictationStart = false
+    private var pendingModelExportFiles: List<File> = emptyList()
 
     private val fileChooserLauncher =
         registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
@@ -208,11 +216,38 @@ class MainActivity : AppCompatActivity() {
             }
         }
 
+    private val importModelLauncher =
+        registerForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
+            if (uri == null) {
+                return@registerForActivityResult
+            }
+
+            lifecycleScope.launch(Dispatchers.IO) {
+                importAndLoadModel(uri)
+            }
+        }
+
+    private val modelExportLauncher =
+        registerForActivityResult(ActivityResultContracts.CreateDocument("application/zip")) { uri ->
+            val exportFiles = pendingModelExportFiles
+            pendingModelExportFiles = emptyList()
+            if (uri == null || exportFiles.isEmpty()) {
+                return@registerForActivityResult
+            }
+
+            lifecycleScope.launch(Dispatchers.IO) {
+                exportModels(uri, exportFiles)
+            }
+        }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        Log.i(TAG, "onCreate: begin")
         setContentView(R.layout.activity_main)
 
         webView = findViewById(R.id.webview)
+        startupSplash = findViewById(R.id.startupSplash)
+        setStartupSplashVisible(true)
         val contentRoot = findViewById<FrameLayout>(android.R.id.content)
         ViewCompat.setOnApplyWindowInsetsListener(contentRoot) { view, insets ->
             val bars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
@@ -220,23 +255,18 @@ class MainActivity : AppCompatActivity() {
             insets
         }
         ViewCompat.requestApplyInsets(contentRoot)
+        Log.i(TAG, "onCreate: views ready")
         setupWebView()
+        Log.i(TAG, "onCreate: webview configured")
 
         lifecycleScope.launch(Dispatchers.IO) {
             try {
+                Log.i(TAG, "startup coroutine: acquiring inference engine")
                 engine = AiChat.getInferenceEngine(applicationContext)
+                Log.i(TAG, "startup coroutine: inference engine ready")
                 if (!ensureModelLoadedOrPrompt()) {
+                    Log.i(TAG, "startup coroutine: model flow ended without loading chat ui")
                     return@launch
-                }
-
-                runCatching {
-                    startLocalServers()
-                }.onFailure {
-                    Log.e(TAG, "Local servers could not be started cleanly during startup; keeping model loaded.", it)
-                }
-
-                launch(Dispatchers.Main) {
-                    loadChatUi()
                 }
             } catch (cancel: CancellationException) {
                 Log.i(TAG, "Startup cancelled")
@@ -266,7 +296,9 @@ class MainActivity : AppCompatActivity() {
             getChatTemplate = { modelChatTemplate },
             getModalities = { modelCapabilities.modalities },
             getContextWindowSize = { engine.contextWindowSize() },
-            onChatCompletion = { body, stream -> handleCompletion(body, stream) },
+            onChatCompletion = { body, stream, conversationId -> handleCompletion(body, stream, conversationId) },
+            streamScope = chatServerScope,
+            streamRegistry = streamRegistry,
             artifactsRootResolver = { File(filesDir, "generated-artifacts").apply { mkdirs() } }
         )
     }
@@ -278,9 +310,11 @@ class MainActivity : AppCompatActivity() {
     @Synchronized
     private fun startLocalServers() {
         if (localServersStarted) {
+            Log.i(TAG, "startLocalServers: already started")
             return
         }
 
+        Log.i(TAG, "startLocalServers: launching chat and analysis servers")
         val chatPort = startServerWithFallback(
             name = "chat-api",
             candidatePorts = CHAT_SERVER_PORT_CANDIDATES,
@@ -390,6 +424,12 @@ class MainActivity : AppCompatActivity() {
     private fun setupWebView() {
         webView.setBackgroundColor(Color.parseColor("#0F172A"))
         webView.webViewClient = object : WebViewClient() {
+            override fun onPageCommitVisible(view: WebView?, url: String?) {
+                super.onPageCommitVisible(view, url)
+                Log.i(TAG, "WebView onPageCommitVisible: $url")
+                setStartupSplashVisible(false)
+            }
+
             override fun shouldOverrideUrlLoading(
                 view: WebView?,
                 request: WebResourceRequest?
@@ -404,6 +444,7 @@ class MainActivity : AppCompatActivity() {
 
             override fun onPageFinished(view: WebView?, url: String?) {
                 super.onPageFinished(view, url)
+                Log.i(TAG, "WebView onPageFinished: $url")
                 // Force a readable light theme baseline in WebView to avoid device force-dark artifacts.
                 view?.evaluateJavascript(
                     """
@@ -419,6 +460,31 @@ class MainActivity : AppCompatActivity() {
                     """.trimIndent(),
                     null
                 )
+                setStartupSplashVisible(false)
+            }
+
+            override fun onReceivedError(
+                view: WebView?,
+                request: WebResourceRequest?,
+                error: android.webkit.WebResourceError?
+            ) {
+                super.onReceivedError(view, request, error)
+                Log.w(TAG, "WebView onReceivedError: ${error?.description} for ${request?.url}")
+                if (request?.isForMainFrame != false) {
+                    setStartupSplashVisible(false)
+                }
+            }
+
+            override fun onReceivedHttpError(
+                view: WebView?,
+                request: WebResourceRequest?,
+                errorResponse: android.webkit.WebResourceResponse?
+            ) {
+                super.onReceivedHttpError(view, request, errorResponse)
+                Log.w(TAG, "WebView onReceivedHttpError: ${request?.url} code=${errorResponse?.statusCode}")
+                if (request?.isForMainFrame != false) {
+                    setStartupSplashVisible(false)
+                }
             }
         }
         webView.webChromeClient = object : WebChromeClient() {
@@ -704,9 +770,18 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun loadChatUi() {
+        Log.i(TAG, "Loading chat UI")
         val cacheBuster = System.currentTimeMillis()
         val language = Locale.getDefault().toLanguageTag().ifBlank { "en-US" }
+        Log.i(TAG, "Loading URL http://127.0.0.1:$chatApiPort/?v=$cacheBuster&lang=$language")
         webView.loadUrl("http://127.0.0.1:$chatApiPort/?v=$cacheBuster&lang=$language")
+    }
+
+    private fun setStartupSplashVisible(visible: Boolean) {
+        if (::startupSplash.isInitialized) {
+            Log.i(TAG, "startupSplash visible=$visible")
+            startupSplash.visibility = if (visible) View.VISIBLE else View.GONE
+        }
     }
 
     private suspend fun ensureModelLoaded(): Boolean {
@@ -715,7 +790,12 @@ class MainActivity : AppCompatActivity() {
             getString(R.string.error_no_gguf_in_models_dir, File(filesDir, "models").absolutePath)
         )
 
-        return activateLocalModel(modelFile, refreshUi = false)
+        Log.i(TAG, "ensureModelLoaded: activating ${modelFile.absolutePath}")
+        return activateLocalModel(
+            modelFile,
+            refreshUi = true,
+            progressMessage = getString(R.string.dialog_model_starting_message)
+        )
     }
 
     private fun modelsDir(): File = File(filesDir, "models").apply { mkdirs() }
@@ -882,7 +962,7 @@ class MainActivity : AppCompatActivity() {
         modelFile: File,
         previousModelPath: String?,
         error: Throwable,
-        progress: ImportProgressDialog?,
+        progress: ModelTransferProgressDialog?,
         deleteOnFailure: Boolean = false
     ): Boolean {
         if (error is CancellationException) {
@@ -920,6 +1000,11 @@ class MainActivity : AppCompatActivity() {
                         runCatching { engine.cleanUp() }
                         engine.loadModel(previousModelPath)
                     }
+                    when (val restoreState = engine.state.value) {
+                        is InferenceEngine.State.Error -> throw restoreState.exception
+                        else -> Unit
+                    }
+                    warmUpLoadedModel()
                     val runtimeInfo = refreshCurrentModelInfo(previousModelFile)
                     modelChatTemplate = runtimeInfo.chatTemplate
                     modelCapabilities = runtimeInfo.capabilities
@@ -943,6 +1028,7 @@ class MainActivity : AppCompatActivity() {
         progressMessage: String? = null,
         deleteOnFailure: Boolean = false
     ): Boolean {
+        Log.i(TAG, "activateLocalModel: start file=${modelFile.absolutePath} refreshUi=$refreshUi")
         if (!modelFile.exists() || !modelFile.isFile) {
             throw IllegalStateException(getString(R.string.error_read_model_file))
         }
@@ -958,7 +1044,7 @@ class MainActivity : AppCompatActivity() {
 
         val progress = progressMessage?.let {
             withContext(Dispatchers.Main) {
-                ImportProgressDialog(this@MainActivity).also { dialog ->
+                ModelTransferProgressDialog(this@MainActivity).also { dialog ->
                     dialog.setMessage(it)
                     dialog.show()
                 }
@@ -994,6 +1080,8 @@ class MainActivity : AppCompatActivity() {
                 else -> Unit
             }
 
+            warmUpLoadedModel()
+
             modelPath = modelFile.absolutePath
             persistPreferredModel(modelFile)
             clearModelFailure(modelFile)
@@ -1005,6 +1093,8 @@ class MainActivity : AppCompatActivity() {
             if (refreshUi) {
                 withContext(Dispatchers.Main) {
                     progress?.close()
+                    setStartupSplashVisible(false)
+                    Log.i(TAG, "activateLocalModel: loading chat ui")
                     loadChatUi()
                 }
             } else {
@@ -1012,18 +1102,29 @@ class MainActivity : AppCompatActivity() {
                     progress?.close()
                 }
             }
+            Log.i(TAG, "activateLocalModel: success file=${modelFile.absolutePath}")
             true
         } catch (t: Throwable) {
             if (t is CancellationException) {
                 throw t
             }
+            Log.w(TAG, "activateLocalModel: failure file=${modelFile.absolutePath}", t)
             handleModelActivationFailure(modelFile, previousModelPath, t, progress, deleteOnFailure)
+        }
+    }
+
+    private suspend fun warmUpLoadedModel() {
+        runCatching {
+            engine.warmup()
+        }.onFailure {
+            Log.w(TAG, "Model warmup failed; continuing with the loaded model.", it)
         }
     }
 
     private suspend fun ensureModelLoadedOrPrompt(): Boolean {
         val loadableModels = listLoadableModelFiles()
         val brokenModels = listBrokenModelFiles()
+        Log.i(TAG, "ensureModelLoadedOrPrompt: loadable=${loadableModels.size} broken=${brokenModels.size}")
 
         if (loadableModels.isNotEmpty()) {
             return ensureModelLoaded()
@@ -1035,7 +1136,11 @@ class MainActivity : AppCompatActivity() {
                 TAG,
                 "All local models are marked failed; retrying ${retryModel.name} once to recover from a transient startup failure."
             )
-            return activateLocalModel(retryModel, refreshUi = false)
+            return activateLocalModel(
+                retryModel,
+                refreshUi = true,
+                progressMessage = getString(R.string.dialog_model_starting_message)
+            )
         }
 
         withContext(Dispatchers.Main) {
@@ -1278,7 +1383,7 @@ class MainActivity : AppCompatActivity() {
 
         importButton.setOnClickListener {
             dialog?.dismiss()
-            pickModelLauncher.launch(arrayOf("*/*"))
+            showModelTransferMenuDialog()
         }
         downloadButton.setOnClickListener {
             dialog?.dismiss()
@@ -1292,6 +1397,26 @@ class MainActivity : AppCompatActivity() {
             dialog?.window?.setBackgroundDrawable(ColorDrawable(Color.TRANSPARENT))
         }
         dialog?.show()
+    }
+
+    private fun showModelTransferMenuDialog() {
+        val exportableModels = listLocalModelFiles()
+        AlertDialog.Builder(this)
+            .setTitle(getString(R.string.dialog_model_transfer_title))
+            .setItems(
+                arrayOf(
+                    getString(R.string.dialog_model_transfer_import),
+                    getString(R.string.dialog_model_transfer_export)
+                )
+            ) { dialog, which ->
+                dialog.dismiss()
+                when (which) {
+                    0 -> importModelLauncher.launch(arrayOf("*/*"))
+                    1 -> startModelExportFlow(exportableModels)
+                }
+            }
+            .setNegativeButton(getString(R.string.dialog_cancel), null)
+            .show()
     }
 
     private fun confirmDeleteModel(modelFile: File, onConfirmedDelete: (() -> Unit)? = null) {
@@ -1383,18 +1508,54 @@ class MainActivity : AppCompatActivity() {
     }
 
     private suspend fun downloadAndLoadModel(url: String) {
-        val progress = withContext(Dispatchers.Main) { ImportProgressDialog(this@MainActivity).also { it.show() } }
-        var targetFile: File? = null
+        val progress = withContext(Dispatchers.Main) { ModelTransferProgressDialog(this@MainActivity).also { it.show() } }
         try {
             val resolved = resolveModelDownload(url)
             val modelsDir = File(filesDir, "models").apply { mkdirs() }
             val outFile = File(modelsDir, resolved.fileName)
             val tempFile = File(modelsDir, "${resolved.fileName}.download")
-            targetFile = tempFile
-            runCatching { tempFile.delete() }
-            downloadWithProgress(resolved.url, tempFile, progress)
+
+            if (outFile.exists() && outFile.length() > 0L && (
+                resolved.expectedSizeBytes <= 0L || outFile.length() == resolved.expectedSizeBytes
+            )) {
+                runCatching { tempFile.delete() }
+                activateLocalModel(outFile, refreshUi = true, deleteOnFailure = true)
+                withContext(Dispatchers.Main) {
+                    progress.close()
+                }
+                return
+            }
+
+            if (tempFile.exists()) {
+                val partialSize = tempFile.length()
+                if (partialSize > MAX_MOBILE_MODEL_BYTES) {
+                    tempFile.delete()
+                    throw IllegalStateException(getString(R.string.error_model_too_large))
+                }
+                if (resolved.expectedSizeBytes > 0 && partialSize == resolved.expectedSizeBytes) {
+                    if (outFile.exists()) {
+                        outFile.delete()
+                    }
+                    if (!tempFile.renameTo(outFile)) {
+                        tempFile.copyTo(outFile, overwrite = true)
+                        tempFile.delete()
+                    }
+                    activateLocalModel(outFile, refreshUi = true, deleteOnFailure = true)
+                    withContext(Dispatchers.Main) {
+                        progress.close()
+                    }
+                    return
+                }
+                if (partialSize > 0L) {
+                    withContext(Dispatchers.Main) {
+                        progress.setMessage(getString(R.string.dialog_model_resuming_message))
+                    }
+                }
+            }
+
+            downloadWithProgress(resolved.url, tempFile, progress, resolved.expectedSizeBytes)
             val downloadedSize = tempFile.length()
-            if (tempFile.length() > MAX_MOBILE_MODEL_BYTES) {
+            if (downloadedSize > MAX_MOBILE_MODEL_BYTES) {
                 tempFile.delete()
                 throw IllegalStateException(getString(R.string.error_model_too_large))
             }
@@ -1415,7 +1576,6 @@ class MainActivity : AppCompatActivity() {
                 tempFile.copyTo(outFile, overwrite = true)
                 tempFile.delete()
             }
-            targetFile = outFile
             activateLocalModel(outFile, refreshUi = true, deleteOnFailure = true)
             withContext(Dispatchers.Main) {
                 progress.close()
@@ -1424,7 +1584,6 @@ class MainActivity : AppCompatActivity() {
             if (t is CancellationException) {
                 throw t
             }
-            runCatching { targetFile?.delete() }
             withContext(Dispatchers.Main) {
                 progress.close()
                 AlertDialog.Builder(this@MainActivity)
@@ -1618,17 +1777,23 @@ class MainActivity : AppCompatActivity() {
     private suspend fun downloadWithProgress(
         url: String,
         target: File,
-        progress: ImportProgressDialog
+        progress: ModelTransferProgressDialog,
+        expectedSizeBytes: Long = -1L
     ) {
         withContext(Dispatchers.IO) {
             var redirectCount = 0
             var currentUrl = url
             while (true) {
+                val existingBytes = if (target.exists()) target.length() else 0L
                 val connection = URL(currentUrl).openConnection() as HttpURLConnection
                 connection.instanceFollowRedirects = false
                 connection.connectTimeout = 20_000
                 connection.readTimeout = 60_000
                 connection.requestMethod = "GET"
+                connection.setRequestProperty("Accept-Encoding", "identity")
+                if (existingBytes > 0L) {
+                    connection.setRequestProperty("Range", "bytes=$existingBytes-")
+                }
                 connection.connect()
 
                 val code = connection.responseCode
@@ -1638,27 +1803,54 @@ class MainActivity : AppCompatActivity() {
                     if (location.isNullOrBlank() || redirectCount >= 5) {
                         throw IllegalStateException(getString(R.string.error_redirect_failed))
                     }
-                    currentUrl = location
+                    currentUrl = URL(URL(currentUrl), location).toString()
                     redirectCount++
                     continue
                 }
 
                 if (code !in 200..299) {
+                    if (code == 416) {
+                        val serverTotal = parseContentRangeTotal(connection.getHeaderField("Content-Range"))
+                        connection.disconnect()
+                        if ((expectedSizeBytes > 0 && existingBytes == expectedSizeBytes) || (serverTotal > 0 && existingBytes == serverTotal)) {
+                            runOnUiThread { progress.updateProgress(100) }
+                            return@withContext
+                        }
+                        if (existingBytes > 0L) {
+                            runCatching { target.delete() }
+                            continue
+                        }
+                    }
                     val msg = connection.errorStream?.bufferedReader()?.readText().orEmpty()
                     connection.disconnect()
                     throw IllegalStateException("HTTP $code ${if (msg.isBlank()) "" else "- $msg"}")
                 }
 
-                val total = connection.contentLengthLong
+                val responseLength = connection.contentLengthLong
+                val contentRange = connection.getHeaderField("Content-Range")
+                val resumeAccepted = existingBytes > 0L && code == HttpURLConnection.HTTP_PARTIAL
+                val appendToFile = resumeAccepted && existingBytes > 0L
+                val total = when {
+                    expectedSizeBytes > 0L -> expectedSizeBytes
+                    resumeAccepted && responseLength > 0L -> existingBytes + responseLength
+                    responseLength > 0L -> responseLength
+                    else -> parseContentRangeTotal(contentRange)
+                }
+                val transferOffset = if (appendToFile) existingBytes else 0L
+
                 connection.inputStream.use { input ->
-                    FileOutputStream(target).use { out ->
+                    FileOutputStream(target, appendToFile).use { out ->
                         val buffer = ByteArray(DEFAULT_BUFFER_SIZE)
-                        var downloaded = 0L
+                        var downloaded = transferOffset
                         var read = input.read(buffer)
+                        if (total > 0L && downloaded > 0L) {
+                            val pct = ((downloaded * 100) / total).toInt().coerceIn(0, 100)
+                            runOnUiThread { progress.updateProgress(pct) }
+                        }
                         while (read >= 0) {
                             out.write(buffer, 0, read)
                             downloaded += read
-                            if (total > 0) {
+                            if (total > 0L) {
                                 val pct = ((downloaded * 100) / total).toInt().coerceIn(0, 100)
                                 runOnUiThread { progress.updateProgress(pct) }
                             }
@@ -1674,11 +1866,29 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+    private fun parseContentRangeTotal(contentRange: String?): Long {
+        if (contentRange.isNullOrBlank()) {
+            return -1L
+        }
+
+        val match = Regex("""bytes\s+\d+-\d+/(\d+|\*)""", RegexOption.IGNORE_CASE).find(contentRange.trim())
+            ?: return -1L
+        val total = match.groupValues[1]
+        return total.toLongOrNull() ?: -1L
+    }
+
     private suspend fun importAndLoadModel(uri: Uri) {
-        val progress = withContext(Dispatchers.Main) { ImportProgressDialog(this@MainActivity).also { it.show() } }
+        val displayName = queryDisplayName(uri) ?: "model-${System.currentTimeMillis()}.gguf"
+        if (isModelArchive(uri, displayName)) {
+            importModelArchive(uri)
+            return
+        }
+
+        val progress = withContext(Dispatchers.Main) {
+            ModelTransferProgressDialog(this@MainActivity).also { it.show() }
+        }
 
         try {
-            val displayName = queryDisplayName(uri) ?: "model-${System.currentTimeMillis()}.gguf"
             val normalizedName = if (displayName.lowercase(Locale.ROOT).endsWith(".gguf")) {
                 displayName
             } else {
@@ -1727,6 +1937,238 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+    private fun isModelArchive(uri: Uri, displayName: String): Boolean {
+        val lowerName = displayName.lowercase(Locale.ROOT)
+        val mimeType = contentResolver.getType(uri)?.lowercase(Locale.ROOT).orEmpty()
+        return lowerName.endsWith(".zip") || mimeType == "application/zip" || mimeType == "application/x-zip-compressed"
+    }
+
+    private fun startModelExportFlow(modelFiles: List<File>) {
+        val exportableFiles = modelFiles
+            .filter { it.exists() && it.isFile && it.length() in 1..MAX_MOBILE_MODEL_BYTES }
+            .sortedBy { it.name.lowercase(Locale.ROOT) }
+
+        if (exportableFiles.isEmpty()) {
+            AlertDialog.Builder(this)
+                .setTitle(getString(R.string.dialog_model_export_title))
+                .setMessage(getString(R.string.dialog_model_export_no_models))
+                .setPositiveButton(getString(R.string.dialog_ok), null)
+                .show()
+            return
+        }
+
+        pendingModelExportFiles = exportableFiles
+        val defaultName = "dmc-models-${System.currentTimeMillis()}.zip"
+        runCatching {
+            modelExportLauncher.launch(defaultName)
+        }.onFailure { t ->
+            pendingModelExportFiles = emptyList()
+            AlertDialog.Builder(this)
+                .setTitle(getString(R.string.dialog_model_export_failed_title))
+                .setMessage(t.message ?: getString(R.string.dialog_unknown_error))
+                .setPositiveButton(getString(R.string.dialog_ok), null)
+                .show()
+        }
+    }
+
+    private suspend fun exportModels(uri: Uri, modelFiles: List<File>) {
+        val progress = withContext(Dispatchers.Main) {
+            ModelTransferProgressDialog(
+                this@MainActivity,
+                getString(R.string.dialog_model_export_title),
+                getString(R.string.dialog_model_export_message)
+            ).also { it.show() }
+        }
+
+        try {
+            val exportableFiles = modelFiles
+                .filter { it.exists() && it.isFile && it.length() in 1..MAX_MOBILE_MODEL_BYTES }
+                .sortedBy { it.name.lowercase(Locale.ROOT) }
+            if (exportableFiles.isEmpty()) {
+                throw IllegalStateException(getString(R.string.dialog_model_export_no_models))
+            }
+
+            val totalBytes = exportableFiles.sumOf { it.length() }.coerceAtLeast(1L)
+            var processedBytes = 0L
+            var lastPct = -1
+
+            contentResolver.openOutputStream(uri)?.use { output ->
+                ZipOutputStream(output).use { zip ->
+                    zip.setLevel(Deflater.NO_COMPRESSION)
+                    exportableFiles.forEach { file ->
+                        zip.putNextEntry(ZipEntry(file.name))
+                        FileInputStream(file).use { input ->
+                            val buffer = ByteArray(DEFAULT_BUFFER_SIZE)
+                            var read = input.read(buffer)
+                            while (read >= 0) {
+                                zip.write(buffer, 0, read)
+                                processedBytes += read
+                                val pct = ((processedBytes * 100) / totalBytes).toInt().coerceIn(0, 100)
+                                if (pct != lastPct) {
+                                    lastPct = pct
+                                    runOnUiThread { progress.updateProgress(pct) }
+                                }
+                                read = input.read(buffer)
+                            }
+                        }
+                        zip.closeEntry()
+                    }
+                    zip.finish()
+                }
+            } ?: throw IllegalStateException(getString(R.string.dialog_unknown_error))
+
+            withContext(Dispatchers.Main) {
+                progress.updateProgress(100)
+                progress.close()
+            }
+        } catch (t: Throwable) {
+            if (t is CancellationException) {
+                throw t
+            }
+            Log.e(TAG, "Model export failed for uri=$uri", t)
+            withContext(Dispatchers.Main) {
+                progress.close()
+                AlertDialog.Builder(this@MainActivity)
+                    .setTitle(getString(R.string.dialog_model_export_failed_title))
+                    .setMessage(t.message ?: getString(R.string.dialog_unknown_error))
+                    .setPositiveButton(getString(R.string.dialog_ok), null)
+                    .show()
+            }
+        }
+    }
+
+    private suspend fun importModelArchive(uri: Uri) {
+        val progress = withContext(Dispatchers.Main) {
+            ModelTransferProgressDialog(
+                this@MainActivity,
+                getString(R.string.dialog_model_import_title),
+                getString(R.string.model_import_archive_message)
+            ).also { it.show() }
+        }
+
+        var archiveFile: File? = null
+        try {
+            archiveFile = File.createTempFile("model_import_", ".zip", cacheDir)
+            val sourceSize = contentResolver.openFileDescriptor(uri, "r")?.statSize ?: -1L
+            contentResolver.openInputStream(uri)?.use { input ->
+                copyWithProgress(input, archiveFile, sourceSize, progress)
+            } ?: throw IllegalStateException(getString(R.string.error_read_model_file))
+
+            withContext(Dispatchers.Main) {
+                progress.setMessage(getString(R.string.model_import_archive_extract_message))
+                progress.updateProgress(0)
+            }
+
+            val importedModels = extractModelArchive(archiveFile, modelsDir(), progress)
+            if (importedModels.isEmpty()) {
+                throw IllegalStateException(getString(R.string.error_no_gguf_in_archive))
+            }
+
+            activateLocalModel(importedModels.first(), refreshUi = true)
+            withContext(Dispatchers.Main) {
+                progress.close()
+            }
+        } catch (t: Throwable) {
+            if (t is CancellationException) {
+                throw t
+            }
+            Log.e(TAG, "Model archive import failed for uri=$uri", t)
+            withContext(Dispatchers.Main) {
+                progress.close()
+                AlertDialog.Builder(this@MainActivity)
+                    .setTitle(getString(R.string.dialog_import_failed_title))
+                    .setMessage(t.message ?: getString(R.string.dialog_unknown_error))
+                    .setPositiveButton(getString(R.string.dialog_pick_again)) { _, _ ->
+                        importModelLauncher.launch(arrayOf("*/*"))
+                    }
+                    .setNegativeButton(getString(R.string.dialog_close)) { _, _ -> }
+                    .show()
+            }
+        } finally {
+            archiveFile?.delete()
+        }
+    }
+
+    private suspend fun extractModelArchive(
+        archiveFile: File,
+        modelsDirectory: File,
+        progress: ModelTransferProgressDialog
+    ): List<File> = withContext(Dispatchers.IO) {
+        val extractedModels = mutableListOf<File>()
+        ZipFile(archiveFile).use { zip ->
+            val entries = zip.entries().asSequence()
+                .filterNot { it.isDirectory }
+                .toList()
+            val modelEntries = entries.filter { entry ->
+                File(entry.name).name.lowercase(Locale.ROOT).endsWith(".gguf")
+            }
+
+            if (modelEntries.isEmpty()) {
+                return@withContext emptyList<File>()
+            }
+
+            val totalBytes = modelEntries.sumOf { entry -> entry.size.coerceAtLeast(0L) }
+            val useByteProgress = totalBytes > 0L
+            var processedBytes = 0L
+            var lastPct = -1
+
+            modelEntries.forEachIndexed { index, entry ->
+                val entryName = File(entry.name).name
+                if (entryName.isBlank()) {
+                    return@forEachIndexed
+                }
+
+                val targetFile = File(modelsDirectory, entryName)
+                val tempFile = File(modelsDirectory, "$entryName.import")
+                runCatching { tempFile.delete() }
+
+                zip.getInputStream(entry).use { input ->
+                    FileOutputStream(tempFile).use { output ->
+                        val buffer = ByteArray(DEFAULT_BUFFER_SIZE)
+                        var read = input.read(buffer)
+                        while (read >= 0) {
+                            output.write(buffer, 0, read)
+                            if (useByteProgress) {
+                                processedBytes += read
+                                val pct = ((processedBytes * 100) / totalBytes).toInt().coerceIn(0, 100)
+                                if (pct != lastPct) {
+                                    lastPct = pct
+                                    runOnUiThread { progress.updateProgress(pct) }
+                                }
+                            }
+                            read = input.read(buffer)
+                        }
+                        output.flush()
+                    }
+                }
+
+                if (tempFile.length() > MAX_MOBILE_MODEL_BYTES) {
+                    tempFile.delete()
+                    throw IllegalStateException(getString(R.string.error_model_too_large))
+                }
+
+                if (targetFile.exists()) {
+                    targetFile.delete()
+                }
+                if (!tempFile.renameTo(targetFile)) {
+                    tempFile.copyTo(targetFile, overwrite = true)
+                    tempFile.delete()
+                }
+                extractedModels += targetFile
+
+                if (!useByteProgress) {
+                    val pct = (((index + 1) * 100) / modelEntries.size).coerceIn(0, 100)
+                    if (pct != lastPct) {
+                        lastPct = pct
+                        runOnUiThread { progress.updateProgress(pct) }
+                    }
+                }
+            }
+        }
+
+        extractedModels
+    }
+
     private fun queryDisplayName(uri: Uri): String? {
         contentResolver.query(uri, arrayOf(OpenableColumns.DISPLAY_NAME), null, null, null)?.use { c ->
             if (c.moveToFirst()) {
@@ -1741,7 +2183,7 @@ class MainActivity : AppCompatActivity() {
         input: InputStream,
         target: File,
         total: Long,
-        progress: ImportProgressDialog
+        progress: ModelTransferProgressDialog
     ) {
         withContext(Dispatchers.IO) {
             FileOutputStream(target).use { out ->
@@ -1939,10 +2381,11 @@ class MainActivity : AppCompatActivity() {
         val prompt: String,
         val predictLength: Int,
         val artifactReply: String?,
-        val enableThinking: Boolean
+        val enableThinking: Boolean,
+        val conversationId: String?
     )
 
-    private fun handleCompletion(body: JSONObject, stream: Boolean): Response {
+    private fun handleCompletion(body: JSONObject, stream: Boolean, conversationId: String?): Response {
         val messages = body.optJSONArray("messages") ?: JSONArray()
         val prompt = extractLastUserMessage(messages)
             .ifBlank { extractAttachmentContextFallback(messages) }
@@ -1969,7 +2412,8 @@ class MainActivity : AppCompatActivity() {
             prompt = prompt,
             predictLength = predictLength,
             artifactReply = artifactReply,
-            enableThinking = enableThinking
+            enableThinking = enableThinking,
+            conversationId = conversationId?.trim()?.takeIf { it.isNotBlank() }
         )
 
         return if (request.stream) {
@@ -2016,97 +2460,131 @@ class MainActivity : AppCompatActivity() {
         val input = PipedInputStream(64 * 1024)
         val output = PipedOutputStream(input)
         val streamStartedAtMs = SystemClock.elapsedRealtime()
+        val streamSession = request.conversationId?.let { streamRegistry.createOrReplace(it) }
 
-        chatServerScope.launch {
+        val job = chatServerScope.launch {
             var emittedChars = 0
             var emittedPieces = 0
-            BufferedWriter(OutputStreamWriter(output, StandardCharsets.UTF_8)).use { writer ->
-                fun sendChunk(json: JSONObject) {
-                    writer.write("data: ")
-                    writer.write(json.toString())
-                    writer.write("\n\n")
-                    writer.flush()
-                }
+            var livePipeBroken = false
 
-                fun buildStreamingTimings(): JSONObject? {
-                    if (emittedPieces <= 0) {
-                        return null
-                    }
-                    val elapsedMs = (SystemClock.elapsedRealtime() - streamStartedAtMs).coerceAtLeast(1L)
-                    return JSONObject()
-                        .put("prompt_n", 0)
-                        .put("prompt_ms", 0)
-                        .put("predicted_n", emittedPieces)
-                        .put("predicted_ms", elapsedMs)
-                        .put("cache_n", 0)
+            fun writeLive(bytes: ByteArray) {
+                if (livePipeBroken) {
+                    return
                 }
-
                 try {
-                    sendChunk(createChatCompletionChunkJson(id, includeRole = true))
+                    output.write(bytes)
+                    output.flush()
+                } catch (_: Throwable) {
+                    livePipeBroken = true
+                }
+            }
 
-                    if (request.artifactReply != null) {
-                        val text = stripModelTags(request.artifactReply, trimWhitespace = false)
-                        if (text.isNotEmpty()) {
-                            emittedChars += text.length
-                            emittedPieces += 1
-                            sendChunk(
+            fun emitFrame(json: JSONObject): Boolean {
+                val frame = "data: ${json}\n\n"
+                val bytes = frame.toByteArray(StandardCharsets.UTF_8)
+                if (streamSession != null && !streamSession.append(bytes)) {
+                    return false
+                }
+                writeLive(bytes)
+                return true
+            }
+
+            fun emitDoneMarker() {
+                val bytes = "data: [DONE]\n\n".toByteArray(StandardCharsets.UTF_8)
+                streamSession?.append(bytes)
+                writeLive(bytes)
+            }
+
+            fun buildStreamingTimings(): JSONObject? {
+                if (emittedPieces <= 0) {
+                    return null
+                }
+                val elapsedMs = (SystemClock.elapsedRealtime() - streamStartedAtMs).coerceAtLeast(1L)
+                return JSONObject()
+                    .put("prompt_n", 0)
+                    .put("prompt_ms", 0)
+                    .put("predicted_n", emittedPieces)
+                    .put("predicted_ms", elapsedMs)
+                    .put("cache_n", 0)
+            }
+
+            try {
+                if (emitFrame(createChatCompletionChunkJson(id, includeRole = true)) == false) {
+                    return@launch
+                }
+
+                if (request.artifactReply != null) {
+                    val text = stripModelTags(request.artifactReply, trimWhitespace = false)
+                    if (text.isNotEmpty()) {
+                        emittedChars += text.length
+                        emittedPieces += 1
+                        if (emitFrame(
                                 createChatCompletionChunkJson(
                                     id,
                                     deltaContent = text,
                                     timings = buildStreamingTimings()
                                 )
-                            )
+                            ) == false
+                        ) {
+                            return@launch
                         }
-                    } else {
-                        engineMutex.withLock {
-                            engine.sendUserPrompt(request.prompt, request.predictLength, request.enableThinking)
-                                .collect { utf8token ->
-                                    val visibleToken = stripModelTags(utf8token, trimWhitespace = false)
-                                    if (visibleToken.isNotEmpty()) {
-                                        emittedChars += visibleToken.length
-                                        emittedPieces += 1
-                                        sendChunk(
+                    }
+                } else {
+                    engineMutex.withLock {
+                        engine.sendUserPrompt(request.prompt, request.predictLength, request.enableThinking)
+                            .collect { utf8token ->
+                                val visibleToken = stripModelTags(utf8token, trimWhitespace = false)
+                                if (visibleToken.isNotEmpty()) {
+                                    emittedChars += visibleToken.length
+                                    emittedPieces += 1
+                                    if (emitFrame(
                                             createChatCompletionChunkJson(
                                                 id,
                                                 deltaContent = visibleToken,
                                                 timings = buildStreamingTimings()
                                             )
-                                        )
+                                        ) == false
+                                    ) {
+                                        throw CancellationException("stream cancelled")
                                     }
                                 }
-                        }
+                            }
                     }
+                }
 
-                    sendChunk(
+                if (emitFrame(
                         createChatCompletionChunkJson(
                             id,
                             finishReason = "stop",
                             timings = buildStreamingTimings()
                         )
-                    )
-                    writer.write("data: [DONE]\n\n")
-                    writer.flush()
-                    Log.i(TAG, "Chat response streamed: chars=$emittedChars")
-                } catch (t: Throwable) {
-                    if (t is CancellationException) {
-                        throw t
-                    }
-                    Log.e(TAG, "Chat stream failed", t)
-                    runCatching {
-                        sendChunk(
-                            createChatCompletionChunkJson(
-                                id,
-                                deltaContent = "Fehler beim Generieren der Antwort."
-                            )
+                    ) == false
+                ) {
+                    return@launch
+                }
+                emitDoneMarker()
+                streamSession?.finish()
+                Log.i(TAG, "Chat response streamed: chars=$emittedChars")
+            } catch (t: Throwable) {
+                if (t is CancellationException) {
+                    throw t
+                }
+                Log.e(TAG, "Chat stream failed", t)
+                runCatching {
+                    emitFrame(
+                        createChatCompletionChunkJson(
+                            id,
+                            deltaContent = "Fehler beim Generieren der Antwort."
                         )
-                        writer.write("data: [DONE]\n\n")
-                        writer.flush()
-                    }
+                    )
+                    emitDoneMarker()
+                    streamSession?.finish()
                 }
             }
             runCatching { output.close() }
             runCatching { input.close() }
         }
+        streamSession?.attachJob(job)
 
         return NanoHTTPD.newChunkedResponse(Response.Status.OK, "text/event-stream", input).apply {
             addHeader("Cache-Control", "no-cache")
@@ -2613,7 +3091,11 @@ class MainActivity : AppCompatActivity() {
     }
 }
 
-private class ImportProgressDialog(activity: AppCompatActivity) {
+private class ModelTransferProgressDialog(
+    activity: AppCompatActivity,
+    title: String = activity.getString(R.string.dialog_model_import_title),
+    initialMessage: String = activity.getString(R.string.model_import_message)
+) {
     private val dialog: AlertDialog
     private val messageView: TextView
     private val progressBar: ProgressBar
@@ -2625,10 +3107,11 @@ private class ImportProgressDialog(activity: AppCompatActivity) {
         progressBar = view.findViewById(R.id.importProgressBar)
         percentLabel = view.findViewById(R.id.importPercent)
         dialog = AlertDialog.Builder(activity)
-            .setTitle(activity.getString(R.string.dialog_model_import_title))
+            .setTitle(title)
             .setView(view)
             .setCancelable(false)
             .create()
+        messageView.text = initialMessage
     }
 
     fun show() = dialog.show()
@@ -2701,6 +3184,289 @@ private data class ModelModalities(
     }
 }
 
+private enum class StreamReadStatus {
+    OK,
+    OFFSET_LOST
+}
+
+private class StreamSession(
+    val conversationId: String,
+    private val maxBytes: Int = 4 * 1024 * 1024
+) {
+    private val lock = ReentrantLock()
+    private val available = lock.newCondition()
+    private var buffer = ByteArray(maxBytes)
+    private var size = 0
+    private var droppedPrefix: Long = 0L
+    private var done = false
+    private var cancelled = false
+    private var completedAt: Long = 0L
+    private var activeJob: Job? = null
+
+    val startedAt: Long = System.currentTimeMillis() / 1000L
+
+    fun attachJob(job: Job) {
+        var shouldCancel = false
+        lock.lock()
+        try {
+            activeJob = job
+            shouldCancel = cancelled
+        } finally {
+            lock.unlock()
+        }
+        if (shouldCancel) {
+            job.cancel()
+        }
+    }
+
+    fun append(bytes: ByteArray): Boolean {
+        if (bytes.isEmpty()) {
+            return true
+        }
+
+        lock.lock()
+        try {
+            if (done) {
+                return false
+            }
+
+            if (bytes.size >= maxBytes) {
+                val skip = bytes.size - maxBytes
+                val droppedExisting = size.toLong()
+                buffer = bytes.copyOfRange(skip, bytes.size)
+                size = maxBytes
+                droppedPrefix += droppedExisting + skip.toLong()
+            } else {
+                val needed = size + bytes.size
+                if (needed > maxBytes) {
+                    val toDrop = needed - maxBytes
+                    if (toDrop > 0) {
+                        if (size - toDrop > 0) {
+                            System.arraycopy(buffer, toDrop, buffer, 0, size - toDrop)
+                        }
+                        size -= toDrop
+                        droppedPrefix += toDrop.toLong()
+                    }
+                }
+                System.arraycopy(bytes, 0, buffer, size, bytes.size)
+                size += bytes.size
+            }
+        } finally {
+            lock.unlock()
+        }
+
+        lock.lock()
+        try {
+            available.signalAll()
+        } finally {
+            lock.unlock()
+        }
+        return true
+    }
+
+    fun finish() {
+        lock.lock()
+        try {
+            if (done) {
+                return
+            }
+            done = true
+            if (completedAt == 0L) {
+                completedAt = System.currentTimeMillis() / 1000L
+            }
+            available.signalAll()
+        } finally {
+            lock.unlock()
+        }
+    }
+
+    fun cancel() {
+        val jobToCancel: Job?
+        lock.lock()
+        try {
+            cancelled = true
+            if (!done) {
+                done = true
+                if (completedAt == 0L) {
+                    completedAt = System.currentTimeMillis() / 1000L
+                }
+            }
+            jobToCancel = activeJob
+            available.signalAll()
+        } finally {
+            lock.unlock()
+        }
+        jobToCancel?.cancel()
+    }
+
+    fun readFrom(
+        startOffset: Long,
+        sink: (ByteArray) -> Boolean,
+        shouldStop: () -> Boolean
+    ): StreamReadStatus {
+        var offset = startOffset
+        while (true) {
+            var chunk: ByteArray? = null
+            lock.lock()
+            try {
+                if (shouldStop()) {
+                    return StreamReadStatus.OK
+                }
+                if (offset < droppedPrefix) {
+                    return StreamReadStatus.OFFSET_LOST
+                }
+
+                val logicalEnd = droppedPrefix + size.toLong()
+                if (offset < logicalEnd) {
+                    val localOffset = (offset - droppedPrefix).toInt()
+                    val availableBytes = size - localOffset
+                    chunk = buffer.copyOfRange(localOffset, localOffset + availableBytes)
+                    offset += availableBytes.toLong()
+                } else if (done) {
+                    return StreamReadStatus.OK
+                } else {
+                    available.await(200, TimeUnit.MILLISECONDS)
+                    continue
+                }
+            } finally {
+                lock.unlock()
+            }
+
+            if (chunk != null && !sink(chunk)) {
+                return StreamReadStatus.OK
+            }
+        }
+    }
+
+    fun isDone(): Boolean {
+        lock.lock()
+        try {
+            return done
+        } finally {
+            lock.unlock()
+        }
+    }
+
+    fun isCancelled(): Boolean {
+        lock.lock()
+        try {
+            return cancelled
+        } finally {
+            lock.unlock()
+        }
+    }
+
+    fun totalBytes(): Long {
+        lock.lock()
+        try {
+            return droppedPrefix + size.toLong()
+        } finally {
+            lock.unlock()
+        }
+    }
+
+    fun droppedPrefix(): Long {
+        lock.lock()
+        try {
+            return droppedPrefix
+        } finally {
+            lock.unlock()
+        }
+    }
+
+    fun completedAt(): Long {
+        lock.lock()
+        try {
+            return completedAt
+        } finally {
+            lock.unlock()
+        }
+    }
+}
+
+private class StreamSessionRegistry {
+    private val lock = Any()
+    private val sessions = mutableMapOf<String, StreamSession>()
+    private val ttlSeconds = 300L
+
+    fun createOrReplace(conversationId: String): StreamSession {
+        require(conversationId.isNotBlank()) { "conversationId must not be blank" }
+        var previous: StreamSession? = null
+        val fresh = StreamSession(conversationId)
+        synchronized(lock) {
+            cleanupExpiredLocked()
+            previous = sessions.remove(conversationId)
+            sessions[conversationId] = fresh
+        }
+        previous?.cancel()
+        return fresh
+    }
+
+    fun get(conversationId: String): StreamSession? {
+        synchronized(lock) {
+            cleanupExpiredLocked()
+            return findMatchesLocked(conversationId).firstOrNull()
+        }
+    }
+
+    fun lookup(conversationIds: List<String>): List<StreamSession> {
+        synchronized(lock) {
+            cleanupExpiredLocked()
+            if (conversationIds.isEmpty()) {
+                return emptyList()
+            }
+            val seen = linkedSetOf<String>()
+            val result = mutableListOf<StreamSession>()
+            for (conversationId in conversationIds) {
+                for (session in findMatchesLocked(conversationId)) {
+                    if (seen.add(session.conversationId)) {
+                        result.add(session)
+                    }
+                }
+            }
+            return result
+        }
+    }
+
+    fun evictAndCancel(conversationId: String) {
+        val removed = mutableListOf<StreamSession>()
+        synchronized(lock) {
+            cleanupExpiredLocked()
+            for (session in findMatchesLocked(conversationId)) {
+                sessions.remove(session.conversationId)
+                removed.add(session)
+            }
+        }
+        removed.forEach { it.cancel() }
+    }
+
+    private fun findMatchesLocked(conversationId: String): List<StreamSession> {
+        if (conversationId.isBlank()) {
+            return emptyList()
+        }
+        val exact = sessions[conversationId]?.let { listOf(it) }.orEmpty()
+        val prefix = "$conversationId::"
+        val prefixed = sessions.values.filter { session ->
+            session.conversationId != conversationId && session.conversationId.startsWith(prefix)
+        }
+        return (exact + prefixed).distinctBy { it.conversationId }.sortedByDescending { it.startedAt }
+    }
+
+    private fun cleanupExpiredLocked(nowSeconds: Long = System.currentTimeMillis() / 1000L) {
+        val iterator = sessions.entries.iterator()
+        while (iterator.hasNext()) {
+            val entry = iterator.next()
+            val session = entry.value
+            if (session.isDone()) {
+                val completedAt = session.completedAt()
+                if (completedAt > 0L && nowSeconds - completedAt > ttlSeconds) {
+                    iterator.remove()
+                }
+            }
+        }
+    }
+}
+
 private class LocalApiServer(
     port: Int,
     private val webRootResolver: () -> android.content.res.AssetManager,
@@ -2708,7 +3474,9 @@ private class LocalApiServer(
     private val getChatTemplate: () -> String,
     private val getModalities: () -> ModelModalities,
     private val getContextWindowSize: () -> Int,
-    private val onChatCompletion: (JSONObject, Boolean) -> Response,
+    private val onChatCompletion: (JSONObject, Boolean, String?) -> Response,
+    private val streamScope: CoroutineScope,
+    private val streamRegistry: StreamSessionRegistry,
     private val artifactsRootResolver: () -> File
 ) : NanoHTTPD("127.0.0.1", port) {
     override fun serve(session: IHTTPSession): Response {
@@ -2717,10 +3485,22 @@ private class LocalApiServer(
             when {
                 session.uri == "/health" && session.method == Method.GET -> jsonResponse(
                     JSONObject()
-                        .put("ok", true)
-                        .put("server", "chat-api")
-                        .put("model", getModelName())
+                            .put("ok", true)
+                            .put("server", "chat-api")
+                            .put("model", getModelName())
                 )
+
+                session.uri == "/v1/streams/lookup" && session.method == Method.POST -> {
+                    streamLookupResponse(session)
+                }
+
+                session.uri.startsWith("/v1/stream/") && session.method == Method.GET -> {
+                    streamReplayResponse(session)
+                }
+
+                session.uri.startsWith("/v1/stream/") && session.method == Method.DELETE -> {
+                    streamDeleteResponse(session)
+                }
 
                 session.uri == "/v1/models" && session.method == Method.GET -> jsonResponse(
                     run {
@@ -2766,8 +3546,9 @@ private class LocalApiServer(
                     val body = parseBodyJson(session)
                     val stream = body.optBoolean("stream", false)
                     val messagesCount = body.optJSONArray("messages")?.length() ?: 0
+                    val conversationId = requestHeader(session, "X-Conversation-Id")
                     Log.i("LocalApiServer", "POST /v1/chat/completions stream=$stream messages=$messagesCount")
-                    onChatCompletion(body, stream)
+                    onChatCompletion(body, stream, conversationId)
                 }
 
                 session.uri == "/tools" && session.method == Method.GET -> {
@@ -2797,6 +3578,126 @@ private class LocalApiServer(
         return JSONObject(raw)
     }
 
+    private fun requestHeader(session: IHTTPSession, name: String): String? {
+        val headers = session.headers
+        return headers.entries.firstOrNull { (key, _) -> key.equals(name, ignoreCase = true) }?.value?.trim()
+            ?.takeIf { it.isNotEmpty() }
+    }
+
+    private fun parseConversationIdFromPath(uri: String): String? {
+        val prefix = "/v1/stream/"
+        if (!uri.startsWith(prefix)) {
+            return null
+        }
+        val encoded = uri.removePrefix(prefix).trim().trim('/')
+        if (encoded.isBlank()) {
+            return null
+        }
+        return runCatching {
+            URLDecoder.decode(encoded, StandardCharsets.UTF_8.name()).trim()
+        }.getOrNull()?.takeIf { it.isNotBlank() }
+    }
+
+    private fun parseFromOffset(session: IHTTPSession): Long? {
+        val from = session.parameters["from"]?.firstOrNull()?.trim().orEmpty()
+        if (from.isBlank()) {
+            return 0L
+        }
+        return from.toLongOrNull()?.takeIf { it >= 0L }
+    }
+
+    private fun streamLookupResponse(session: IHTTPSession): Response {
+        val body = parseBodyJson(session)
+        val requestedIds = mutableListOf<String>()
+        val ids = body.optJSONArray("conversation_ids")
+        if (ids != null) {
+            for (i in 0 until ids.length()) {
+                val id = ids.opt(i)
+                if (id is String) {
+                    val trimmed = id.trim()
+                    if (trimmed.isNotBlank()) {
+                        requestedIds.add(trimmed)
+                    }
+                }
+            }
+        }
+        body.optString("conversation_id").trim().takeIf { it.isNotBlank() }?.let { requestedIds.add(it) }
+
+        val result = JSONArray()
+        for (stream in streamRegistry.lookup(requestedIds)) {
+            result.put(
+                JSONObject()
+                    .put("conversation_id", stream.conversationId)
+                    .put("is_done", stream.isDone())
+                    .put("total_bytes", stream.totalBytes())
+                    .put("started_at", stream.startedAt)
+                    .put("completed_at", stream.completedAt())
+            )
+        }
+        return jsonResponse(result)
+    }
+
+    private fun streamReplayResponse(session: IHTTPSession): Response {
+        val conversationId = parseConversationIdFromPath(session.uri)
+            ?: return newFixedLengthResponse(Response.Status.BAD_REQUEST, "application/json", """{"error":"missing conversation id"}""")
+        val stream = streamRegistry.get(conversationId)
+            ?: return newFixedLengthResponse(Response.Status.NOT_FOUND, "application/json", """{"error":"stream not found or expired"}""")
+        val from = parseFromOffset(session)
+            ?: return newFixedLengthResponse(Response.Status.BAD_REQUEST, "application/json", """{"error":"invalid from offset"}""")
+        if (from < stream.droppedPrefix()) {
+            return newFixedLengthResponse(Response.Status.BAD_REQUEST, "application/json", """{"error":"stream offset lost, please restart"}""")
+        }
+        if (stream.isDone() && from >= stream.totalBytes()) {
+            Log.d("LocalApiServer", "stream replay already complete for $conversationId, returning terminal marker")
+            return newFixedLengthResponse(
+                Response.Status.OK,
+                "text/event-stream",
+                "data: [DONE]\n\n"
+            ).apply {
+                addHeader("Cache-Control", "no-cache")
+                addHeader("Connection", "keep-alive")
+            }
+        }
+
+        val input = PipedInputStream(64 * 1024)
+        val output = PipedOutputStream(input)
+        streamScope.launch {
+            try {
+                val sinkResult = stream.readFrom(
+                    from,
+                    sink = { chunk ->
+                        try {
+                            output.write(chunk)
+                            output.flush()
+                            true
+                        } catch (_: Throwable) {
+                            false
+                        }
+                    },
+                    shouldStop = { stream.isCancelled() }
+                )
+                if (sinkResult == StreamReadStatus.OFFSET_LOST) {
+                    Log.w("LocalApiServer", "stream replay offset lost while serving $conversationId")
+                }
+            } finally {
+                runCatching { output.close() }
+                runCatching { input.close() }
+            }
+        }
+
+        return NanoHTTPD.newChunkedResponse(Response.Status.OK, "text/event-stream", input).apply {
+            addHeader("Cache-Control", "no-cache")
+            addHeader("Connection", "keep-alive")
+        }
+    }
+
+    private fun streamDeleteResponse(session: IHTTPSession): Response {
+        val conversationId = parseConversationIdFromPath(session.uri)
+            ?: return newFixedLengthResponse(Response.Status.BAD_REQUEST, "application/json", """{"error":"missing conversation id"}""")
+        streamRegistry.evictAndCancel(conversationId)
+        return newFixedLengthResponse(Response.Status.NO_CONTENT, "application/json", "")
+    }
+
     private fun staticResponse(uri: String): Response {
         val clean = when (uri) {
             "/", "" -> "index.html"
@@ -2808,6 +3709,12 @@ private class LocalApiServer(
             val stream = assets.open(path)
             newChunkedResponse(Response.Status.OK, mimeFor(path), stream)
         } catch (_: Throwable) {
+            val looksLikeAsset = clean.contains('.') || clean.startsWith("_")
+            if (looksLikeAsset && clean != "index.html") {
+                Log.w("LocalApiServer", "static asset missing: $path")
+                return newFixedLengthResponse(Response.Status.NOT_FOUND, "text/plain", "not found")
+            }
+
             try {
                 val stream = webRootResolver().open("webui/index.html")
                 newChunkedResponse(Response.Status.OK, "text/html", stream)

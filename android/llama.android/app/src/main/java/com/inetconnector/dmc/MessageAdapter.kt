@@ -1,4 +1,4 @@
-package com.inetconnector.aichat
+package com.inetconnector.dmc
 
 import android.view.LayoutInflater
 import android.view.View

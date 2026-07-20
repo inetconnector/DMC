@@ -13,6 +13,6 @@ dependencyResolutionManagement {
     }
 }
 
-rootProject.name = "DMC AiChat"
+rootProject.name = "DMC"
 include(":app")
 include(":lib")

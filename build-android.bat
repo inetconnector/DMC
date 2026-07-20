@@ -1,5 +1,5 @@
 @echo off
-setlocal EnableExtensions
+setlocal EnableExtensions EnableDelayedExpansion
 goto :main
 
 :resolve_java
@@ -39,6 +39,20 @@ if defined VULKAN_SDK (
   echo [INFO] Using Vulkan SDK: %VULKAN_SDK%
 ) else (
   echo [WARN] Vulkan SDK not found; Android build will fall back to CPU/OpenCL if available.
+)
+exit /b 0
+
+:resolve_gradle
+set "GRADLE_EXE="
+for /f "delims=" %%D in ('dir /b /ad /o-n "%USERPROFILE%\.gradle\wrapper\dists\gradle-8.14.3-bin" 2^>nul') do (
+  if not defined GRADLE_EXE if exist "%USERPROFILE%\.gradle\wrapper\dists\gradle-8.14.3-bin\%%D\gradle-8.14.3\bin\gradle.bat" set "GRADLE_EXE=%USERPROFILE%\.gradle\wrapper\dists\gradle-8.14.3-bin\%%D\gradle-8.14.3\bin\gradle.bat"
+)
+if not defined GRADLE_EXE if exist "%ProgramFiles%\Gradle\gradle-8.14.3\bin\gradle.bat" set "GRADLE_EXE=%ProgramFiles%\Gradle\gradle-8.14.3\bin\gradle.bat"
+if not defined GRADLE_EXE if exist "%ProgramFiles(x86)%\Gradle\gradle-8.14.3\bin\gradle.bat" set "GRADLE_EXE=%ProgramFiles(x86)%\Gradle\gradle-8.14.3\bin\gradle.bat"
+if defined GRADLE_EXE (
+  echo [INFO] Using local Gradle: %GRADLE_EXE%
+) else (
+  echo [WARN] Local Gradle not found; falling back to the Gradle wrapper.
 )
 exit /b 0
 
@@ -83,11 +97,29 @@ break > "%HOST_TOOLCHAIN_FILE%"
 echo [INFO] Wrote Vulkan host toolchain: %HOST_TOOLCHAIN_FILE%
 exit /b 0
 
+:wait_for_file
+set "WAIT_FILE=%~1"
+set "WAIT_SECONDS=%~2"
+if not defined WAIT_SECONDS set "WAIT_SECONDS=10"
+set /a WAIT_COUNT=0
+:wait_for_file_loop
+if exist "%WAIT_FILE%" exit /b 0
+set /a WAIT_COUNT+=1
+if %WAIT_COUNT% GEQ %WAIT_SECONDS% exit /b 1
+timeout /t 1 /nobreak >nul
+goto :wait_for_file_loop
+
 :main
 for %%I in ("%~dp0.") do set "ROOT=%%~fI"
+set "APP_ID=com.inetconnector.dmc"
+set "APP_VERSION_NAME=1.0.0"
+set "APP_VERSION_CODE=1"
 set "ANDROID_DIR=%ROOT%\android\llama.android"
 set "WRAPPER_JAR=%ANDROID_DIR%\gradle\wrapper\gradle-wrapper.jar"
 set "VARIANT=debug"
+set "PUBLISH_DIR=%ROOT%\publish\%APP_ID%\%APP_VERSION_NAME%+%APP_VERSION_CODE%"
+set "GRADLE_OFFLINE_ARGS="
+if /I "%ANDROID_BUILD_OFFLINE%"=="1" set "GRADLE_OFFLINE_ARGS=--offline"
 
 if /I "%ANDROID_BUILD_VARIANT%"=="release" set "VARIANT=release"
 
@@ -106,6 +138,9 @@ if not exist "%WRAPPER_JAR%" (
 call :resolve_vulkan_sdk
 if errorlevel 1 exit /b 1
 
+call :resolve_gradle
+if errorlevel 1 exit /b 1
+
 call :resolve_vsdevcmd
 if errorlevel 1 exit /b 1
 
@@ -117,9 +152,17 @@ if errorlevel 1 exit /b 1
 
 pushd "%ANDROID_DIR%"
 if /I "%VARIANT%"=="release" (
-  "%JAVA_EXE%" -classpath gradle\wrapper\gradle-wrapper.jar org.gradle.wrapper.GradleWrapperMain --no-daemon -PaiChatHostToolchainFile=%HOST_TOOLCHAIN_FILE% :app:clean :app:assembleRelease --console=plain
+  if defined GRADLE_EXE (
+    call "%GRADLE_EXE%" --no-daemon %GRADLE_OFFLINE_ARGS% -PaiChatHostToolchainFile=%HOST_TOOLCHAIN_FILE% :app:clean :app:assembleRelease :app:bundleRelease --console=plain
+  ) else (
+    "%JAVA_EXE%" -classpath gradle\wrapper\gradle-wrapper.jar org.gradle.wrapper.GradleWrapperMain --no-daemon %GRADLE_OFFLINE_ARGS% -PaiChatHostToolchainFile=%HOST_TOOLCHAIN_FILE% :app:clean :app:assembleRelease :app:bundleRelease --console=plain
+  )
 ) else (
-  "%JAVA_EXE%" -classpath gradle\wrapper\gradle-wrapper.jar org.gradle.wrapper.GradleWrapperMain --no-daemon -PaiChatHostToolchainFile=%HOST_TOOLCHAIN_FILE% :app:clean :app:assembleDebug --console=plain
+  if defined GRADLE_EXE (
+    call "%GRADLE_EXE%" --no-daemon %GRADLE_OFFLINE_ARGS% -PaiChatHostToolchainFile=%HOST_TOOLCHAIN_FILE% :app:clean :app:assembleDebug --console=plain
+  ) else (
+    "%JAVA_EXE%" -classpath gradle\wrapper\gradle-wrapper.jar org.gradle.wrapper.GradleWrapperMain --no-daemon %GRADLE_OFFLINE_ARGS% -PaiChatHostToolchainFile=%HOST_TOOLCHAIN_FILE% :app:clean :app:assembleDebug --console=plain
+  )
 )
 set "BUILD_EXIT=%ERRORLEVEL%"
 popd
@@ -131,7 +174,8 @@ if not "%BUILD_EXIT%"=="0" (
 
 if /I "%VARIANT%"=="release" (
   set "APK_PATH=%ANDROID_DIR%\app\build\outputs\apk\release\app-release.apk"
-  if not exist "%APK_PATH%" set "APK_PATH=%ANDROID_DIR%\app\build\outputs\apk\release\app-release-unsigned.apk"
+  call :wait_for_file "!APK_PATH!" 15
+  if not exist "!APK_PATH!" set "APK_PATH=%ANDROID_DIR%\app\build\outputs\apk\release\app-release-unsigned.apk"
 ) else (
   set "APK_PATH=%ANDROID_DIR%\app\build\outputs\apk\debug\app-debug.apk"
 )
@@ -142,7 +186,16 @@ if not exist "%APK_PATH%" (
   exit /b 1
 )
 
+if not exist "%PUBLISH_DIR%" mkdir "%PUBLISH_DIR%" >nul 2>nul
+if /I "%VARIANT%"=="release" (
+  if exist "%ANDROID_DIR%\app\build\outputs\bundle\release\app-release.aab" (
+    copy /Y "%ANDROID_DIR%\app\build\outputs\bundle\release\app-release.aab" "%PUBLISH_DIR%\%APP_ID%-%APP_VERSION_NAME%+%APP_VERSION_CODE%-release.aab" >nul
+  )
+)
+copy /Y "%APK_PATH%" "%PUBLISH_DIR%\%APP_ID%-%APP_VERSION_NAME%+%APP_VERSION_CODE%-%VARIANT%.apk" >nul
+
 echo.
 echo [OK] Build completed.
 echo [OK] APK: %APK_PATH%
+echo [OK] Publish: %PUBLISH_DIR%
 goto :eof
