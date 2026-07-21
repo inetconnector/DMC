@@ -80,9 +80,13 @@ Update this file and `README.md` together whenever behavior changes.
   expected InetConnector certificate fingerprint
   `649A7EC870A7D18E5AF0AF12F0AC63B27F15DB864E28FECA9DA5FCF94AB8EC0F`.
   The release APK SHA-256 is
-  `0A0FDDD7AB37FE0B80AFDA2A6CF24D11F32804B8CF989756284176A395B709F5`;
+  `E32DB4D728D53F0631428D4D2A7D801A1415F80DCC97525EE30B0EEFA9F732C7`;
   the AAB SHA-256 is
-  `6BDC8D8DBFD761250AE9FDBBEAF943FDA23C99DAEA5D8A2CD9923E58E003E2F6`.
+  `3AD275C6DDD6D86C4D674A938812337F6FB4C3F03CDB3CE184DC51B336D78F6E`;
+  and the debug APK SHA-256 is
+  `D663D4B60CAAA1C719ABDC9F5055AE36CA3AB309D84B22030F16D6AF9B4129C3`.
+  All three versioned artifacts were copied to
+  `\\diskstation.fritz.box\Dani`, then read back and hash-verified.
 - The public Android V1.0 release uses tag `android-v1.0.0` because the older
   repository tag `v1.0.0` already identifies a pre-Android project milestone
   and must not be moved. The release page is
@@ -160,11 +164,19 @@ Update this file and `README.md` together whenever behavior changes.
   and launched on Samsung `SM-S931B` on 2026-07-21. Visual inspection confirmed
   the chat UI, model selector, microphone, and send button; the process remained
   alive with `MainActivity` focused and no fatal exception or black screen.
+- The current debug APK was installed again as a data-preserving update because
+  the existing device installation uses the debug certificate. Installing the
+  separately signed release over it would require uninstalling the app and
+  deleting its private model and settings data.
 - Device Logcat confirmed `DMC_RUNTIME self-test passed`, `enabled=1`, a 16384
   physical context, and a 131072 logical context while loading the existing
   Gemma model. Direct device API checks returned `OK` with `finish_reason=stop`;
   SSE delivered the content incrementally, one terminal stop chunk, and exactly
   one `[DONE]` marker without reconnect, resume, or network errors.
+- Android can reclaim DMC under device-wide memory pressure when another large
+  local-model app is active at the same time. With the competing model app
+  stopped, DMC starts normally, remains alive, and loads the installed Gemma
+  model. This is a device memory limit, not a DMC fatal exception.
 
 - Removed the hidden Android 512-token fallback that cut responses in the
   middle of sentences. Missing output limits now mean model-EOG generation.

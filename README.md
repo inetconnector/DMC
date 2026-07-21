@@ -141,11 +141,21 @@ The current signed release was built successfully at:
 
 Release APK SHA-256:
 
-`0A0FDDD7AB37FE0B80AFDA2A6CF24D11F32804B8CF989756284176A395B709F5`
+`E32DB4D728D53F0631428D4D2A7D801A1415F80DCC97525EE30B0EEFA9F732C7`
+
+Release AAB SHA-256:
+
+`3AD275C6DDD6D86C4D674A938812337F6FB4C3F03CDB3CE184DC51B336D78F6E`
+
+Debug APK SHA-256:
+
+`D663D4B60CAAA1C719ABDC9F5055AE36CA3AB309D84B22030F16D6AF9B4129C3`
 
 Published APK/AAB files are kept under the ignored `publish/` directory. The
-current release APK and AAB were also copied to `\\diskstation.fritz.box\Dani`
-using the versioned `com.inetconnector.dmc-1.0.0+1-release` names.
+current debug APK, signed release APK, and signed release AAB were also copied
+to `\\diskstation.fritz.box\Dani` using versioned
+`com.inetconnector.dmc-1.0.0+1` names. Their hashes were verified again after
+copying.
 
 If you want to check the launch without starting the server, use:
 
