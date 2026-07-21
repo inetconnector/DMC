@@ -130,6 +130,12 @@ echo Root: %ROOT%
 echo Android project: %ANDROID_DIR%
 echo Variant: %VARIANT%
 
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File "%ROOT%\scripts\windows\prepare-llama-submodule.ps1" -RepositoryRoot "%ROOT%"
+if errorlevel 1 (
+  echo [ERROR] Pinned llama.cpp submodule preparation failed.
+  exit /b 1
+)
+
 if not exist "%WRAPPER_JAR%" (
   echo [ERROR] Missing Gradle wrapper jar: %WRAPPER_JAR%
   exit /b 1

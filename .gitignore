@@ -330,13 +330,18 @@ AHSMA-debug.apk
 # Local build trees inside the imported artifact snapshot
 artifacts/**/build/
 
-# Local verification checkouts and CUDA junction
-upstream/
+# Pinned llama.cpp submodule plus local verification checkouts
+upstream/*
+!upstream/llama.cpp/
 cuda13/
 runtime/llama.cpp/
 runtime/huggingface/
 cpp/build/
 .codex-remote-attachments/
+
+# The global Visual Studio Arm/ rule above would otherwise hide this package.
+!android/llama.android/lib/src/main/java/com/arm/
+!android/llama.android/lib/src/main/java/com/arm/**
 
 # Cake - Uncomment if you are using it
 # tools/**

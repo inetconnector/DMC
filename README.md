@@ -19,7 +19,8 @@ to validate than a more ad hoc retrieval system.
   helper scripts.
 - DMC Android V1.0 is available as a signed APK from GitHub Releases.
 - The design focuses on long context first, quality second, speed third.
-- The repository is licensed under MIT.
+- DMC's original code is licensed under MIT. Bundled third-party components
+  retain their own licenses and terms; see `THIRD_PARTY_NOTICES.md`.
 - Nothing in this repository should be read as a patent clearance opinion or
   as a guarantee that the implementation is free to publish in every
   jurisdiction.
@@ -75,9 +76,21 @@ silently containing an older UI bundle. Set `ANDROID_SKIP_WEBUI_BUILD=1` only
 for a deliberate native-only rebuild when the synchronized UI is already
 current.
 
-The Android project is wired against the local `upstream/llama.cpp` checkout,
-so it keeps the imported model manager, download/import flows, and the local
-analysis features from the original app while staying in this repo.
+The Android project is wired against the pinned `upstream/llama.cpp` Git
+submodule. It points to the DMC Android branch of the public
+[`inetconnector/llama.cpp`](https://github.com/inetconnector/llama.cpp) fork,
+so a normal clone can reproduce the native runtime and imported Web UI instead
+of relying on an untracked local directory. Clone with `--recurse-submodules`
+or run `git submodule update --init --recursive` after cloning. The build helper
+verifies the exact recorded submodule commit and refuses a dirty or mismatched
+checkout.
+
+`build-android.bat` also regenerates the exact Web UI dependency notices and
+packages the DMC, llama.cpp, Apache 2.0, NanoHTTPD, and generated Web UI license
+files into the APK under `assets/licenses/`. The repository's MIT license
+covers DMC's original code only. In particular, Google ML Kit remains subject
+to Google's separate terms, and downloaded GGUF models retain their publishers'
+licenses. See `THIRD_PARTY_NOTICES.md` for the complete scope.
 
 The Android inference path is DMC-enabled. It keeps the canonical token history
 separately from a 16384-token physical llama.cpp KV window. Short conversations

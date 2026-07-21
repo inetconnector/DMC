@@ -130,8 +130,41 @@ Update this file and `README.md` together whenever behavior changes.
   for duplicate `MCP Resources` translation keys, missing ARIA roles on swipe
   containers, one Svelte state-capture warning, and a Rollup circular re-export.
   These warnings should be cleaned up before the next release.
+- The published `android-v1.0.0` tag predates the checked-in llama.cpp
+  submodule pointer. Do not move that public tag. Publish the next Android
+  patch release from the reproducible submodule-based source state.
 
 ## Recent Change
+
+- The formerly ignored `upstream/llama.cpp` working tree was converted into a
+  real Git submodule. It is pinned to commit
+  `404affccbd730d2fb9a2ad20e4c66f0c46ea1809` on the `dmc-android` branch of
+  `https://github.com/inetconnector/llama.cpp.git`; that repository is a public
+  fork of `ggml-org/llama.cpp` and preserves the complete DMC Android diff.
+- `build-android.bat` now initializes and validates that exact submodule commit
+  before doing any UI or native build work. A dirty checkout, wrong origin, or
+  missing fork marker fails the build instead of producing an unreproducible
+  APK.
+- The root ignore rules now retain both the submodule and the required
+  `com/arm/aichat` Kotlin sources, which had been hidden accidentally by a
+  broad Visual Studio `Arm/` pattern.
+- The licensing audit confirmed that DMC's own code and llama.cpp can be
+  distributed under MIT, but the binary is not exclusively MIT: AndroidX,
+  Material and Kotlin carry Apache 2.0 terms, NanoHTTPD is BSD 3-Clause, and
+  Google ML Kit is governed by its own service/API terms. Exact notices are in
+  `THIRD_PARTY_NOTICES.md` and `third_party_licenses/`.
+- Android builds now generate notices for every installed Web UI package and
+  package all DMC, llama.cpp, Apache, BSD, and Web UI license material under
+  `assets/licenses/` in the APK.
+- The submodule-based debug APK was rebuilt, installed with preserved app data,
+  and launched on Samsung `SM-S931B` on 2026-07-21. Visual inspection confirmed
+  the chat UI, model selector, microphone, and send button; the process remained
+  alive with `MainActivity` focused and no fatal exception or black screen.
+- Device Logcat confirmed `DMC_RUNTIME self-test passed`, `enabled=1`, a 16384
+  physical context, and a 131072 logical context while loading the existing
+  Gemma model. Direct device API checks returned `OK` with `finish_reason=stop`;
+  SSE delivered the content incrementally, one terminal stop chunk, and exactly
+  one `[DONE]` marker without reconnect, resume, or network errors.
 
 - Removed the hidden Android 512-token fallback that cut responses in the
   middle of sentences. Missing output limits now mean model-EOG generation.

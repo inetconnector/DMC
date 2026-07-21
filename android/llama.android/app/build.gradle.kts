@@ -77,6 +77,7 @@ android {
     sourceSets {
         getByName("main") {
             assets.srcDir(layout.buildDirectory.dir("generated/webuiAssets"))
+            assets.srcDir(layout.buildDirectory.dir("generated/licenseAssets"))
         }
     }
 
@@ -98,8 +99,23 @@ val copyWebUiAssets by tasks.registering(Copy::class) {
     into(layout.buildDirectory.dir("generated/webuiAssets/webui"))
 }
 
+val copyLicenseAssets by tasks.registering(Copy::class) {
+    into(layout.buildDirectory.dir("generated/licenseAssets/licenses"))
+    from(layout.projectDirectory.file("../../../LICENSE")) {
+        rename { "DMC-LICENSE.txt" }
+    }
+    from(layout.projectDirectory.file("../../../THIRD_PARTY_NOTICES.md"))
+    from(layout.projectDirectory.file("../../../third_party_licenses/Apache-2.0.txt"))
+    from(layout.projectDirectory.file("../../../third_party_licenses/NanoHTTPD-BSD-3-Clause.txt"))
+    from(layout.projectDirectory.file("../../../third_party_licenses/WEB_UI_NOTICES.txt"))
+    from(layout.projectDirectory.file("../../../upstream/llama.cpp/LICENSE")) {
+        rename { "LLAMA-CPP-LICENSE.txt" }
+    }
+}
+
 tasks.named("preBuild") {
     dependsOn(copyWebUiAssets)
+    dependsOn(copyLicenseAssets)
 }
 
 dependencies {
