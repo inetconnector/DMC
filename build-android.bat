@@ -135,6 +135,16 @@ if not exist "%WRAPPER_JAR%" (
   exit /b 1
 )
 
+if /I "%ANDROID_SKIP_WEBUI_BUILD%"=="1" (
+  echo [WARN] Skipping Android Web UI rebuild because ANDROID_SKIP_WEBUI_BUILD=1.
+) else (
+  powershell.exe -NoProfile -ExecutionPolicy Bypass -File "%ROOT%\scripts\windows\prepare-android-webui.ps1" -RepositoryRoot "%ROOT%"
+  if errorlevel 1 (
+    echo [ERROR] Android Web UI build failed.
+    exit /b 1
+  )
+)
+
 call :resolve_vulkan_sdk
 if errorlevel 1 exit /b 1
 
@@ -183,6 +193,12 @@ if /I "%VARIANT%"=="release" (
 if not exist "%APK_PATH%" (
   echo [ERROR] APK not found after build.
   echo [INFO] Checked: %APK_PATH%
+  exit /b 1
+)
+
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File "%ROOT%\scripts\windows\verify-android-dmc.ps1" -ApkPath "%APK_PATH%"
+if errorlevel 1 (
+  echo [ERROR] APK does not contain the required DMC runtime.
   exit /b 1
 )
 

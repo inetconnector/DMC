@@ -9,10 +9,17 @@ to validate than a more ad hoc retrieval system.
 
 ## Current State
 
-- The project notes live in `docs/`.
+- `README.md` and `state.md` are the living project documents.
+- `docs/TARGET_STATE.md` is the concise capability target.
 - The code in `dmc/` and `cpp/` is the reference implementation.
-- The local runtime in `scripts/windows/` runs `llama.cpp` on your own
-  machine.
+- The Android native runtime now compiles that same C++ DMC selector into
+  `libai-chat.so`; it is no longer only an app name or a separate demo.
+- The local runtime in `scripts/windows/` runs `llama.cpp` on your own machine.
+- The Android app lives in `android/llama.android/` and is built from the root
+  helper scripts.
+- The current DMC-enabled Android APK builds successfully. Its final model-load
+  regression test is pending because the phone disconnected from ADB after the
+  build.
 - The design focuses on long context first, quality second, speed third.
 - The repository is licensed under MIT.
 - Nothing in this repository should be read as a patent clearance opinion or
@@ -56,9 +63,60 @@ Use these helpers from the repository root:
 2. `install-android.bat` to build, install, and launch the app on a connected
    device.
 
+Both helpers rebuild the Svelte Web UI and synchronize the resulting `dist/`
+files into the Android assets before Gradle runs. This prevents an APK from
+silently containing an older UI bundle. Set `ANDROID_SKIP_WEBUI_BUILD=1` only
+for a deliberate native-only rebuild when the synchronized UI is already
+current.
+
 The Android project is wired against the local `upstream/llama.cpp` checkout,
 so it keeps the imported model manager, download/import flows, and the local
 analysis features from the original app while staying in this repo.
+
+The Android inference path is DMC-enabled. It keeps the canonical token history
+separately from a 16384-token physical llama.cpp KV window. Short conversations
+remain on the unchanged dense path. When the physical prompt budget is reached,
+the shared deterministic selector from `cpp/dmc_reference.hpp` keeps the global
+prefix, the recent 2048-token window, and seven fixed replay levels, then
+rehydrates those selected tokens in chronological order. For a Gemma model that
+reports 131072 trained context tokens, the UI therefore retains a 131072-token
+logical context while avoiding a 131072-token mobile KV allocation. This path
+does not recursively summarize the conversation. The selected KV state is
+reused for subsequent turns and rebuilt only when the physical budget fills
+again, avoiding repeated long prefills.
+
+Normal chat generation has no implicit 512-token output cap. If a request does
+not explicitly provide `max_tokens`, `max_completion_tokens`, or `n_predict`,
+Android generates until the model emits its end-of-generation token. When an
+answer fills the physical KV window, DMC rehydrates a selected context with
+fresh output space and continues the same generation. Explicit positive API
+limits and the explicit zero-token cache-warm request remain supported.
+
+Every model preparation runs a deterministic native DMC self-test. In addition,
+`build-android.bat` opens the generated APK and refuses to publish it unless the
+ARM64 native library contains the DMC enablement, self-test, and rebuild markers.
+Removing or bypassing DMC from the Android inference path is a release-blocking
+regression.
+
+On Android, native dictation inserts the recognized text and immediately sends
+it as a normal chat message. The microphone and manual send button remain
+separate controls. Chat responses use uncompressed server-sent events so text
+appears token by token instead of arriving as one buffered block. The Android
+SSE producer closes only its writer after the final `[DONE]` marker; NanoHTTPD
+owns the reader until delivery completes, preventing false reconnect banners
+after an otherwise successful answer.
+
+The current DMC-enabled debug APK was built successfully at:
+
+`android/llama.android/app/build/outputs/apk/debug/app-debug.apk`
+
+The current signed release was built successfully at:
+
+`android/llama.android/app/build/outputs/apk/release/app-release.apk`
+
+Published APK/AAB files are kept under the ignored `publish/` directory. The
+current release APK and AAB were also copied to `\\diskstation.fritz.box\Dani`
+using the versioned `com.inetconnector.dmc-1.0.0+1-release` names.
 
 If you want to check the launch without starting the server, use:
 
@@ -78,15 +136,20 @@ If you want to check the launch without starting the server, use:
 ## How It Works
 
 1. The model runs locally in `llama.cpp`.
-2. The launcher starts a model instance with a chosen context size.
-3. DMC selects the important spans of history in a deterministic way.
-4. Exact attention is applied over the selected tokens.
-5. The answer is returned through the local API, the browser UI, or an editor
-   integration.
+2. Android retains the canonical logical token history outside the physical KV
+   window.
+3. DMC deterministically selects global, local, and multiresolution replay
+   spans when the physical prompt budget is exceeded.
+4. llama.cpp rebuilds the KV state in causal order and applies exact attention
+   over those selected tokens.
+5. Short Android chats stay dense; long chats switch to DMC without recursive
+   summarization.
+6. The Windows LAN launcher currently remains the standard dense llama.cpp
+   runtime; its DMC adapter is still a separate follow-up task.
 
 ## Start Here
 
-1. Read `docs/STATE.md` for the current status and next steps.
+1. Read `state.md` for the current status and next steps.
 2. Read `docs/INSTANCE.md` for the active runtime setup.
 3. Read `docs/LLAMA_CPP_LAN.md` if you want the browser UI on your laptop or
    phone.

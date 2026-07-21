@@ -8,6 +8,7 @@
 #include <unistd.h>
 #include <sampling.h>
 
+#include "dmc_reference.hpp"
 #include "logging.h"
 #include "chat.h"
 #include "common.h"
@@ -47,6 +48,10 @@ constexpr int   N_THREADS_MAX           = 6;
 constexpr int   N_THREADS_HEADROOM      = 1;
 
 constexpr int   MIN_CONTEXT_SIZE        = 4096;
+constexpr int   DMC_PHYSICAL_CONTEXT    = 16384;
+constexpr int   DMC_MIN_OUTPUT_RESERVE  = 512;
+constexpr int   DMC_CONTINUATION_RESERVE = 4096;
+constexpr int   DMC_SYSTEM_PREFIX_MAX   = 1024;
 constexpr int   OVERFLOW_HEADROOM       = 4;
 constexpr int   BATCH_SIZE              = 512;
 constexpr float DEFAULT_SAMPLER_TEMP    = 0.3f;
@@ -58,6 +63,11 @@ static common_chat_templates_ptr          g_chat_templates;
 static common_sampler                   * g_sampler;
 static bool                               g_enable_thinking = false;
 static bool                               g_batch_initialized = false;
+static llama_tokens                       g_dmc_token_history;
+static std::size_t                        g_dmc_system_tokens = 0;
+static int                                g_dmc_logical_context_window = 0;
+static bool                               g_dmc_has_compacted = false;
+static std::uint64_t                      g_dmc_rebuild_count = 0;
 
 static std::string trim_copy(const std::string &text) {
     const auto first = text.find_first_not_of(" \t\r\n");
@@ -86,7 +96,12 @@ static std::vector<int> build_context_candidates(llama_model *model, int request
     }
 
     const int trained_context_size = std::max(0, llama_model_n_ctx_train(model));
-    const int initial_context = std::max(requested_n_ctx > 0 ? requested_n_ctx : trained_context_size, MIN_CONTEXT_SIZE);
+    const int automatic_context = trained_context_size > 0
+        ? std::min(trained_context_size, DMC_PHYSICAL_CONTEXT)
+        : DMC_PHYSICAL_CONTEXT;
+    const int initial_context = std::max(
+        requested_n_ctx > 0 ? requested_n_ctx : automatic_context,
+        MIN_CONTEXT_SIZE);
 
     auto add_candidate = [&](const int candidate) {
         if (candidate < MIN_CONTEXT_SIZE) {
@@ -98,7 +113,6 @@ static std::vector<int> build_context_candidates(llama_model *model, int request
     };
 
     add_candidate(initial_context);
-    add_candidate(trained_context_size);
 
     for (size_t i = 0; i < candidates.size(); ++i) {
         const int candidate = candidates[i];
@@ -285,6 +299,41 @@ static common_sampler *new_sampler(float temp) {
     return common_sampler_init(g_model, sparams);
 }
 
+static dmc::DMCConfig runtime_dmc_config() {
+    dmc::DMCConfig cfg;
+    cfg.block_size = 64;
+    cfg.local_window = 2048;
+    cfg.global_tokens = std::max<std::size_t>(
+        64,
+        std::min<std::size_t>(g_dmc_system_tokens, DMC_SYSTEM_PREFIX_MAX));
+    cfg.replay_levels = 7;
+    return cfg;
+}
+
+static bool validate_dmc_runtime() {
+    try {
+        const auto first = dmc::plan_runtime_context(32768, 4096, runtime_dmc_config());
+        const auto second = dmc::plan_runtime_context(32768, 4096, runtime_dmc_config());
+        const bool valid = first.compacted &&
+            first.token_ids == second.token_ids &&
+            !first.token_ids.empty() &&
+            first.token_ids.size() <= 4096 &&
+            first.token_ids.back() == 32767;
+        if (!valid) {
+            LOGe("DMC_RUNTIME self-test failed");
+            return false;
+        }
+        LOGi("DMC_RUNTIME self-test passed: logical=%d selected=%d spans=%d",
+             32768,
+             (int) first.token_ids.size(),
+             (int) first.spans.size());
+        return true;
+    } catch (const std::exception &e) {
+        LOGe("DMC_RUNTIME self-test failed: %s", e.what());
+        return false;
+    }
+}
+
 extern "C"
 JNIEXPORT jint JNICALL
 Java_com_arm_aichat_internal_InferenceEngineImpl_prepare(JNIEnv * /*env*/, jobject /*unused*/) {
@@ -295,6 +344,23 @@ Java_com_arm_aichat_internal_InferenceEngineImpl_prepare(JNIEnv * /*env*/, jobje
     g_batch_initialized = true;
     g_chat_templates = common_chat_templates_init(g_model, "");
     g_sampler = new_sampler(DEFAULT_SAMPLER_TEMP);
+    g_dmc_token_history.clear();
+    g_dmc_system_tokens = 0;
+    g_dmc_has_compacted = false;
+    g_dmc_rebuild_count = 0;
+    g_dmc_logical_context_window = std::max(
+        runtime_context_window_size(g_context),
+        llama_model_n_ctx_train(g_model));
+    if (!validate_dmc_runtime()) {
+        return 2;
+    }
+    LOGi("DMC_RUNTIME enabled=1 physical_context=%d logical_context=%d block=%d local=%d global=%d levels=%d",
+         runtime_context_window_size(g_context),
+         g_dmc_logical_context_window,
+         (int) runtime_dmc_config().block_size,
+         (int) runtime_dmc_config().local_window,
+         (int) runtime_dmc_config().global_tokens,
+         (int) runtime_dmc_config().replay_levels);
     return 0;
 }
 
@@ -319,7 +385,7 @@ Java_com_arm_aichat_internal_InferenceEngineImpl_systemInfo(JNIEnv *env, jobject
 extern "C"
 JNIEXPORT jint JNICALL
 Java_com_arm_aichat_internal_InferenceEngineImpl_nativeContextWindowSize(JNIEnv * /*env*/, jobject /*unused*/) {
-    return static_cast<jint>(runtime_context_window_size(g_context));
+    return static_cast<jint>(g_dmc_logical_context_window);
 }
 
 extern "C"
@@ -497,6 +563,10 @@ static void reset_long_term_states(const bool clear_kv_cache = true) {
     chat_msgs.clear();
     system_prompt_position = 0;
     current_position = 0;
+    g_dmc_token_history.clear();
+    g_dmc_system_tokens = 0;
+    g_dmc_has_compacted = false;
+    g_dmc_rebuild_count = 0;
 
     if (clear_kv_cache && g_context)
         llama_memory_clear(llama_get_memory(g_context), false);
@@ -504,18 +574,30 @@ static void reset_long_term_states(const bool clear_kv_cache = true) {
 
 /**
  * Completion loop's short-term states:
- * - stop generation position
+ * - optional explicit output-token limit
  * - token chars caching
  * - current assistant message being generated
  */
-static llama_pos stop_generation_position;
+static std::int64_t generation_token_limit;
+static std::int64_t generated_token_count;
+static bool assistant_message_finalized;
 static std::string cached_token_chars;
 static std::ostringstream assistant_ss;
 
 static void reset_short_term_states() {
-    stop_generation_position = 0;
+    generation_token_limit = -1;
+    generated_token_count = 0;
+    assistant_message_finalized = false;
     cached_token_chars.clear();
     assistant_ss.str("");
+}
+
+static void finalize_assistant_message() {
+    if (assistant_message_finalized) {
+        return;
+    }
+    format_chat_message(ROLE_ASSISTANT, strip_model_tags(assistant_ss.str()));
+    assistant_message_finalized = true;
 }
 
 static int decode_tokens_in_batches(
@@ -557,6 +639,60 @@ static int decode_tokens_in_batches(
     return 0;
 }
 
+static int rebuild_dmc_context(
+        const llama_tokens &logical_history,
+        const std::size_t physical_token_budget,
+        const bool compute_last_logit) {
+    if (g_context == nullptr || logical_history.empty()) {
+        LOGe("DMC_RUNTIME cannot rebuild an empty or unavailable context");
+        return 1;
+    }
+
+    try {
+        const auto plan = dmc::plan_runtime_context(
+            logical_history.size(),
+            physical_token_budget,
+            runtime_dmc_config());
+        if (plan.token_ids.empty()) {
+            LOGe("DMC_RUNTIME produced an empty token plan");
+            return 2;
+        }
+
+        llama_tokens selected_tokens;
+        selected_tokens.reserve(plan.token_ids.size());
+        for (const auto history_index : plan.token_ids) {
+            selected_tokens.push_back(logical_history.at(history_index));
+        }
+
+        llama_memory_clear(llama_get_memory(g_context), false);
+        if (decode_tokens_in_batches(
+                g_context,
+                g_batch,
+                selected_tokens,
+                0,
+                compute_last_logit)) {
+            LOGe("DMC_RUNTIME failed to rehydrate selected KV context");
+            return 3;
+        }
+
+        current_position = static_cast<llama_pos>(selected_tokens.size());
+        g_dmc_token_history = logical_history;
+        g_dmc_has_compacted = plan.compacted;
+        g_dmc_rebuild_count++;
+        LOGi("DMC_RUNTIME rebuild=%llu logical=%d selected=%d spans=%d physical_budget=%d compacted=%s",
+             (unsigned long long) g_dmc_rebuild_count,
+             (int) logical_history.size(),
+             (int) selected_tokens.size(),
+             (int) plan.spans.size(),
+             (int) physical_token_budget,
+             plan.compacted ? "true" : "false");
+        return 0;
+    } catch (const std::exception &e) {
+        LOGe("DMC_RUNTIME rebuild failed: %s", e.what());
+        return 4;
+    }
+}
+
 extern "C"
 JNIEXPORT jint JNICALL
 Java_com_arm_aichat_internal_InferenceEngineImpl_processSystemPrompt(
@@ -589,22 +725,32 @@ Java_com_arm_aichat_internal_InferenceEngineImpl_processSystemPrompt(
             LOGv("token: `%s`\t -> `%d`", common_token_to_piece(g_context, id).c_str(), id);
         }
 
-        // Handle context overflow
-        const int max_batch_size = runtime_context_limit(g_context);
-        if ((int) system_tokens.size() > max_batch_size) {
-            LOGe("%s: System prompt too long for context! %d tokens, max: %d",
-                 __func__, (int) system_tokens.size(), max_batch_size);
-            return 1;
+        g_dmc_system_tokens = system_tokens.size();
+        const int physical_budget = std::max(
+            1,
+            runtime_context_limit(g_context) - DMC_MIN_OUTPUT_RESERVE);
+        if ((int) system_tokens.size() > physical_budget) {
+            const int rebuild_result = rebuild_dmc_context(
+                system_tokens,
+                static_cast<std::size_t>(physical_budget),
+                false);
+            if (rebuild_result != 0) {
+                LOGe("%s: DMC system-prompt rebuild failed: %d", __func__, rebuild_result);
+                return 1;
+            }
+        } else {
+            if (decode_tokens_in_batches(g_context, g_batch, system_tokens, current_position)) {
+                LOGe("%s: llama_decode() failed!", __func__);
+                return 2;
+            }
+            current_position = static_cast<llama_pos>(system_tokens.size());
+            g_dmc_token_history = system_tokens;
+            LOGi("DMC_RUNTIME dense system prefix: logical=%d physical=%d",
+                 (int) g_dmc_token_history.size(),
+                 (int) current_position);
         }
 
-        // Decode system tokens in batches
-        if (decode_tokens_in_batches(g_context, g_batch, system_tokens, current_position)) {
-            LOGe("%s: llama_decode() failed!", __func__);
-            return 2;
-        }
-
-        // Update position
-        system_prompt_position = current_position = (int) system_tokens.size();
+        system_prompt_position = current_position;
         return 0;
     } catch (const std::exception &e) {
         LOGe("%s: failed: %s", __func__, e.what());
@@ -643,33 +789,53 @@ Java_com_arm_aichat_internal_InferenceEngineImpl_processUserPrompt(
             LOGv("token: `%s`\t -> `%d`", common_token_to_piece(g_context, id).c_str(), id);
         }
 
-        // Ensure user prompt doesn't exceed the remaining context window by truncating if necessary.
-        const int user_prompt_size = (int) user_tokens.size();
-        const int available_context = std::max(0, runtime_context_limit(g_context) - (int) current_position);
-        if (available_context == 0) {
-            LOGe("%s: No context remaining for user prompt", __func__);
-            return 1;
-        }
-        if (user_prompt_size > available_context) {
-            const int skipped_tokens = user_prompt_size - available_context;
-            user_tokens.resize(available_context);
-            LOGw("%s: User prompt too long! Skipped %d tokens!", __func__, skipped_tokens);
-        }
+        llama_tokens logical_history = g_dmc_token_history;
+        logical_history.insert(logical_history.end(), user_tokens.begin(), user_tokens.end());
 
-        // Decode user tokens in batches
-        if (decode_tokens_in_batches(g_context, g_batch, user_tokens, current_position, true)) {
-            LOGe("%s: llama_decode() failed!", __func__);
-            return 2;
-        }
+        const int context_limit = runtime_context_limit(g_context);
+        const int requested_output_reserve = n_predict < 0
+            ? DMC_CONTINUATION_RESERVE
+            : std::max(DMC_MIN_OUTPUT_RESERVE, (int) n_predict);
+        const int output_reserve = std::min(
+            requested_output_reserve,
+            std::max(1, context_limit / 2));
+        const int physical_prompt_budget = std::max(1, context_limit - output_reserve);
+        const bool logical_history_exceeds_budget =
+            logical_history.size() > static_cast<std::size_t>(physical_prompt_budget);
+        const bool physical_history_exceeds_budget =
+            current_position + static_cast<llama_pos>(user_tokens.size()) > physical_prompt_budget;
+        const bool use_dmc_selection =
+            logical_history_exceeds_budget && physical_history_exceeds_budget;
 
-        // Update the generation stop position without exceeding the native window.
-        current_position += (int) user_tokens.size();
-        const llama_pos generation_limit = runtime_context_limit(g_context);
-        if (n_predict < 0) {
-            stop_generation_position = generation_limit;
+        if (use_dmc_selection) {
+            const int rebuild_result = rebuild_dmc_context(
+                logical_history,
+                static_cast<std::size_t>(physical_prompt_budget),
+                true);
+            if (rebuild_result != 0) {
+                LOGe("%s: DMC user-prompt rebuild failed: %d", __func__, rebuild_result);
+                return 1;
+            }
         } else {
-            stop_generation_position = std::min(current_position + n_predict, generation_limit);
+            if (decode_tokens_in_batches(g_context, g_batch, user_tokens, current_position, true)) {
+                LOGe("%s: llama_decode() failed!", __func__);
+                return 2;
+            }
+            current_position += static_cast<llama_pos>(user_tokens.size());
+            g_dmc_token_history = std::move(logical_history);
+            LOGi("DMC_RUNTIME incremental turn: mode=%s logical=%d physical=%d budget=%d",
+                 g_dmc_has_compacted ? "selected-reuse" : "dense",
+                 (int) g_dmc_token_history.size(),
+                 (int) current_position,
+                 physical_prompt_budget);
         }
+
+        // A negative value means generate until model EOG. The physical KV
+        // window is compacted by DMC during generation and is not an output cap.
+        generation_token_limit = n_predict > 0 ? n_predict : -1;
+        LOGi("GENERATION limit=%lld (%s)",
+             (long long) generation_token_limit,
+             generation_token_limit < 0 ? "model-eog" : "explicit");
         return 0;
     } catch (const std::exception &e) {
         LOGe("%s: failed: %s", __func__, e.what());
@@ -717,17 +883,35 @@ Java_com_arm_aichat_internal_InferenceEngineImpl_generateNextToken(
         JNIEnv *env,
         jobject /*unused*/
 ) {
-    // Stop generation once the fixed mobile context window is full.
-    const int context_limit = runtime_context_limit(g_context);
-    if (current_position >= context_limit) {
-        LOGw("%s: Context full; stopping generation at position %d", __func__, current_position);
+    if (generation_token_limit >= 0 && generated_token_count >= generation_token_limit) {
+        LOGi("GENERATION explicit token limit reached: %lld", (long long) generation_token_limit);
+        finalize_assistant_message();
         return nullptr;
     }
 
-    // Stop if reaching the marked position
-    if (current_position >= stop_generation_position) {
-        LOGw("%s: STOP: hitting stop position: %d", __func__, stop_generation_position);
-        return nullptr;
+    // The canonical history is larger than the mobile KV cache. Rehydrate a
+    // DMC-selected context and continue from its final token instead of
+    // silently truncating a visible answer at the physical context boundary.
+    const int context_limit = runtime_context_limit(g_context);
+    if (current_position >= context_limit) {
+        const int continuation_budget = std::max(1, context_limit - DMC_CONTINUATION_RESERVE);
+        LOGi("DMC_RUNTIME generation continuation: logical=%d physical=%d budget=%d",
+             (int) g_dmc_token_history.size(),
+             (int) current_position,
+             continuation_budget);
+        const int rebuild_result = rebuild_dmc_context(
+            g_dmc_token_history,
+            static_cast<std::size_t>(continuation_budget),
+            true);
+        if (rebuild_result != 0 || current_position >= context_limit) {
+            LOGe("%s: DMC continuation rebuild failed: result=%d physical=%d limit=%d",
+                 __func__, rebuild_result, (int) current_position, context_limit);
+            jclass exception_class = env->FindClass("java/lang/IllegalStateException");
+            if (exception_class != nullptr) {
+                env->ThrowNew(exception_class, "DMC could not continue generation after KV compaction");
+            }
+            return nullptr;
+        }
     }
 
     // Sample next token
@@ -742,15 +926,19 @@ Java_com_arm_aichat_internal_InferenceEngineImpl_generateNextToken(
         return nullptr;
     }
 
-    // Update position
+    // Preserve every decoded token in the canonical logical history, including
+    // EOG. DMC can therefore rebuild the exact same chat-template stream later.
+    g_dmc_token_history.push_back(new_token_id);
     current_position++;
 
     // Stop if next token is EOG
     if (llama_vocab_is_eog(llama_model_get_vocab(g_model), new_token_id)) {
-        LOGd("id: %d,\tIS EOG!\nSTOP.", new_token_id);
-        format_chat_message(ROLE_ASSISTANT, strip_model_tags(assistant_ss.str()));
+        LOGi("GENERATION completed by model EOG after %lld tokens", (long long) generated_token_count);
+        finalize_assistant_message();
         return nullptr;
     }
+
+    generated_token_count++;
 
     // If not EOG, convert to text
     auto new_token_chars = common_token_to_piece(g_context, new_token_id);
@@ -869,6 +1057,7 @@ Java_com_arm_aichat_internal_InferenceEngineImpl_unload(JNIEnv * /*unused*/, job
         llama_model_free(g_model);
         g_model = nullptr;
     }
+    g_dmc_logical_context_window = 0;
 }
 
 extern "C"

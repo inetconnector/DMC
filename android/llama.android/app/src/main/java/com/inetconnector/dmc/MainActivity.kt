@@ -455,6 +455,8 @@ class MainActivity : AppCompatActivity() {
                         document.documentElement.style.background = '#0F172A';
                         document.body.style.background = '#0F172A';
                         document.body.style.color = '#F8FAFC';
+                        window.__DMC_NATIVE_DICTATION__ = true;
+                        window.dispatchEvent(new Event('dmc-native-dictation-ready'));
                       } catch (e) {}
                     })();
                     """.trimIndent(),
@@ -2580,9 +2582,11 @@ class MainActivity : AppCompatActivity() {
                     emitDoneMarker()
                     streamSession?.finish()
                 }
+            } finally {
+                // Closing the reader here races NanoHTTPD and can discard the final
+                // finish chunk and [DONE] marker. EOF is signalled by the writer only.
+                runCatching { output.close() }
             }
-            runCatching { output.close() }
-            runCatching { input.close() }
         }
         streamSession?.attachJob(job)
 
@@ -2936,7 +2940,7 @@ class MainActivity : AppCompatActivity() {
 
     /**
      * Accept both OpenAI-style `max_tokens` and llama.cpp-style `n_predict`.
-     * Treat missing values as a request for a local default, but preserve
+     * Treat missing values as unlimited generation, but preserve
      * explicit zero so cache-warming requests can skip generation entirely.
      */
     private fun resolvePredictLength(body: JSONObject): Int {
@@ -2951,7 +2955,7 @@ class MainActivity : AppCompatActivity() {
         }
         val fallback = InferenceEngine.DEFAULT_PREDICT_LENGTH
         return when {
-            candidate > 0 -> candidate.coerceIn(1, 4096)
+            candidate > 0 -> candidate
             candidate < 0 -> -1
             hasMaxCompletionTokens || hasMaxTokens || hasNPredict -> 0
             else -> fallback
@@ -3479,6 +3483,14 @@ private class LocalApiServer(
     private val streamRegistry: StreamSessionRegistry,
     private val artifactsRootResolver: () -> File
 ) : NanoHTTPD("127.0.0.1", port) {
+    override fun useGzipWhenAccepted(response: Response): Boolean {
+        // GZIPOutputStream buffers tiny SSE frames, which makes token streaming appear
+        // as one complete response in Android WebView. Keep compression for static UI
+        // assets, but send chat-completion events directly as they are generated.
+        return !response.mimeType.orEmpty().startsWith("text/event-stream", ignoreCase = true) &&
+            super.useGzipWhenAccepted(response)
+    }
+
     override fun serve(session: IHTTPSession): Response {
         return try {
             Log.i("LocalApiServer", "serve ${session.method} ${session.uri}")
@@ -3680,8 +3692,9 @@ private class LocalApiServer(
                     Log.w("LocalApiServer", "stream replay offset lost while serving $conversationId")
                 }
             } finally {
+                // NanoHTTPD owns the input side while sending the chunked response.
+                // Closing the writer is sufficient to deliver EOF after buffered data.
                 runCatching { output.close() }
-                runCatching { input.close() }
             }
         }
 

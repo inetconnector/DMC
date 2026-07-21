@@ -215,6 +215,16 @@ if errorlevel 1 (
 call :select_device
 if errorlevel 1 goto :fail
 
+if /I "%ANDROID_SKIP_WEBUI_BUILD%"=="1" (
+  echo [WARN] Skipping Android Web UI rebuild because ANDROID_SKIP_WEBUI_BUILD=1.
+) else (
+  powershell.exe -NoProfile -ExecutionPolicy Bypass -File "%ROOT%\scripts\windows\prepare-android-webui.ps1" -RepositoryRoot "%ROOT%"
+  if errorlevel 1 (
+    echo [ERROR] Android Web UI build failed.
+    goto :fail
+  )
+)
+
 echo [INFO] Building Android app...
 pushd "%ANDROID_DIR%"
 if /I "%VARIANT%"=="release" (

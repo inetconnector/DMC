@@ -43,6 +43,11 @@ def test_span_lengths_follow_the_hierarchy():
     assert replay_spans[0].last_pos - replay_spans[0].first_pos + 1 == 8
     assert replay_spans[1].last_pos - replay_spans[1].first_pos + 1 == 16
     assert replay_spans[2].last_pos - replay_spans[2].first_pos + 1 == 32
+    assert [(span.first_pos, span.last_pos) for span in replay_spans] == [
+        (80, 87),
+        (64, 79),
+        (32, 63),
+    ]
 
 
 def test_selection_stays_isolated_per_sequence():

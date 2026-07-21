@@ -128,24 +128,22 @@ class DMCIndex:
         spans: list[Span] = []
         local_start = max(0, current_pos - self.cfg.local_window + 1)
 
-        spans.append(self._build_span(seq_id, refs, local_start, current_pos, level=0))
+        if self.cfg.local_window > 0:
+            spans.append(self._build_span(seq_id, refs, local_start, current_pos, level=0))
 
         if self.cfg.global_tokens > 0:
             global_end = min(self.cfg.global_tokens - 1, current_pos)
             if global_end >= 0:
                 spans.append(self._build_span(seq_id, refs, 0, global_end, level=0))
 
-        history_end = local_start - 1
+        replay_stride = max(self.cfg.local_window, self.cfg.block_size)
         for level in range(self.cfg.replay_levels):
-            if history_end < 0:
+            distance = replay_stride << level
+            end = current_pos - distance
+            if end < 0:
                 break
             span_size = self.cfg.block_size << level
-            end = ((history_end + 1) // span_size) * span_size - 1
-            if end < 0:
-                continue
             start = max(0, end - span_size + 1)
-            if start >= local_start:
-                continue
             spans.append(self._build_span(seq_id, refs, start, end, level=level + 1))
 
         token_ids = _unique_preserve_order(

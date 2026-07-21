@@ -38,6 +38,13 @@ struct Selection {
     std::vector<Span> spans;
 };
 
+struct RuntimePlan {
+    std::size_t logical_token_count = 0;
+    std::vector<std::uint32_t> token_ids;
+    std::vector<Span> spans;
+    bool compacted = false;
+};
+
 inline void validate_qkv(const std::vector<float> & q,
                          const std::vector<float> & k,
                          const std::vector<float> & v,
@@ -198,11 +205,13 @@ public:
         }
 
         std::vector<Span> spans;
-        const std::int64_t local_start = current_pos > static_cast<std::int64_t>(cfg_.local_window)
+        const std::int64_t local_start = current_pos >= static_cast<std::int64_t>(cfg_.local_window)
             ? current_pos - static_cast<std::int64_t>(cfg_.local_window) + 1
             : 0;
 
-        spans.push_back(build_span(seq_id, causal_refs, local_start, current_pos, 0));
+        if (cfg_.local_window > 0) {
+            spans.push_back(build_span(seq_id, causal_refs, local_start, current_pos, 0));
+        }
         if (cfg_.global_tokens > 0) {
             const std::int64_t global_end = std::min<std::int64_t>(
                 static_cast<std::int64_t>(cfg_.global_tokens) - 1, current_pos);
@@ -211,21 +220,21 @@ public:
             }
         }
 
-        const std::int64_t history_end = local_start - 1;
+        const std::size_t replay_stride = std::max(cfg_.local_window, cfg_.block_size);
         for (std::size_t level = 0; level < cfg_.replay_levels; ++level) {
-            if (history_end < 0) {
+            if (level >= std::numeric_limits<std::size_t>::digits ||
+                replay_stride > (std::numeric_limits<std::size_t>::max() >> level) ||
+                cfg_.block_size > (std::numeric_limits<std::size_t>::max() >> level)) {
                 break;
             }
+            const std::size_t distance = replay_stride << level;
+            if (distance > static_cast<std::size_t>(current_pos)) {
+                break;
+            }
+            const std::int64_t end = current_pos - static_cast<std::int64_t>(distance);
             const std::size_t span_size = cfg_.block_size << level;
-            const std::int64_t end = static_cast<std::int64_t>(((history_end + 1) / span_size) * span_size - 1);
-            if (end < 0) {
-                continue;
-            }
             const std::int64_t start = std::max<std::int64_t>(0, end - static_cast<std::int64_t>(span_size) + 1);
-            if (start >= local_start) {
-                continue;
-            }
-            spans.push_back(build_span(seq_id, seq_refs, start, end, level + 1));
+            spans.push_back(build_span(seq_id, causal_refs, start, end, level + 1));
         }
 
         Selection out;
@@ -282,5 +291,109 @@ private:
         return span;
     }
 };
+
+// Builds the deterministic token plan consumed by an inference runtime. Short
+// histories remain dense; histories above the physical budget use the same
+// multiresolution selector as the reference attention path. Returned token IDs
+// are sorted chronologically because a decoder must rehydrate KV state in
+// causal order even though attention itself is insensitive to selection order.
+inline RuntimePlan plan_runtime_context(
+        std::size_t token_count,
+        std::size_t physical_token_budget,
+        DMCConfig cfg = DMCConfig{}) {
+    if (physical_token_budget == 0) {
+        throw std::invalid_argument("physical_token_budget must be positive");
+    }
+    if (token_count > static_cast<std::size_t>(std::numeric_limits<std::uint32_t>::max())) {
+        throw std::overflow_error("DMC runtime history exceeds 32-bit token addressing");
+    }
+
+    RuntimePlan plan;
+    plan.logical_token_count = token_count;
+    if (token_count == 0) {
+        return plan;
+    }
+
+    if (token_count <= physical_token_budget) {
+        plan.token_ids.reserve(token_count);
+        for (std::size_t i = 0; i < token_count; ++i) {
+            plan.token_ids.push_back(static_cast<std::uint32_t>(i));
+        }
+        return plan;
+    }
+
+    std::vector<TokenRef> refs;
+    refs.reserve(token_count);
+    for (std::size_t i = 0; i < token_count; ++i) {
+        refs.push_back(TokenRef{
+            static_cast<std::uint32_t>(i),
+            static_cast<std::int64_t>(i),
+            0,
+        });
+    }
+
+    DMCIndex index(cfg);
+    index.rebuild(refs);
+    auto selection = index.select(0, static_cast<std::int64_t>(token_count - 1));
+    plan.spans = selection.spans;
+    plan.token_ids = std::move(selection.token_ids);
+    std::sort(plan.token_ids.begin(), plan.token_ids.end());
+    plan.token_ids.erase(
+        std::unique(plan.token_ids.begin(), plan.token_ids.end()),
+        plan.token_ids.end());
+
+    // A constrained physical runtime still gives priority to the global prefix
+    // and recent local window. Remaining replay tokens fill the free budget in
+    // deterministic chronological order.
+    if (plan.token_ids.size() > physical_token_budget) {
+        std::vector<std::uint32_t> bounded;
+        bounded.reserve(physical_token_budget);
+        std::unordered_set<std::uint32_t> seen;
+
+        const std::size_t global_keep = std::min({
+            cfg.global_tokens,
+            token_count,
+            physical_token_budget / 4,
+        });
+        for (std::size_t i = 0; i < global_keep; ++i) {
+            const auto id = static_cast<std::uint32_t>(i);
+            if (seen.insert(id).second) {
+                bounded.push_back(id);
+            }
+        }
+
+        const std::size_t local_capacity = physical_token_budget - bounded.size();
+        const std::size_t local_keep = std::min({
+            cfg.local_window,
+            token_count,
+            local_capacity,
+        });
+        const std::size_t local_begin = token_count - local_keep;
+        for (std::size_t i = local_begin; i < token_count; ++i) {
+            const auto id = static_cast<std::uint32_t>(i);
+            if (seen.insert(id).second) {
+                bounded.push_back(id);
+            }
+        }
+
+        for (const auto id : plan.token_ids) {
+            if (bounded.size() == physical_token_budget) {
+                break;
+            }
+            if (seen.insert(id).second) {
+                bounded.push_back(id);
+            }
+        }
+
+        std::sort(bounded.begin(), bounded.end());
+        plan.token_ids = std::move(bounded);
+    }
+
+    if (plan.token_ids.empty() || plan.token_ids.back() != token_count - 1) {
+        throw std::runtime_error("DMC runtime plan does not contain the newest token");
+    }
+    plan.compacted = true;
+    return plan;
+}
 
 } // namespace dmc
