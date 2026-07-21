@@ -106,6 +106,12 @@ SSE producer closes only its writer after the final `[DONE]` marker; NanoHTTPD
 owns the reader until delivery completes, preventing false reconnect banners
 after an otherwise successful answer.
 
+Image attachments from both the file picker and the camera use the same local
+multimodal bridge. Android decodes the Web UI's base64 image part, runs the
+existing on-device ML Kit OCR and image-labeling pipeline, and appends that
+analysis to the user's original question before DMC/Gemma inference. Raw image
+data never leaves the device and temporary files are deleted immediately.
+
 The current DMC-enabled debug APK was built successfully at:
 
 `android/llama.android/app/build/outputs/apk/debug/app-debug.apk`

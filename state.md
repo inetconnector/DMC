@@ -59,9 +59,8 @@ Update this file and `README.md` together whenever behavior changes.
 - The standalone Android app exists in `android/llama.android/`.
 - The Android build/install helpers rebuild the Svelte UI and synchronize it
   into the Android assets before Gradle runs, preventing stale UI bundles.
-- The previous Android build/install succeeded on a connected phone. The new
-  DMC-enabled APK is built but has not yet been installed because the phone
-  disappeared from ADB after the build.
+- The DMC-enabled debug APK was rebuilt and installed as a data-preserving
+  update on Samsung `SM-S931B` on 2026-07-21.
 - The microphone and normal submit button are independently visible on Android.
 - A nonempty native dictation result is passed directly to the normal submit
   handler and sent immediately; an empty result or cancellation sends nothing.
@@ -81,6 +80,14 @@ Update this file and `README.md` together whenever behavior changes.
 - The Android WebView bootstrap now exposes native dictation support to the UI
   by setting `window.__DMC_NATIVE_DICTATION__ = true` and emitting
   `dmc-native-dictation-ready`.
+- Image attachments are no longer discarded when the same user message also
+  contains a question. The Android completion path now resolves multipart
+  `image_url` content, decodes local base64 image data, reuses the on-device ML
+  Kit OCR/image-labeling analyzer, and appends the result to the original user
+  text before inference. Gallery and camera attachments share this API path.
+- A device-side `/v1/chat/completions` test with a real JPEG confirmed
+  `images=1`, `analyzedImages=1`, OCR output, and an 843-character enriched
+  native prompt instead of the previous text-only prompt.
 
 ## Current Open Issues To Recheck
 
@@ -100,6 +107,11 @@ Update this file and `README.md` together whenever behavior changes.
   Android flow and needs a full localization audit.
 - Attachment flow changes, especially the camera/photo action in the add menu,
   need device QA.
+- The image transport and local analysis path is verified, but the current
+  Gemma test still answered as if the image were unavailable despite receiving
+  OCR context. Prompt behavior and OCR latency/quality therefore still require
+  an end-user regression pass; transport must not be misdiagnosed again as the
+  remaining model-response issue.
 - Any black-screen or stuck-processing behavior after app start or after model
   load must be treated as a regression and reproduced before fixing.
 - The stop/pause button state after sending a message should be verified after
@@ -139,6 +151,11 @@ Update this file and `README.md` together whenever behavior changes.
 - `MainActivity.kt` tells the WebView bootstrap that native dictation is
   available, disables GZIP only for `text/event-stream` responses, and leaves
   the stream reader owned by NanoHTTPD until all final bytes are delivered.
+- `MainActivity.kt` now treats the latest multipart user turn atomically:
+  question text and attached images are combined instead of selecting text and
+  skipping the image fallback. It accepts up to four local image data URLs,
+  limits encoded/context sizes, logs metadata only, and removes temporary image
+  files after local analysis.
 - `ChatForm.svelte` refreshes dictation availability after WebView init and
   submits the recognized text as an explicit message value.
 - `ChatScreenForm.svelte` accepts that explicit value, so auto-submit does not
