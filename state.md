@@ -17,6 +17,10 @@ Update this file and `README.md` together whenever behavior changes.
   files remain in the ignored `publish/` directory, on the DiskStation, and as
   downloadable GitHub Release assets.
 - Active target: DMC (Deterministic Multiresolution Context)
+- `docs/LARGE_CONTEXT.md` and `docs/GROSSER_KONTEXT.md` document the implemented
+  Android long-context pipeline in accessible English and German, including
+  the logical/physical context split, deterministic span selection, KV
+  rehydration, continuation, diagnostics, and current limitations.
 
 ## Verified Working
 

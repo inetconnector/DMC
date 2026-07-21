@@ -10,6 +10,10 @@ to validate than a more ad hoc retrieval system.
 ## Current State
 
 - `README.md` and `state.md` are the living project documents.
+- [`docs/LARGE_CONTEXT.md`](docs/LARGE_CONTEXT.md) and
+  [`docs/GROSSER_KONTEXT.md`](docs/GROSSER_KONTEXT.md) explain the Android
+  long-context architecture in accessible English and German, including its
+  algorithm, runtime limits, and trade-offs.
 - `docs/TARGET_STATE.md` is the concise capability target.
 - The code in `dmc/` and `cpp/` is the reference implementation.
 - The Android native runtime now compiles that same C++ DMC selector into
