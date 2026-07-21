@@ -17,9 +17,7 @@ to validate than a more ad hoc retrieval system.
 - The local runtime in `scripts/windows/` runs `llama.cpp` on your own machine.
 - The Android app lives in `android/llama.android/` and is built from the root
   helper scripts.
-- The current DMC-enabled Android APK builds successfully. Its final model-load
-  regression test is pending because the phone disconnected from ADB after the
-  build.
+- DMC Android V1.0 is available as a signed APK from GitHub Releases.
 - The design focuses on long context first, quality second, speed third.
 - The repository is licensed under MIT.
 - Nothing in this repository should be read as a patent clearance opinion or
@@ -56,6 +54,14 @@ It prints the primary LAN IPv4 address that the phone can use.
 
 The standalone Android app now lives in `android/llama.android/` and is
 checked in alongside the DMC stack.
+
+**Download:** [DMC Android V1.0 release](https://github.com/inetconnector/DMC/releases/tag/android-v1.0.0)
+or [download the signed APK directly](https://github.com/inetconnector/DMC/releases/download/android-v1.0.0/com.inetconnector.dmc-1.0.0%2B1-release.apk).
+
+The APK requires Android 13 or newer. It contains no AI model; install the APK,
+allow installation from the selected browser or file manager when Android asks,
+then import or download a compatible local GGUF model inside the app. Large
+models require several gigabytes of free storage.
 
 Use these helpers from the repository root:
 
@@ -119,6 +125,10 @@ The current DMC-enabled debug APK was built successfully at:
 The current signed release was built successfully at:
 
 `android/llama.android/app/build/outputs/apk/release/app-release.apk`
+
+Release APK SHA-256:
+
+`0A0FDDD7AB37FE0B80AFDA2A6CF24D11F32804B8CF989756284176A395B709F5`
 
 Published APK/AAB files are kept under the ignored `publish/` directory. The
 current release APK and AAB were also copied to `\\diskstation.fritz.box\Dani`

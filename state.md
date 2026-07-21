@@ -8,13 +8,14 @@ Update this file and `README.md` together whenever behavior changes.
 ## Snapshot
 
 - Repository root: `C:\Users\frede\Projekte\AHSMA`
-- Branch: `develop`
+- Branches: `master` and `develop` are kept at the same released revision.
 - Commit: use `git rev-parse --short HEAD` for the current revision; this file
   deliberately avoids embedding a hash that becomes stale in its own commit.
 - Tracked state: Android dictation/SSE fixes, reproducible Web UI integration,
   native DMC runtime and continuation, DMC regression gates, and refreshed
-  documentation are integrated on `develop`. Generated APK/AAB files remain in
-  the ignored `publish/` directory and on the DiskStation.
+  documentation are integrated on `master` and `develop`. Generated APK/AAB
+  files remain in the ignored `publish/` directory, on the DiskStation, and as
+  downloadable GitHub Release assets.
 - Active target: DMC (Deterministic Multiresolution Context)
 
 ## Verified Working
@@ -74,9 +75,18 @@ Update this file and `README.md` together whenever behavior changes.
   encoding, or network error after completion.
 - The debug APK path is
   `android/llama.android/app/build/outputs/apk/debug/app-debug.apk`.
-- The signed release APK and AAB were rebuilt on 2026-07-21 and copied to
-  `\\diskstation.fritz.box\Dani`. The local and remote release APK SHA-256 is
-  `B7CEEA47A02F3DC21ED9DEA2F6FA37693B006BE7BB3E0C06F1CDF2035840FCF2`.
+- The signed release APK and AAB were rebuilt from the V1.0 source on
+  2026-07-21. Android `apksigner` verifies the APK with v2 signing and the
+  expected InetConnector certificate fingerprint
+  `649A7EC870A7D18E5AF0AF12F0AC63B27F15DB864E28FECA9DA5FCF94AB8EC0F`.
+  The release APK SHA-256 is
+  `0A0FDDD7AB37FE0B80AFDA2A6CF24D11F32804B8CF989756284176A395B709F5`;
+  the AAB SHA-256 is
+  `6BDC8D8DBFD761250AE9FDBBEAF943FDA23C99DAEA5D8A2CD9923E58E003E2F6`.
+- The public Android V1.0 release uses tag `android-v1.0.0` because the older
+  repository tag `v1.0.0` already identifies a pre-Android project milestone
+  and must not be moved. The release page is
+  `https://github.com/inetconnector/DMC/releases/tag/android-v1.0.0`.
 - The Android WebView bootstrap now exposes native dictation support to the UI
   by setting `window.__DMC_NATIVE_DICTATION__ = true` and emitting
   `dmc-native-dictation-ready`.
@@ -116,6 +126,10 @@ Update this file and `README.md` together whenever behavior changes.
   load must be treated as a regression and reproduced before fixing.
 - The stop/pause button state after sending a message should be verified after
   each release build.
+- The Web UI release build succeeds but currently reports non-fatal warnings
+  for duplicate `MCP Resources` translation keys, missing ARIA roles on swipe
+  containers, one Svelte state-capture warning, and a Rollup circular re-export.
+  These warnings should be cleaned up before the next release.
 
 ## Recent Change
 
