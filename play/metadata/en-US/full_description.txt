@@ -1,0 +1,24 @@
+DMC brings capable AI conversations directly to your Android device. Run compatible GGUF language models locally, keep long conversations available, and receive responses as they are generated.
+
+LOCAL-FIRST AI
+Your model and conversations stay on your device during local inference. No cloud account is required for chatting. An internet connection is needed only when you choose to download a model or obtain external reference data.
+
+LONG, RELIABLE CONTEXT
+Deterministic Multiresolution Context (DMC) preserves important parts of long histories when the physical model cache fills. It combines a stable global prefix, recent conversation detail and deterministic replay levels without recursively summarizing your original text. The available context size depends on the selected model and device resources.
+
+MULTIMODAL INPUT
+Attach images, take a photo, add text documents or PDFs, and use voice input. Image and audio capabilities depend on the selected model. Responses stream into the conversation while the model is working.
+
+OFFLINE KNOWLEDGE MODULES
+Import supported reference packages and enable or disable them as needed. Official classification data is not bundled with DMC; obtain it from the respective publisher and follow its licence terms. Imported modules remain on the device.
+
+BUILT FOR CONTROL
+- Local GGUF model management
+- Resumable model downloads
+- Persistent chats with isolated conversation context
+- Import and export for conversations, settings and models
+- Camera, image, audio, text and PDF attachments
+- Configurable generation and sampling settings
+- CPU-focused Android inference
+
+Model compatibility, speed and maximum context vary by model, quantization, available memory and device. DMC is a general-purpose AI tool. Imported medical classifications are reference data and do not replace professional medical advice, diagnosis or treatment.

@@ -1,0 +1,24 @@
+DMC leva conversas avançadas com IA diretamente para seu dispositivo Android. Execute modelos de linguagem GGUF compatíveis de forma local, mantenha conversas longas no contexto e acompanhe as respostas enquanto são geradas.
+
+IA LOCAL
+O modelo e as conversas permanecem no dispositivo durante a inferência local. Não é necessário ter uma conta na nuvem para conversar. A conexão com a Internet só é usada quando você decide baixar um modelo ou dados de referência externos.
+
+CONTEXTO LONGO E CONFIÁVEL
+Deterministic Multiresolution Context (DMC) preserva partes importantes de históricos longos quando o cache físico do modelo fica cheio. Ele combina um prefixo global estável, detalhes recentes e níveis determinísticos de repetição sem resumir recursivamente os textos originais. O tamanho disponível depende do modelo e dos recursos do dispositivo.
+
+ENTRADAS MULTIMODAIS
+Anexe imagens, tire uma foto, adicione documentos de texto ou PDF e use a entrada por voz. Os recursos de imagem e áudio dependem do modelo selecionado. As respostas são exibidas por streaming durante o processamento.
+
+MÓDULOS DE CONHECIMENTO OFFLINE
+Importe pacotes de referência compatíveis e ative ou desative quando necessário. O DMC não inclui dados oficiais de classificação. Obtenha-os com o publicador responsável e siga os termos da licença. Os módulos importados permanecem no dispositivo.
+
+PRINCIPAIS RECURSOS
+- Gerenciamento local de modelos GGUF
+- Downloads de modelos que podem ser retomados
+- Chats persistentes com contexto separado
+- Importação e exportação de conversas, configurações e modelos
+- Anexos de câmera, imagem, áudio, texto e PDF
+- Opções configuráveis de geração e amostragem
+- Inferência Android focada em CPU
+
+Compatibilidade, velocidade e contexto máximo variam conforme o modelo, a quantização, a memória disponível e o dispositivo. DMC é uma ferramenta de IA de uso geral. Classificações médicas importadas servem como referência e não substituem orientação, diagnóstico ou tratamento médico profissional.

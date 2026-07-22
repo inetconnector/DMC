@@ -1,0 +1,1 @@
+Privé lokale AI met lange context, beeldanalyse en offline kennis.

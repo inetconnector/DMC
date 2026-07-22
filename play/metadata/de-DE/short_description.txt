@@ -1,0 +1,1 @@
+Private lokale KI mit Langkontext, Bildanalyse und Offline-Wissen.

@@ -1,0 +1,24 @@
+DMC brengt krachtige AI-gesprekken rechtstreeks naar je Android-apparaat. Voer compatibele GGUF-taalmodellen lokaal uit, houd lange gesprekken in context en zie antwoorden verschijnen terwijl ze worden gegenereerd.
+
+LOKALE AI
+Het model en je gesprekken blijven tijdens lokale inferentie op het apparaat. Voor chatten is geen cloudaccount nodig. Een internetverbinding is alleen nodig wanneer je zelf een model of externe referentiegegevens downloadt.
+
+LANGE, BETROUWBARE CONTEXT
+Deterministic Multiresolution Context (DMC) bewaart belangrijke delen van lange geschiedenissen wanneer de fysieke modelcache vol raakt. Het combineert een stabiel globaal begin, recente gespreksdetails en deterministische herhalingsniveaus zonder je oorspronkelijke tekst telkens samen te vatten. De beschikbare context hangt af van het model en de apparaatbronnen.
+
+MULTIMODALE INVOER
+Voeg afbeeldingen toe, maak een foto, voeg tekstbestanden of pdf's toe en gebruik spraakinvoer. Beeld- en audiomogelijkheden hangen af van het gekozen model. Antwoorden worden tijdens de berekening direct gestreamd.
+
+OFFLINE KENNISMODULES
+Importeer ondersteunde referentiepakketten en schakel ze naar behoefte in of uit. Officiële classificatiegegevens zijn niet inbegrepen in DMC. Download ze bij de betreffende uitgever en volg de licentievoorwaarden. Geïmporteerde modules blijven op het apparaat.
+
+BELANGRIJKSTE FUNCTIES
+- Lokaal beheer van GGUF-modellen
+- Hervatbare modeldownloads
+- Blijvende chats met gescheiden gesprekscontext
+- Import en export van chats, instellingen en modellen
+- Camera-, beeld-, audio-, tekst- en pdf-bijlagen
+- Instelbare generatie- en samplingopties
+- CPU-gerichte Android-inferentie
+
+Compatibiliteit, snelheid en maximale context verschillen per model, kwantisatie, beschikbaar geheugen en apparaat. DMC is een algemeen AI-hulpmiddel. Geïmporteerde medische classificaties zijn referentiemateriaal en vervangen geen professioneel medisch advies, diagnose of behandeling.

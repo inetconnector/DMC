@@ -1,0 +1,24 @@
+DMC, güçlü yapay zeka sohbetlerini doğrudan Android cihazınıza getirir. Uyumlu GGUF dil modellerini yerel olarak çalıştırın, uzun sohbetleri bağlamda tutun ve yanıtları oluşturulurken görün.
+
+YEREL YAPAY ZEKA
+Yerel çıkarım sırasında model ve sohbetler cihazınızda kalır. Sohbet etmek için bulut hesabı gerekmez. İnternet bağlantısı yalnızca bir model veya harici referans verisi indirmeyi seçtiğinizde gerekir.
+
+UZUN VE GÜVENİLİR BAĞLAM
+Deterministic Multiresolution Context (DMC), fiziksel model önbelleği dolduğunda uzun geçmişlerin önemli bölümlerini korur. Özgün metninizi tekrar tekrar özetlemeden kararlı bir genel başlangıcı, son sohbet ayrıntılarını ve deterministik yeniden oynatma katmanlarını birleştirir. Kullanılabilir bağlam boyutu modele ve cihaz kaynaklarına bağlıdır.
+
+ÇOK MODLU GİRDİ
+Görsel ekleyin, fotoğraf çekin, metin belgesi veya PDF yükleyin ve sesli girişi kullanın. Görsel ve ses yetenekleri seçilen modele bağlıdır. Yanıtlar hesaplama sürerken akış halinde gösterilir.
+
+ÇEVRİMDIŞI BİLGİ MODÜLLERİ
+Desteklenen referans paketlerini içe aktarın ve gerektiğinde etkinleştirin veya devre dışı bırakın. Resmî sınıflandırma verileri DMC ile birlikte sunulmaz. Verileri ilgili yayıncıdan edinin ve lisans koşullarına uyun. İçe aktarılan modüller cihazda kalır.
+
+TEMEL ÖZELLİKLER
+- Yerel GGUF model yönetimi
+- Devam ettirilebilir model indirmeleri
+- Ayrılmış sohbet bağlamına sahip kalıcı konuşmalar
+- Sohbet, ayar ve model içe/dışa aktarma
+- Kamera, görsel, ses, metin ve PDF ekleri
+- Yapılandırılabilir üretim ve örnekleme seçenekleri
+- CPU odaklı Android çıkarımı
+
+Model uyumluluğu, hız ve azami bağlam; modele, nicelemeye, kullanılabilir belleğe ve cihaza göre değişir. DMC genel amaçlı bir yapay zeka aracıdır. İçe aktarılan tıbbi sınıflandırmalar referans niteliğindedir ve profesyonel tıbbi tavsiye, tanı veya tedavinin yerini almaz.

@@ -1,0 +1,38 @@
+[
+  {
+    "language": "en-US",
+    "text": "Initial DMC release with local GGUF chat, 131K model context support, streaming responses, image and document attachments, voice input, persistent conversations and optional offline knowledge modules."
+  },
+  {
+    "language": "de-DE",
+    "text": "Erste DMC-Version mit lokalem GGUF-Chat, Unterstützung für 131K Modellkontext, Streaming-Antworten, Bild- und Dokumentanhängen, Spracheingabe, gespeicherten Unterhaltungen und optionalen Offline-Wissensmodulen."
+  },
+  {
+    "language": "fr-FR",
+    "text": "Première version de DMC avec chat GGUF local, contexte modèle 131K, réponses en continu, pièces jointes image et document, saisie vocale, conversations persistantes et modules de connaissances hors ligne facultatifs."
+  },
+  {
+    "language": "es-ES",
+    "text": "Primera versión de DMC con chat GGUF local, contexto de modelo 131K, respuestas en streaming, archivos de imagen y documentos, entrada de voz, conversaciones persistentes y módulos de conocimiento sin conexión opcionales."
+  },
+  {
+    "language": "it-IT",
+    "text": "Prima versione di DMC con chat GGUF locale, contesto modello 131K, risposte in streaming, allegati immagine e documento, input vocale, conversazioni persistenti e moduli di conoscenza offline opzionali."
+  },
+  {
+    "language": "nl-NL",
+    "text": "Eerste DMC-versie met lokale GGUF-chat, 131K modelcontext, gestreamde antwoorden, beeld- en documentbijlagen, spraakinvoer, blijvende gesprekken en optionele offline kennismodules."
+  },
+  {
+    "language": "pl-PL",
+    "text": "Pierwsze wydanie DMC z lokalnym czatem GGUF, kontekstem modelu 131K, odpowiedziami strumieniowymi, załącznikami obrazów i dokumentów, wejściem głosowym, trwałymi rozmowami i opcjonalnymi modułami wiedzy offline."
+  },
+  {
+    "language": "pt-BR",
+    "text": "Primeira versão do DMC com chat GGUF local, contexto de modelo 131K, respostas por streaming, anexos de imagem e documento, entrada por voz, conversas persistentes e módulos opcionais de conhecimento offline."
+  },
+  {
+    "language": "tr-TR",
+    "text": "Yerel GGUF sohbeti, 131K model bağlamı, akış yanıtları, görsel ve belge ekleri, sesli giriş, kalıcı konuşmalar ve isteğe bağlı çevrimdışı bilgi modülleri sunan ilk DMC sürümü."
+  }
+]

@@ -1,0 +1,1 @@
+Private local AI chat with long context, vision and offline knowledge.

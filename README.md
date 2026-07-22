@@ -63,6 +63,28 @@ It prints the primary LAN IPv4 address that the phone can use.
 The standalone Android app now lives in `android/llama.android/` and is
 checked in alongside the DMC stack.
 
+For Google Play automation, the repository includes a non-secret package pin
+at `.gplay/config.yaml` and the DMC-specific setup guide
+[`docs/GOOGLE_PLAY_DMC.md`](docs/GOOGLE_PLAY_DMC.md). Service-account JSON keys
+must remain outside the repository under `C:\Users\frede\.gplay\keys\`; use
+`scripts/windows/setup-gplay-dmc.ps1` to register and verify the app-scoped
+`dmc` profile without printing the private key.
+
+The complete version-controlled Google Play source set lives under `play/`:
+nine localized listings and release notes, five reviewed German phone
+screenshots, two English phone screenshots, a 512x512 RGB icon, a 1024x500 RGB
+feature graphic, and the editable SVG artwork. The screenshots are direct,
+privacy-checked 1080x1920 captures from a Samsung S25. Subjects and suggested
+accessibility text are documented in
+[`play/screenshots/README.md`](play/screenshots/README.md).
+
+Version `1.0.0 (1)` is uploaded and processed in Google Play's internal test
+track. Publishing the localized store presence still requires the shared
+service account to receive the app-specific **Manage store presence**
+permission. Pricing (`4.99 EUR`), Data safety, content declarations, and the
+final production submission remain Play Console steps; see
+[`docs/GOOGLE_PLAY_DMC.md`](docs/GOOGLE_PLAY_DMC.md).
+
 **Download:** [DMC Android V1.0 release](https://github.com/inetconnector/DMC/releases/tag/android-v1.0.0)
 or [download the signed APK directly](https://github.com/inetconnector/DMC/releases/download/android-v1.0.0/com.inetconnector.dmc-1.0.0%2B1-release.apk).
 
@@ -198,11 +220,11 @@ The current signed release was built successfully at:
 
 Release APK SHA-256:
 
-`E32DB4D728D53F0631428D4D2A7D801A1415F80DCC97525EE30B0EEFA9F732C7`
+`80AF50622903FBCD154C4A36E68859107DB1514646DA68E18949A6014EB6D656`
 
 Release AAB SHA-256:
 
-`3AD275C6DDD6D86C4D674A938812337F6FB4C3F03CDB3CE184DC51B336D78F6E`
+`A5A910A5D706A9705CC0F8D7DB6F16949ED65947682413EBF855CF24F0455357`
 
 Debug APK SHA-256:
 
@@ -214,6 +236,8 @@ signed V1.0 release APK/AAB and the preceding debug APK were copied to
 names. The debug hash above is the newer `offline-knowledge-modules` branch
 build from 2026-07-22. It is available separately at
 `\\diskstation.fritz.box\Dani\offline-knowledge-modules\com.inetconnector.dmc-1.0.0+1-offline-knowledge-modules-debug.apk`.
+The fresh 2026-07-23 release APK/AAB and a ZIP of the complete Play Store asset
+set are also hash-verified in that `offline-knowledge-modules` directory.
 
 If you want to check the launch without starting the server, use:
 

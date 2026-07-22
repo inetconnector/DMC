@@ -1,0 +1,24 @@
+DMC lleva conversaciones de IA potentes directamente a tu dispositivo Android. Ejecuta modelos de lenguaje GGUF compatibles de forma local, conserva conversaciones largas en contexto y observa las respuestas mientras se generan.
+
+IA LOCAL
+El modelo y las conversaciones permanecen en el dispositivo durante la inferencia local. No necesitas una cuenta en la nube para chatear. Solo hace falta conexión a Internet cuando decides descargar un modelo o datos de referencia externos.
+
+CONTEXTO LARGO Y FIABLE
+Deterministic Multiresolution Context (DMC) conserva las partes importantes de historiales largos cuando se llena la caché física del modelo. Combina un prefijo global estable, los detalles recientes y niveles de repetición deterministas sin resumir de forma recursiva tus textos originales. El tamaño disponible depende del modelo y de los recursos del dispositivo.
+
+ENTRADAS MULTIMODALES
+Adjunta imágenes, toma una foto, añade documentos de texto o PDF y utiliza la entrada de voz. Las funciones de imagen y audio dependen del modelo seleccionado. Las respuestas aparecen progresivamente durante el cálculo.
+
+MÓDULOS DE CONOCIMIENTO SIN CONEXIÓN
+Importa paquetes de referencia compatibles y actívalos o desactívalos cuando los necesites. DMC no incluye datos oficiales de clasificación: obténlos del editor correspondiente y respeta sus licencias. Los módulos importados permanecen en el dispositivo.
+
+FUNCIONES PRINCIPALES
+- Gestión local de modelos GGUF
+- Reanudación de descargas de modelos
+- Chats persistentes con contexto aislado
+- Importación y exportación de chats, ajustes y modelos
+- Archivos de cámara, imagen, audio, texto y PDF
+- Opciones configurables de generación y muestreo
+- Inferencia Android orientada a CPU
+
+La compatibilidad, la velocidad y el contexto máximo varían según el modelo, la cuantización, la memoria disponible y el dispositivo. DMC es una herramienta de IA de uso general. Las clasificaciones médicas importadas son material de referencia y no sustituyen el consejo, diagnóstico o tratamiento de un profesional sanitario.

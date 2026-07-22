@@ -1,0 +1,42 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="500" viewBox="0 0 1024 500">
+  <defs>
+    <linearGradient id="bg" x1="80" y1="18" x2="944" y2="500" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#17243c"/>
+      <stop offset="0.52" stop-color="#0b1426"/>
+      <stop offset="1" stop-color="#020617"/>
+    </linearGradient>
+    <radialGradient id="glow" cx="0" cy="0" r="1" gradientTransform="translate(798 236) rotate(90) scale(242 292)" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#14b8a6" stop-opacity="0.22"/>
+      <stop offset="1" stop-color="#14b8a6" stop-opacity="0"/>
+    </radialGradient>
+    <filter id="soft" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="8"/>
+    </filter>
+  </defs>
+  <rect width="1024" height="500" fill="url(#bg)"/>
+  <rect width="1024" height="500" fill="url(#glow)"/>
+  <g opacity="0.72">
+    <ellipse cx="816" cy="250" rx="160" ry="160" fill="none" stroke="#2dd4bf" stroke-width="2"/>
+    <ellipse cx="816" cy="250" rx="118" ry="118" fill="none" stroke="#2dd4bf" stroke-opacity="0.56" stroke-width="2"/>
+    <ellipse cx="816" cy="250" rx="76" ry="76" fill="none" stroke="#f4b96a" stroke-opacity="0.72" stroke-width="2"/>
+    <ellipse cx="816" cy="250" rx="34" ry="34" fill="#14b8a6" fill-opacity="0.15" stroke="#5eead4" stroke-width="2"/>
+    <circle cx="816" cy="250" r="7" fill="#f4b96a"/>
+    <path d="M610 250H1012M816 44V456" stroke="#2dd4bf" stroke-opacity="0.24"/>
+    <path d="M648 152C712 184 754 190 816 190C878 190 920 184 984 152M648 348C712 316 754 310 816 310C878 310 920 316 984 348" fill="none" stroke="#2dd4bf" stroke-opacity="0.3"/>
+    <g fill="#5eead4">
+      <circle cx="610" cy="250" r="3"/><circle cx="668" cy="194" r="3"/><circle cx="702" cy="330" r="3"/>
+      <circle cx="934" cy="188" r="3"/><circle cx="975" cy="286" r="3"/><circle cx="888" cy="370" r="3"/>
+    </g>
+  </g>
+  <circle cx="816" cy="250" r="28" fill="#14b8a6" fill-opacity="0.2" filter="url(#soft)"/>
+  <g transform="translate(82 92)">
+    <rect width="112" height="112" rx="24" fill="#f8fafc"/>
+    <path d="M20 88V24H35L56 60L77 24H92V88H77V48L60 77H52L35 48V88H20Z" fill="#0f172a"/>
+    <circle cx="101" cy="34" r="6.5" fill="#14b8a6"/>
+    <circle cx="101" cy="56" r="6.5" fill="#14b8a6"/>
+    <circle cx="101" cy="78" r="6.5" fill="#14b8a6"/>
+  </g>
+  <text x="82" y="280" fill="#f8fafc" font-family="Segoe UI, Arial, sans-serif" font-size="92" font-weight="700" letter-spacing="3">DMC</text>
+  <text x="86" y="336" fill="#5eead4" font-family="Segoe UI, Arial, sans-serif" font-size="25" font-weight="600" letter-spacing="4">LOCAL AI. LONG MEMORY.</text>
+  <text x="86" y="382" fill="#a8b3c7" font-family="Segoe UI, Arial, sans-serif" font-size="22">Private chat, vision and offline knowledge.</text>
+</svg>

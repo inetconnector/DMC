@@ -1,0 +1,24 @@
+DMC przenosi zaawansowane rozmowy z AI bezpośrednio na urządzenie z Androidem. Uruchamiaj lokalnie zgodne modele językowe GGUF, zachowuj kontekst długich rozmów i obserwuj odpowiedzi już w trakcie ich generowania.
+
+LOKALNA AI
+Model i rozmowy pozostają na urządzeniu podczas lokalnego wnioskowania. Czat nie wymaga konta w chmurze. Połączenie z Internetem jest potrzebne tylko wtedy, gdy zdecydujesz się pobrać model lub zewnętrzne dane referencyjne.
+
+DŁUGI I NIEZAWODNY KONTEKST
+Deterministic Multiresolution Context (DMC) zachowuje ważne fragmenty długiej historii, gdy fizyczna pamięć podręczna modelu się zapełni. Łączy stabilny globalny początek, najnowsze szczegóły rozmowy i deterministyczne poziomy odtwarzania bez rekurencyjnego streszczania oryginalnego tekstu. Dostępny rozmiar kontekstu zależy od modelu i zasobów urządzenia.
+
+WEJŚCIA MULTIMODALNE
+Dołączaj obrazy, rób zdjęcia, dodawaj dokumenty tekstowe lub PDF i korzystaj z wprowadzania głosowego. Obsługa obrazu i dźwięku zależy od wybranego modelu. Odpowiedzi są wyświetlane strumieniowo podczas obliczeń.
+
+MODUŁY WIEDZY OFFLINE
+Importuj obsługiwane pakiety referencyjne i włączaj lub wyłączaj je w razie potrzeby. DMC nie zawiera oficjalnych danych klasyfikacyjnych. Pobierz je od odpowiedniego wydawcy i przestrzegaj warunków licencji. Zaimportowane moduły pozostają na urządzeniu.
+
+NAJWAŻNIEJSZE FUNKCJE
+- Lokalne zarządzanie modelami GGUF
+- Wznawianie pobierania modeli
+- Trwałe czaty z oddzielnym kontekstem rozmów
+- Import i eksport rozmów, ustawień oraz modeli
+- Załączniki z aparatu, obrazy, audio, tekst i PDF
+- Konfigurowalne generowanie i próbkowanie
+- Wnioskowanie Android ukierunkowane na CPU
+
+Zgodność, szybkość i maksymalny kontekst zależą od modelu, kwantyzacji, dostępnej pamięci i urządzenia. DMC jest narzędziem AI ogólnego przeznaczenia. Importowane klasyfikacje medyczne są materiałem referencyjnym i nie zastępują profesjonalnej porady, diagnozy ani leczenia.

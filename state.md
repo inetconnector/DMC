@@ -1,6 +1,6 @@
 # State
 
-Last updated: 2026-07-22
+Last updated: 2026-07-23
 
 This file is the live development log for the repository.
 Update this file and `README.md` together whenever behavior changes.
@@ -25,6 +25,36 @@ Update this file and `README.md` together whenever behavior changes.
 - `docs/OFFLINE_WISSENSMODULE.md` documents the implemented offline module
   format, ICD-10-GM/ICD-11 flows, retrieval behavior, and licensing boundary in
   German and English.
+- `docs/GOOGLE_PLAY_DMC.md` is the DMC-specific Google Play service-account and
+  publication handoff. `.gplay/config.yaml` pins `com.inetconnector.dmc` but
+  contains no credential path or secret.
+- Five German and two English privacy-checked Play Store screenshots from
+  Samsung `SM-S931B` are versioned under `play/screenshots/`. They are direct
+  1080x1920 (9:16), 24-bit RGB PNG captures without alpha. They cover local
+  chat performance, the clean welcome screen, camera/file attachments, model
+  metadata with the 131072-token context and vision/audio modalities, and the
+  installed ICD-10-GM 2026 module with 12606 entries. The temporary display
+  size, rotation, app locale, and locale-config overrides were restored.
+- `play/metadata/` contains validated title, short-description, and full-
+  description files for `en-US`, `de-DE`, `fr-FR`, `es-ES`, `it-IT`, `nl-NL`,
+  `pl-PL`, `pt-BR`, and `tr-TR`. `play/release-notes/1.0.0.json` covers the
+  same nine locales. `play/graphics/` contains the final 512x512 icon,
+  1024x500 feature graphic, and editable SVG sources.
+- The Play Console app `com.inetconnector.dmc` now exists as the draft
+  "Offline KI - OLLAMA UI -DMC". The existing publishing service account can
+  access it and read the alpha, beta, internal, and production tracks. A local
+  `dmc` profile alias now references the same credential as the existing
+  `activitylauncher` profile without changing the default profile.
+- Fresh signed version `1.0.0 (1)` was uploaded on 2026-07-23 and is processed
+  with status `completed` on the internal track. Google remotely reports all
+  nine localized release notes. The shared service account can manage releases
+  but cannot commit store-listing/media edits; Play Console must grant it the
+  DMC-specific **Manage store presence** permission before `play/metadata/`,
+  screenshots, icon, and feature graphic can be synced. The failed media edit
+  was discarded, leaving no active edit.
+- The fresh APK, AAB, and a ZIP of `play/` were copied to
+  `\\diskstation.fritz.box\Dani\offline-knowledge-modules\` and read back with
+  matching SHA-256 hashes.
 
 ## Verified Working
 
@@ -98,14 +128,14 @@ Update this file and `README.md` together whenever behavior changes.
   encoding, or network error after completion.
 - The debug APK path is
   `android/llama.android/app/build/outputs/apk/debug/app-debug.apk`.
-- The signed release APK and AAB were rebuilt from the V1.0 source on
-  2026-07-21. Android `apksigner` verifies the APK with v2 signing and the
+- The signed release APK and AAB were rebuilt from the current branch on
+  2026-07-23. Android `apksigner` verifies the APK with v2 signing and the
   expected InetConnector certificate fingerprint
   `649A7EC870A7D18E5AF0AF12F0AC63B27F15DB864E28FECA9DA5FCF94AB8EC0F`.
   The release APK SHA-256 is
-  `E32DB4D728D53F0631428D4D2A7D801A1415F80DCC97525EE30B0EEFA9F732C7`;
+  `80AF50622903FBCD154C4A36E68859107DB1514646DA68E18949A6014EB6D656`;
   the AAB SHA-256 is
-  `3AD275C6DDD6D86C4D674A938812337F6FB4C3F03CDB3CE184DC51B336D78F6E`;
+  `A5A910A5D706A9705CC0F8D7DB6F16949ED65947682413EBF855CF24F0455357`;
   and the debug APK SHA-256 is
   `9C241211C8260B93C2B66CB36403E89C4EE59DB337AC6D40940F37E2E5970A63`.
   All three versioned artifacts were copied to
@@ -272,6 +302,25 @@ Update this file and `README.md` together whenever behavior changes.
 
 ## Recent Change
 
+- Built and independently verified a fresh signed APK/AAB, passed `gplay
+  preflight` with zero findings, and published version `1.0.0 (1)` to the
+  internal Google Play track. Added nine localized listings/release notes,
+  German and English phone screenshots, and final store graphics. Store media
+  upload is prepared but blocked only by the service account's missing
+  app-specific store-presence permission.
+- Made the Android Web UI build work without a globally installed npm. The
+  fallback uses a fixed npm 11.5.2 CLI through pnpm, installs from llama.cpp's
+  checked-in `package-lock.json`, and invokes the locked local build tools.
+  This avoids pnpm re-resolution and keeps the pinned submodule clean.
+- The data-preserving install of the new release APK was intentionally not
+  forced because the S25 currently has the same package signed by a different
+  certificate. Uninstalling would delete downloaded models, chats, and offline
+  modules. Resolve that migration deliberately before replacing the device app.
+- Added a non-secret repository-local gplay package pin, a least-privilege DMC
+  service-account setup guide, and `scripts/windows/setup-gplay-dmc.ps1`. The
+  script validates the external JSON shape without printing private fields,
+  registers profile `dmc`, and runs authentication/API diagnostics. No DMC
+  service-account key has been created or stored in the repository yet.
 - Added strict conversation isolation without disabling DMC. The server now
   reconstructs native chat-template/DMC state from the complete API transcript
   whenever the conversation identity or branch progression changes, while an
