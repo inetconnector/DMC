@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="dialog_knowledge_title">Offline referenties</string>
+    <string name="dialog_knowledge_empty">Er zijn geen offline referentiemodules geïnstalleerd.</string>
+    <string name="dialog_knowledge_import">Bestand importeren</string>
+    <string name="dialog_knowledge_sources">Officiële bronnen</string>
+    <string name="dialog_knowledge_terms_title">Officiële referentiegegevens importeren</string>
+    <string name="dialog_knowledge_terms_message">DMC bevat geen classificatiegegevens. Download deze bij de officiële uitgever en lees de actuele voorwaarden. De oorspronkelijke codes, titels en bron-URI’s moeten ongewijzigd blijven. Voor vertalingen en koppelingen kan afzonderlijke toestemming nodig zijn.</string>
+    <string name="dialog_knowledge_terms_confirm">Ik heb dit bestand van de officiële bron verkregen, de voorwaarden geaccepteerd en de officiële inhoud niet gewijzigd.</string>
+    <string name="dialog_continue">Doorgaan</string>
+    <string name="dialog_knowledge_source_bfarm">BfArM: ICD-10-GM-downloads</string>
+    <string name="dialog_knowledge_source_who">WHO: ICD-11-API en documentatie</string>
+    <string name="dialog_knowledge_sources_message">Deze koppelingen openen de officiële uitgevers. DMC downloadt of verspreidt classificatiegegevens niet automatisch.</string>
+    <string name="dialog_knowledge_records">%1$d vermeldingen</string>
+    <string name="dialog_knowledge_module_details">Bron: %1$s\nLicentie: %2$s\n\nNaamsvermelding:\n%3$s\n\nSHA-256: %4$s</string>
+    <string name="dialog_knowledge_disable">Uitschakelen</string>
+    <string name="dialog_knowledge_enable">Inschakelen</string>
+    <string name="dialog_knowledge_open_source">Bron openen</string>
+    <string name="dialog_knowledge_remove">Verwijderen</string>
+    <string name="dialog_knowledge_remove_title">Offline referentie verwijderen</string>
+    <string name="dialog_knowledge_remove_message">%1$s %2$s en alle lokaal geïndexeerde vermeldingen verwijderen?</string>
+    <string name="dialog_knowledge_import_title">Offline referentie importeren</string>
+    <string name="dialog_knowledge_importing">Officiële gegevens lokaal valideren en indexeren...</string>
+    <string name="dialog_knowledge_import_complete">Import voltooid</string>
+    <string name="dialog_knowledge_import_complete_message">%1$s %2$s is met %3$d vermeldingen geïmporteerd en klaar voor offline gebruik.</string>
+</resources>

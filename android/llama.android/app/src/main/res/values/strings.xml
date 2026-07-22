@@ -98,4 +98,27 @@
     <string name="analysis_ocr_header">OCR:</string>
     <string name="analysis_labels_header">Labels: %1$s</string>
     <string name="analysis_none">none</string>
+    <string name="dialog_knowledge_title">Offline references</string>
+    <string name="dialog_knowledge_empty">No offline reference modules are installed.</string>
+    <string name="dialog_knowledge_import">Import file</string>
+    <string name="dialog_knowledge_sources">Official sources</string>
+    <string name="dialog_knowledge_terms_title">Import official reference data</string>
+    <string name="dialog_knowledge_terms_message">DMC does not include classification data. Download it from the official publisher and review its current terms. The original codes, titles and source URIs must remain unchanged. Translations and crosswalks may require separate permission.</string>
+    <string name="dialog_knowledge_terms_confirm">I obtained this file from the official source, accepted its terms and did not alter the official content.</string>
+    <string name="dialog_continue">Continue</string>
+    <string name="dialog_knowledge_source_bfarm">BfArM: ICD-10-GM downloads</string>
+    <string name="dialog_knowledge_source_who">WHO: ICD-11 API and documentation</string>
+    <string name="dialog_knowledge_sources_message">These links open the official publishers. DMC neither downloads nor redistributes classification data automatically.</string>
+    <string name="dialog_knowledge_records">%1$d entries</string>
+    <string name="dialog_knowledge_module_details">Source: %1$s\nLicense: %2$s\n\nAttribution:\n%3$s\n\nSHA-256: %4$s</string>
+    <string name="dialog_knowledge_disable">Disable</string>
+    <string name="dialog_knowledge_enable">Enable</string>
+    <string name="dialog_knowledge_open_source">Open source</string>
+    <string name="dialog_knowledge_remove">Remove</string>
+    <string name="dialog_knowledge_remove_title">Remove offline reference</string>
+    <string name="dialog_knowledge_remove_message">Remove %1$s %2$s and all locally indexed entries?</string>
+    <string name="dialog_knowledge_import_title">Import offline reference</string>
+    <string name="dialog_knowledge_importing">Validating and indexing the official data locally...</string>
+    <string name="dialog_knowledge_import_complete">Import complete</string>
+    <string name="dialog_knowledge_import_complete_message">%1$s %2$s was imported with %3$d entries and is ready for offline use.</string>
 </resources>

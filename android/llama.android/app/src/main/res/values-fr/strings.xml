@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="dialog_knowledge_title">Références hors ligne</string>
+    <string name="dialog_knowledge_empty">Aucun module de référence hors ligne n’est installé.</string>
+    <string name="dialog_knowledge_import">Importer un fichier</string>
+    <string name="dialog_knowledge_sources">Sources officielles</string>
+    <string name="dialog_knowledge_terms_title">Importer des données de référence officielles</string>
+    <string name="dialog_knowledge_terms_message">DMC ne contient aucune donnée de classification. Téléchargez-la auprès de l’éditeur officiel et consultez ses conditions actuelles. Les codes, titres et URI sources d’origine doivent rester inchangés. Les traductions et correspondances peuvent nécessiter une autorisation distincte.</string>
+    <string name="dialog_knowledge_terms_confirm">J’ai obtenu ce fichier auprès de la source officielle, accepté ses conditions et n’ai pas modifié le contenu officiel.</string>
+    <string name="dialog_continue">Continuer</string>
+    <string name="dialog_knowledge_source_bfarm">BfArM : téléchargements ICD-10-GM</string>
+    <string name="dialog_knowledge_source_who">OMS : API et documentation CIM-11</string>
+    <string name="dialog_knowledge_sources_message">Ces liens ouvrent les éditeurs officiels. DMC ne télécharge ni ne redistribue automatiquement les données de classification.</string>
+    <string name="dialog_knowledge_records">%1$d entrées</string>
+    <string name="dialog_knowledge_module_details">Source : %1$s\nLicence : %2$s\n\nAttribution :\n%3$s\n\nSHA-256 : %4$s</string>
+    <string name="dialog_knowledge_disable">Désactiver</string>
+    <string name="dialog_knowledge_enable">Activer</string>
+    <string name="dialog_knowledge_open_source">Ouvrir la source</string>
+    <string name="dialog_knowledge_remove">Supprimer</string>
+    <string name="dialog_knowledge_remove_title">Supprimer la référence hors ligne</string>
+    <string name="dialog_knowledge_remove_message">Supprimer %1$s %2$s et toutes les entrées indexées localement ?</string>
+    <string name="dialog_knowledge_import_title">Importer une référence hors ligne</string>
+    <string name="dialog_knowledge_importing">Validation et indexation locale des données officielles...</string>
+    <string name="dialog_knowledge_import_complete">Importation terminée</string>
+    <string name="dialog_knowledge_import_complete_message">%1$s %2$s a été importé avec %3$d entrées et est prêt pour une utilisation hors ligne.</string>
+</resources>

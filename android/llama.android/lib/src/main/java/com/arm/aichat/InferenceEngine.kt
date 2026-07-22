@@ -40,6 +40,16 @@ interface InferenceEngine {
     ): Flow<String>
 
     /**
+     * Replaces the native conversation with the supplied complete transcript and
+     * generates the assistant response to its final user message.
+     */
+    fun sendConversation(
+        messages: List<ConversationMessage>,
+        predictLength: Int = DEFAULT_PREDICT_LENGTH,
+        enableThinking: Boolean = false
+    ): Flow<String>
+
+    /**
      * Runs a benchmark with the specified parameters.
      */
     suspend fun bench(pp: Int, tg: Int, pl: Int, nr: Int = 1): String
@@ -86,6 +96,11 @@ interface InferenceEngine {
         const val DEFAULT_PREDICT_LENGTH = -1
     }
 }
+
+data class ConversationMessage(
+    val role: String,
+    val content: String
+)
 
 val State.isUninterruptible
     get() = this is State.Initializing ||

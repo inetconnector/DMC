@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="dialog_knowledge_title">Źródła offline</string>
+    <string name="dialog_knowledge_empty">Nie zainstalowano żadnych modułów źródeł offline.</string>
+    <string name="dialog_knowledge_import">Importuj plik</string>
+    <string name="dialog_knowledge_sources">Oficjalne źródła</string>
+    <string name="dialog_knowledge_terms_title">Importuj oficjalne dane referencyjne</string>
+    <string name="dialog_knowledge_terms_message">DMC nie zawiera danych klasyfikacyjnych. Pobierz je od oficjalnego wydawcy i zapoznaj się z aktualnymi warunkami. Oryginalne kody, tytuły i identyfikatory URI źródła muszą pozostać bez zmian. Tłumaczenia i mapowania mogą wymagać osobnej zgody.</string>
+    <string name="dialog_knowledge_terms_confirm">Plik pochodzi z oficjalnego źródła, zaakceptowano warunki, a oficjalna treść nie została zmieniona.</string>
+    <string name="dialog_continue">Kontynuuj</string>
+    <string name="dialog_knowledge_source_bfarm">BfArM: pliki ICD-10-GM</string>
+    <string name="dialog_knowledge_source_who">WHO: API i dokumentacja ICD-11</string>
+    <string name="dialog_knowledge_sources_message">Te łącza otwierają oficjalnych wydawców. DMC nie pobiera ani nie rozpowszechnia automatycznie danych klasyfikacyjnych.</string>
+    <string name="dialog_knowledge_records">Liczba wpisów: %1$d</string>
+    <string name="dialog_knowledge_module_details">Źródło: %1$s\nLicencja: %2$s\n\nUznanie autorstwa:\n%3$s\n\nSHA-256: %4$s</string>
+    <string name="dialog_knowledge_disable">Wyłącz</string>
+    <string name="dialog_knowledge_enable">Włącz</string>
+    <string name="dialog_knowledge_open_source">Otwórz źródło</string>
+    <string name="dialog_knowledge_remove">Usuń</string>
+    <string name="dialog_knowledge_remove_title">Usuń źródło offline</string>
+    <string name="dialog_knowledge_remove_message">Usunąć %1$s %2$s i wszystkie lokalnie zindeksowane wpisy?</string>
+    <string name="dialog_knowledge_import_title">Importuj źródło offline</string>
+    <string name="dialog_knowledge_importing">Sprawdzanie i lokalne indeksowanie oficjalnych danych...</string>
+    <string name="dialog_knowledge_import_complete">Import zakończony</string>
+    <string name="dialog_knowledge_import_complete_message">Zaimportowano %1$s %2$s z liczbą wpisów %3$d. Moduł jest gotowy do użycia offline.</string>
+</resources>

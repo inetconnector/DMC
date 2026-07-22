@@ -98,4 +98,27 @@
     <string name="analysis_ocr_header">OCR:</string>
     <string name="analysis_labels_header">Beschriftungen: %1$s</string>
     <string name="analysis_none">keine</string>
+    <string name="dialog_knowledge_title">Offline-Referenzen</string>
+    <string name="dialog_knowledge_empty">Es sind keine Offline-Referenzmodule installiert.</string>
+    <string name="dialog_knowledge_import">Datei importieren</string>
+    <string name="dialog_knowledge_sources">Offizielle Quellen</string>
+    <string name="dialog_knowledge_terms_title">Offizielle Referenzdaten importieren</string>
+    <string name="dialog_knowledge_terms_message">DMC enthält keine Klassifikationsdaten. Lade sie beim offiziellen Herausgeber herunter und prüfe dessen aktuelle Bedingungen. Die ursprünglichen Codes, Titel und Quell-URIs müssen unverändert bleiben. Übersetzungen und Crosswalks können eine gesonderte Erlaubnis erfordern.</string>
+    <string name="dialog_knowledge_terms_confirm">Ich habe diese Datei aus der offiziellen Quelle bezogen, die Bedingungen akzeptiert und den offiziellen Inhalt nicht verändert.</string>
+    <string name="dialog_continue">Weiter</string>
+    <string name="dialog_knowledge_source_bfarm">BfArM: ICD-10-GM-Downloads</string>
+    <string name="dialog_knowledge_source_who">WHO: ICD-11-API und Dokumentation</string>
+    <string name="dialog_knowledge_sources_message">Diese Links öffnen die offiziellen Herausgeber. DMC lädt Klassifikationsdaten weder automatisch herunter noch verteilt es sie weiter.</string>
+    <string name="dialog_knowledge_records">%1$d Einträge</string>
+    <string name="dialog_knowledge_module_details">Quelle: %1$s\nLizenz: %2$s\n\nQuellenangabe:\n%3$s\n\nSHA-256: %4$s</string>
+    <string name="dialog_knowledge_disable">Deaktivieren</string>
+    <string name="dialog_knowledge_enable">Aktivieren</string>
+    <string name="dialog_knowledge_open_source">Quelle öffnen</string>
+    <string name="dialog_knowledge_remove">Entfernen</string>
+    <string name="dialog_knowledge_remove_title">Offline-Referenz entfernen</string>
+    <string name="dialog_knowledge_remove_message">%1$s %2$s und alle lokal indexierten Einträge entfernen?</string>
+    <string name="dialog_knowledge_import_title">Offline-Referenz importieren</string>
+    <string name="dialog_knowledge_importing">Offizielle Daten werden geprüft und lokal indexiert...</string>
+    <string name="dialog_knowledge_import_complete">Import abgeschlossen</string>
+    <string name="dialog_knowledge_import_complete_message">%1$s %2$s wurde mit %3$d Einträgen importiert und ist offline einsatzbereit.</string>
 </resources>

@@ -35,8 +35,10 @@ import android.view.View
 import android.widget.AdapterView
 import android.widget.BaseAdapter
 import android.widget.Button
+import android.widget.CheckBox
 import android.widget.FrameLayout
 import android.widget.ImageButton
+import android.widget.LinearLayout
 import android.widget.ListView
 import android.widget.ProgressBar
 import android.widget.ArrayAdapter
@@ -60,6 +62,7 @@ import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.updatePadding
 import androidx.lifecycle.lifecycleScope
 import com.arm.aichat.AiChat
+import com.arm.aichat.ConversationMessage
 import com.arm.aichat.InferenceEngine
 import com.arm.aichat.gguf.GgufMetadata
 import com.arm.aichat.gguf.GgufMetadataReader
@@ -94,6 +97,7 @@ import java.net.HttpURLConnection
 import java.net.URL
 import java.net.URLDecoder
 import java.nio.charset.StandardCharsets
+import java.security.MessageDigest
 import java.util.Locale
 import java.util.UUID
 import java.util.zip.Deflater
@@ -110,6 +114,9 @@ import com.google.mlkit.vision.label.ImageLabeling
 import com.google.mlkit.vision.label.defaults.ImageLabelerOptions
 import com.google.mlkit.vision.text.TextRecognition
 import com.google.mlkit.vision.text.latin.TextRecognizerOptions
+import com.inetconnector.dmc.knowledge.KnowledgeModule
+import com.inetconnector.dmc.knowledge.KnowledgeModuleStore
+import com.inetconnector.dmc.knowledge.KnowledgePackageImporter
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.locks.ReentrantLock
@@ -131,6 +138,7 @@ class MainActivity : AppCompatActivity() {
         private const val PREFS_NAME = "model_selection_prefs"
         private const val PREF_KEY_PREFERRED_MODEL_PATH = "preferred_model_path"
         private const val PREF_KEY_FAILED_MODEL_PATHS = "failed_model_paths"
+        private const val CX_FILE_EXPLORER_PACKAGE = "com.cxinventor.file.explorer"
         private const val TAG = "MainActivity"
     }
     private lateinit var webView: WebView
@@ -143,10 +151,13 @@ class MainActivity : AppCompatActivity() {
     @Volatile
     private var analysisApiPort: Int = ANALYSIS_SERVER_PORT_CANDIDATES.first()
     private val modelPrefs by lazy { getSharedPreferences(PREFS_NAME, MODE_PRIVATE) }
+    private val knowledgeStore by lazy { KnowledgeModuleStore(applicationContext) }
+    private val knowledgeImporter by lazy { KnowledgePackageImporter(applicationContext, knowledgeStore) }
     @Volatile
     private var localServersStarted = false
 
     private val engineMutex = Mutex()
+    private val conversationStateTracker = ConversationStateTracker()
     private val chatServerScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     private val streamRegistry = StreamSessionRegistry()
     private var modelPath: String? = null
@@ -188,7 +199,8 @@ class MainActivity : AppCompatActivity() {
         }
 
     private val pickModelLauncher =
-        registerForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
+        registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
+            val uri = documentUriFromResult(result.resultCode, result.data)
             if (uri == null) {
                 showModelRequiredDialog()
                 return@registerForActivityResult
@@ -221,7 +233,8 @@ class MainActivity : AppCompatActivity() {
         }
 
     private val importModelLauncher =
-        registerForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
+        registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
+            val uri = documentUriFromResult(result.resultCode, result.data)
             if (uri == null) {
                 return@registerForActivityResult
             }
@@ -243,6 +256,28 @@ class MainActivity : AppCompatActivity() {
                 exportModels(uri, exportFiles)
             }
         }
+
+    private val importKnowledgeLauncher =
+        registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
+            val uri = documentUriFromResult(result.resultCode, result.data)
+                ?: return@registerForActivityResult
+            importKnowledgeModule(uri, System.currentTimeMillis())
+        }
+
+    private fun documentUriFromResult(resultCode: Int, data: Intent?): Uri? {
+        if (resultCode != RESULT_OK) return null
+        val uri = data?.data ?: return null
+        val persistableFlags = data.flags and
+            (Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_WRITE_URI_PERMISSION)
+        if (persistableFlags != 0) {
+            runCatching {
+                contentResolver.takePersistableUriPermission(uri, persistableFlags)
+            }.onFailure {
+                Log.d(TAG, "Picker did not grant persistable access for $uri", it)
+            }
+        }
+        return uri
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -555,6 +590,7 @@ class MainActivity : AppCompatActivity() {
         webView.clearHistory()
         webView.addJavascriptInterface(AndroidSpeechBridge(), "AndroidSpeechBridge")
         webView.addJavascriptInterface(AndroidModelBridge(), "AndroidModelBridge")
+        webView.addJavascriptInterface(AndroidKnowledgeBridge(), "AndroidKnowledgeBridge")
         webView.setDownloadListener { url, _userAgent, contentDisposition, mimeType, _contentLength ->
             enqueueWebDownload(url, contentDisposition, mimeType)
         }
@@ -615,21 +651,22 @@ class MainActivity : AppCompatActivity() {
                 type = "*/*"
                 putExtra(Intent.EXTRA_ALLOW_MULTIPLE, true)
             }
+            val preferredContentIntent = preferCxFileExplorer(contentIntent)
 
             val shouldOfferCamera = hasCameraPermission() && acceptsImageOrVideo(params)
             val launchIntent = if (shouldOfferCamera) {
                 val cameraIntent = createCameraCaptureIntent()
                 if (cameraIntent != null) {
                     Intent(Intent.ACTION_CHOOSER).apply {
-                        putExtra(Intent.EXTRA_INTENT, contentIntent)
+                        putExtra(Intent.EXTRA_INTENT, preferredContentIntent)
                         putExtra(Intent.EXTRA_INITIAL_INTENTS, arrayOf(cameraIntent))
                     }
                 } else {
-                    contentIntent
+                    preferredContentIntent
                 }
             } else {
                 pendingCameraCaptureUri = null
-                contentIntent
+                preferredContentIntent
             }
 
             fileChooserLauncher.launch(launchIntent)
@@ -705,6 +742,240 @@ class MainActivity : AppCompatActivity() {
                 showModelDownloadDialog()
             }
         }
+
+    }
+
+    private inner class AndroidKnowledgeBridge {
+        @JavascriptInterface
+        fun openKnowledgeModules() {
+            runOnUiThread { showKnowledgeModulesDialog() }
+        }
+    }
+
+    private fun createCxPreferredOpenDocumentIntent(mimeTypes: Array<String>): Intent {
+        val concreteType = mimeTypes.firstOrNull { it.isNotBlank() && it != "*/*" }
+            ?: "application/octet-stream"
+        return preferCxFileExplorer(
+            Intent(Intent.ACTION_OPEN_DOCUMENT).apply {
+                addCategory(Intent.CATEGORY_OPENABLE)
+                type = concreteType
+                putExtra(Intent.EXTRA_MIME_TYPES, mimeTypes)
+                addFlags(
+                    Intent.FLAG_GRANT_READ_URI_PERMISSION or
+                        Intent.FLAG_GRANT_PERSISTABLE_URI_PERMISSION
+                )
+            }
+        )
+    }
+
+    private fun createModelOpenDocumentIntent(): Intent =
+        createCxPreferredOpenDocumentIntent(
+            arrayOf("application/octet-stream", "application/zip", "application/x-gguf")
+        )
+
+    private fun preferCxFileExplorer(source: Intent): Intent {
+        val cxIntent = Intent(source).apply {
+            if (type.isNullOrBlank() || type == "*/*") {
+                type = getStringArrayExtra(Intent.EXTRA_MIME_TYPES)
+                    ?.firstOrNull { it.isNotBlank() && it != "*/*" }
+                    ?: "application/octet-stream"
+            }
+            setPackage(CX_FILE_EXPLORER_PACKAGE)
+        }
+        return if (cxIntent.resolveActivity(packageManager) != null) {
+            cxIntent
+        } else {
+            source
+        }
+    }
+
+    private fun showKnowledgeModulesDialog() {
+        val modules = runCatching { knowledgeStore.listModules() }.getOrElse {
+            showSimpleError(getString(R.string.dialog_knowledge_title), it)
+            return
+        }
+        val builder = AlertDialog.Builder(this)
+            .setTitle(getString(R.string.dialog_knowledge_title))
+            .setPositiveButton(getString(R.string.dialog_knowledge_import)) { _, _ ->
+                showKnowledgeImportTermsDialog()
+            }
+            .setNeutralButton(getString(R.string.dialog_knowledge_sources)) { _, _ ->
+                showOfficialKnowledgeSources()
+            }
+            .setNegativeButton(getString(R.string.dialog_close), null)
+
+        if (modules.isEmpty()) {
+            builder.setMessage(getString(R.string.dialog_knowledge_empty))
+        } else {
+            builder.setItems(modules.map(::knowledgeModuleLabel).toTypedArray()) { _, which ->
+                modules.getOrNull(which)?.let(::showKnowledgeModuleActions)
+            }
+        }
+        builder.show()
+    }
+
+    private fun showKnowledgeImportTermsDialog() {
+        val density = resources.displayMetrics.density
+        val horizontalPadding = (24 * density).roundToInt()
+        val verticalPadding = (8 * density).roundToInt()
+        val content = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            setPadding(horizontalPadding, verticalPadding, horizontalPadding, 0)
+        }
+        content.addView(TextView(this).apply {
+            setText(R.string.dialog_knowledge_terms_message)
+            setTextAppearance(android.R.style.TextAppearance_Material_Body1)
+            setPadding(0, 0, 0, verticalPadding)
+        })
+        val confirmation = CheckBox(this).apply {
+            setText(R.string.dialog_knowledge_terms_confirm)
+        }
+        content.addView(confirmation)
+
+        val dialog = AlertDialog.Builder(this)
+            .setTitle(getString(R.string.dialog_knowledge_terms_title))
+            .setView(content)
+            .setPositiveButton(getString(R.string.dialog_continue)) { _, _ ->
+                launchKnowledgeFilePicker()
+            }
+            .setNegativeButton(getString(R.string.dialog_cancel), null)
+            .create()
+        dialog.setOnShowListener {
+            val continueButton = dialog.getButton(AlertDialog.BUTTON_POSITIVE)
+            continueButton.isEnabled = confirmation.isChecked
+            confirmation.setOnCheckedChangeListener { _, isChecked ->
+                continueButton.isEnabled = isChecked
+            }
+        }
+        dialog.show()
+    }
+
+    private fun launchKnowledgeFilePicker() {
+        importKnowledgeLauncher.launch(
+            createCxPreferredOpenDocumentIntent(
+                arrayOf("application/zip", "application/xml", "text/xml", "application/octet-stream")
+            )
+        )
+    }
+
+    private fun showOfficialKnowledgeSources() {
+        val labels = arrayOf(
+            getString(R.string.dialog_knowledge_source_bfarm),
+            getString(R.string.dialog_knowledge_source_who)
+        )
+        val urls = arrayOf(
+            "https://www.bfarm.de/DE/Kodiersysteme/Services/Downloads/_verteilerseite.html",
+            "https://icd.who.int/icdapi"
+        )
+        AlertDialog.Builder(this)
+            .setTitle(getString(R.string.dialog_knowledge_sources))
+            .setMessage(getString(R.string.dialog_knowledge_sources_message))
+            .setItems(labels) { _, which -> urls.getOrNull(which)?.let(::openOfficialKnowledgeUrl) }
+            .setNegativeButton(getString(R.string.dialog_close), null)
+            .show()
+    }
+
+    private fun openOfficialKnowledgeUrl(url: String) {
+        runCatching { startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url))) }
+            .onFailure { showSimpleError(getString(R.string.dialog_knowledge_sources), it) }
+    }
+
+    private fun knowledgeModuleLabel(module: KnowledgeModule): String = buildString {
+        append(if (module.enabled) "✓ " else "○ ")
+        append(module.name).append(" · ").append(module.version)
+        append("\n").append(module.language).append(" · ").append(module.jurisdiction)
+        append(" · ").append(getString(R.string.dialog_knowledge_records, module.recordCount))
+    }
+
+    private fun showKnowledgeModuleActions(module: KnowledgeModule) {
+        val details = getString(
+            R.string.dialog_knowledge_module_details,
+            "${module.sourceName}\n${module.sourceUrl}",
+            "${module.licenseName}\n${module.licenseUrl}",
+            module.attributionText,
+            module.checksum
+        )
+        AlertDialog.Builder(this)
+            .setTitle("${module.name} ${module.version}")
+            .setMessage(details)
+            .setPositiveButton(
+                getString(if (module.enabled) R.string.dialog_knowledge_disable else R.string.dialog_knowledge_enable)
+            ) { _, _ ->
+                lifecycleScope.launch(Dispatchers.IO) {
+                    knowledgeStore.setEnabled(module.id, !module.enabled)
+                    runOnUiThread { showKnowledgeModulesDialog() }
+                }
+            }
+            .setNeutralButton(getString(R.string.dialog_knowledge_open_source)) { _, _ ->
+                openOfficialKnowledgeUrl(module.sourceUrl)
+            }
+            .setNegativeButton(getString(R.string.dialog_knowledge_remove)) { _, _ ->
+                confirmKnowledgeModuleDelete(module)
+            }
+            .show()
+    }
+
+    private fun confirmKnowledgeModuleDelete(module: KnowledgeModule) {
+        AlertDialog.Builder(this)
+            .setTitle(getString(R.string.dialog_knowledge_remove_title))
+            .setMessage(getString(R.string.dialog_knowledge_remove_message, module.name, module.version))
+            .setPositiveButton(getString(R.string.dialog_knowledge_remove)) { _, _ ->
+                lifecycleScope.launch(Dispatchers.IO) {
+                    runCatching { knowledgeStore.deleteModule(module.id) }
+                        .onSuccess { runOnUiThread { showKnowledgeModulesDialog() } }
+                        .onFailure {
+                            runOnUiThread { showSimpleError(getString(R.string.dialog_delete_failed_title), it) }
+                        }
+                }
+            }
+            .setNegativeButton(getString(R.string.dialog_cancel), null)
+            .show()
+    }
+
+    private fun importKnowledgeModule(uri: Uri, termsAcceptedAt: Long) {
+        val progress = ModelTransferProgressDialog(
+            this,
+            getString(R.string.dialog_knowledge_import_title),
+            getString(R.string.dialog_knowledge_importing)
+        )
+        progress.show()
+        lifecycleScope.launch(Dispatchers.IO) {
+            runCatching { knowledgeImporter.import(uri, termsAcceptedAt) }
+                .onSuccess { result ->
+                    runOnUiThread {
+                        progress.close()
+                        AlertDialog.Builder(this@MainActivity)
+                            .setTitle(getString(R.string.dialog_knowledge_import_complete))
+                            .setMessage(
+                                getString(
+                                    R.string.dialog_knowledge_import_complete_message,
+                                    result.module.name,
+                                    result.module.version,
+                                    result.module.recordCount
+                                )
+                            )
+                            .setPositiveButton(getString(R.string.dialog_ok)) { _, _ ->
+                                showKnowledgeModulesDialog()
+                            }
+                            .show()
+                    }
+                }
+                .onFailure { error ->
+                    Log.e(TAG, "Knowledge module import failed", error)
+                    runOnUiThread {
+                        progress.close()
+                        showSimpleError(getString(R.string.dialog_import_failed_title), error)
+                    }
+                }
+        }
+    }
+
+    private fun showSimpleError(title: String, error: Throwable) {
+        AlertDialog.Builder(this)
+            .setTitle(title)
+            .setMessage(error.message ?: getString(R.string.dialog_unknown_error))
+            .setPositiveButton(getString(R.string.dialog_close), null)
+            .show()
     }
 
     private fun startNativeDictationFlow() {
@@ -779,8 +1050,9 @@ class MainActivity : AppCompatActivity() {
         Log.i(TAG, "Loading chat UI")
         val cacheBuster = System.currentTimeMillis()
         val language = Locale.getDefault().toLanguageTag().ifBlank { "en-US" }
-        Log.i(TAG, "Loading URL http://127.0.0.1:$chatApiPort/?v=$cacheBuster&lang=$language")
-        webView.loadUrl("http://127.0.0.1:$chatApiPort/?v=$cacheBuster&lang=$language")
+        val chatUrl = "http://127.0.0.1:$chatApiPort/?v=$cacheBuster&lang=$language&restore_chat=true"
+        Log.i(TAG, "Loading URL $chatUrl")
+        webView.loadUrl(chatUrl)
     }
 
     private fun setStartupSplashVisible(visible: Boolean) {
@@ -1003,6 +1275,7 @@ class MainActivity : AppCompatActivity() {
                 val previousModelFile = File(previousModelPath)
                 if (previousModelFile.exists() && previousModelFile.isFile) {
                     engineMutex.withLock {
+                        conversationStateTracker.invalidate()
                         runCatching { engine.cleanUp() }
                         engine.loadModel(previousModelPath)
                     }
@@ -1061,6 +1334,7 @@ class MainActivity : AppCompatActivity() {
             modelChatTemplate = ""
             modelCapabilities = ModelCapabilities()
             engineMutex.withLock {
+                conversationStateTracker.invalidate()
                 try {
                     engine.loadModel(modelFile.absolutePath)
                 } catch (stateError: IllegalStateException) {
@@ -1169,7 +1443,7 @@ class MainActivity : AppCompatActivity() {
                     showModelDownloadDialog()
                 }
                 .setNeutralButton(getString(R.string.dialog_model_switcher_import)) { _, _ ->
-                    pickModelLauncher.launch(arrayOf("*/*"))
+                    pickModelLauncher.launch(createModelOpenDocumentIntent())
                 }
                 .setNegativeButton(getString(R.string.dialog_close)) { dialog, _ ->
                     dialog.dismiss()
@@ -1190,7 +1464,7 @@ class MainActivity : AppCompatActivity() {
                     showModelSwitcherDialog()
                 }
                 .setNegativeButton(getString(R.string.dialog_model_switcher_import)) { _, _ ->
-                    pickModelLauncher.launch(arrayOf("*/*"))
+                    pickModelLauncher.launch(createModelOpenDocumentIntent())
                 }
                 .setCancelable(true)
                 .show()
@@ -1248,7 +1522,7 @@ class MainActivity : AppCompatActivity() {
             .setTitle(getString(R.string.dialog_model_downloader_title))
             .setView(dialogView)
             .setPositiveButton(getString(R.string.dialog_model_switcher_import)) { _, _ ->
-                pickModelLauncher.launch(arrayOf("*/*"))
+                pickModelLauncher.launch(createModelOpenDocumentIntent())
             }
             .setNeutralButton(getString(R.string.dialog_custom_url_button)) { _, _ ->
                 showCustomUrlDialog()
@@ -1417,7 +1691,7 @@ class MainActivity : AppCompatActivity() {
             ) { dialog, which ->
                 dialog.dismiss()
                 when (which) {
-                    0 -> importModelLauncher.launch(arrayOf("*/*"))
+                    0 -> importModelLauncher.launch(createModelOpenDocumentIntent())
                     1 -> startModelExportFlow(exportableModels)
                 }
             }
@@ -1471,6 +1745,7 @@ class MainActivity : AppCompatActivity() {
         val wasCurrent = modelPath == targetPath
 
         if (wasCurrent) {
+            conversationStateTracker.invalidate()
             runCatching { engine.cleanUp() }
         }
 
@@ -1935,7 +2210,7 @@ class MainActivity : AppCompatActivity() {
                     .setTitle(getString(R.string.dialog_import_failed_title))
                     .setMessage(t.message ?: getString(R.string.dialog_unknown_error))
                     .setPositiveButton(getString(R.string.dialog_pick_again)) { _, _ ->
-                        pickModelLauncher.launch(arrayOf("*/*"))
+                        pickModelLauncher.launch(createModelOpenDocumentIntent())
                     }
                     .setNegativeButton(getString(R.string.dialog_close)) { _, _ -> }
                     .show()
@@ -2085,7 +2360,7 @@ class MainActivity : AppCompatActivity() {
                     .setTitle(getString(R.string.dialog_import_failed_title))
                     .setMessage(t.message ?: getString(R.string.dialog_unknown_error))
                     .setPositiveButton(getString(R.string.dialog_pick_again)) { _, _ ->
-                        importModelLauncher.launch(arrayOf("*/*"))
+                        importModelLauncher.launch(createModelOpenDocumentIntent())
                     }
                     .setNegativeButton(getString(R.string.dialog_close)) { _, _ -> }
                     .show()
@@ -2385,6 +2660,9 @@ class MainActivity : AppCompatActivity() {
     private data class ChatCompletionRequest(
         val stream: Boolean,
         val prompt: String,
+        val messages: List<ConversationMessage>,
+        val visibleMessages: List<ConversationMessage>,
+        val messageCount: Int,
         val predictLength: Int,
         val artifactReply: String?,
         val enableThinking: Boolean,
@@ -2419,9 +2697,19 @@ class MainActivity : AppCompatActivity() {
         if (prompt.isBlank() && artifactReply == null) {
             Log.w(TAG, "Chat request resolved to an empty prompt; falling back to raw user text is not possible")
         }
+        val knowledgeContext = if (prompt.isBlank() || artifactReply != null) {
+            ""
+        } else {
+            runCatching { knowledgeStore.buildEvidenceContext(prompt) }
+                .onFailure { Log.e(TAG, "Offline knowledge retrieval failed; continuing without it", it) }
+                .getOrDefault("")
+        }
         val request = ChatCompletionRequest(
             stream = stream,
-            prompt = prompt,
+            prompt = prompt + knowledgeContext,
+            messages = resolveConversationMessages(messages, prompt + knowledgeContext),
+            visibleMessages = resolveConversationMessages(messages, prompt),
+            messageCount = messages.length(),
             predictLength = predictLength,
             artifactReply = artifactReply,
             enableThinking = enableThinking,
@@ -2461,8 +2749,55 @@ class MainActivity : AppCompatActivity() {
             return ""
         }
         return runBlocking {
-            engineMutex.withLock {
-                engine.sendUserPrompt(request.prompt, request.predictLength, request.enableThinking).toList().joinToString("")
+            val result = StringBuilder()
+            collectCompletionTokens(request) { result.append(it) }
+            result.toString()
+        }
+    }
+
+    private suspend fun collectCompletionTokens(
+        request: ChatCompletionRequest,
+        onToken: suspend (String) -> Unit
+    ) {
+        engineMutex.withLock {
+            val historySignature = conversationSignature(request.visibleMessages.dropLast(1))
+            val mode = conversationStateTracker.modeFor(
+                request.conversationId,
+                request.messageCount,
+                historySignature
+            )
+            Log.i(
+                TAG,
+                "DMC session sync: mode=$mode conversation=${request.conversationId ?: "stateless"} messages=${request.messageCount}"
+            )
+            val flow = when (mode) {
+                ConversationSyncMode.INCREMENTAL -> engine.sendUserPrompt(
+                    request.prompt,
+                    request.predictLength,
+                    request.enableThinking
+                )
+                ConversationSyncMode.REBUILD -> engine.sendConversation(
+                    request.messages,
+                    request.predictLength,
+                    request.enableThinking
+                )
+            }
+            try {
+                val visibleResponse = StringBuilder()
+                flow.collect {
+                    visibleResponse.append(stripModelTags(it, trimWhitespace = false))
+                    onToken(it)
+                }
+                val completedTranscript = request.visibleMessages +
+                    ConversationMessage("assistant", visibleResponse.toString())
+                conversationStateTracker.markCompleted(
+                    request.conversationId,
+                    request.messageCount,
+                    conversationSignature(completedTranscript)
+                )
+            } catch (t: Throwable) {
+                conversationStateTracker.invalidate()
+                throw t
             }
         }
     }
@@ -2542,9 +2877,7 @@ class MainActivity : AppCompatActivity() {
                         }
                     }
                 } else {
-                    engineMutex.withLock {
-                        engine.sendUserPrompt(request.prompt, request.predictLength, request.enableThinking)
-                            .collect { utf8token ->
+                    collectCompletionTokens(request) { utf8token ->
                                 val visibleToken = stripModelTags(utf8token, trimWhitespace = false)
                                 if (visibleToken.isNotEmpty()) {
                                     emittedChars += visibleToken.length
@@ -2560,7 +2893,6 @@ class MainActivity : AppCompatActivity() {
                                         throw CancellationException("stream cancelled")
                                     }
                                 }
-                            }
                     }
                 }
 
@@ -3089,6 +3421,61 @@ class MainActivity : AppCompatActivity() {
         }
 
         return ResolvedUserPrompt("", 0, 0)
+    }
+
+    private fun resolveConversationMessages(
+        messages: JSONArray,
+        resolvedFinalPrompt: String
+    ): List<ConversationMessage> {
+        var finalUserIndex = -1
+        for (i in messages.length() - 1 downTo 0) {
+            if (messages.optJSONObject(i)?.optString("role") == "user") {
+                finalUserIndex = i
+                break
+            }
+        }
+
+        val transcript = mutableListOf<ConversationMessage>()
+        for (i in 0 until messages.length()) {
+            val item = messages.optJSONObject(i) ?: continue
+            val role = item.optString("role").lowercase(Locale.ROOT)
+            if (role !in setOf("system", "user", "assistant")) {
+                continue
+            }
+            val content = if (i == finalUserIndex) {
+                resolvedFinalPrompt
+            } else {
+                when (val raw = item.opt("content")) {
+                    is JSONArray -> extractTextFromContentParts(raw).ifBlank { synthesizeAttachmentContext(raw) }
+                    is String -> raw
+                    null -> ""
+                    else -> raw.toString()
+                }
+            }.trim()
+            if (content.isNotEmpty()) {
+                transcript += ConversationMessage(role, content)
+            }
+        }
+
+        if (transcript.lastOrNull()?.role != "user") {
+            return listOf(ConversationMessage("user", resolvedFinalPrompt))
+        }
+        return transcript
+    }
+
+    private fun conversationSignature(messages: List<ConversationMessage>): String {
+        val digest = MessageDigest.getInstance("SHA-256")
+        for (message in messages) {
+            val role = message.role.toByteArray(StandardCharsets.UTF_8)
+            val content = message.content.toByteArray(StandardCharsets.UTF_8)
+            digest.update(role.size.toString().toByteArray(StandardCharsets.US_ASCII))
+            digest.update(0.toByte())
+            digest.update(role)
+            digest.update(content.size.toString().toByteArray(StandardCharsets.US_ASCII))
+            digest.update(0.toByte())
+            digest.update(content)
+        }
+        return digest.digest().joinToString("") { "%02x".format(it.toInt() and 0xff) }
     }
 
     private fun extractImageUrls(parts: JSONArray): List<String> {
@@ -4458,7 +4845,10 @@ private class LocalAnalysisServer(
     private fun withCors(response: Response): Response {
         response.addHeader("Access-Control-Allow-Origin", "*")
         response.addHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
-        response.addHeader("Access-Control-Allow-Headers", "Content-Type, Authorization, X-Requested-With")
+        response.addHeader(
+            "Access-Control-Allow-Headers",
+            "Content-Type, Authorization, X-Requested-With, X-Conversation-Id"
+        )
         return response
     }
 }

@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="dialog_knowledge_title">Riferimenti offline</string>
+    <string name="dialog_knowledge_empty">Non sono installati moduli di riferimento offline.</string>
+    <string name="dialog_knowledge_import">Importa file</string>
+    <string name="dialog_knowledge_sources">Fonti ufficiali</string>
+    <string name="dialog_knowledge_terms_title">Importa dati di riferimento ufficiali</string>
+    <string name="dialog_knowledge_terms_message">DMC non include dati di classificazione. Scaricali dall’editore ufficiale e consulta le condizioni aggiornate. I codici, i titoli e gli URI di origine devono rimanere invariati. Traduzioni e collegamenti possono richiedere un’autorizzazione separata.</string>
+    <string name="dialog_knowledge_terms_confirm">Ho ottenuto questo file dalla fonte ufficiale, accettato le condizioni e non modificato il contenuto ufficiale.</string>
+    <string name="dialog_continue">Continua</string>
+    <string name="dialog_knowledge_source_bfarm">BfArM: download ICD-10-GM</string>
+    <string name="dialog_knowledge_source_who">OMS: API e documentazione ICD-11</string>
+    <string name="dialog_knowledge_sources_message">Questi collegamenti aprono gli editori ufficiali. DMC non scarica né ridistribuisce automaticamente i dati di classificazione.</string>
+    <string name="dialog_knowledge_records">%1$d voci</string>
+    <string name="dialog_knowledge_module_details">Fonte: %1$s\nLicenza: %2$s\n\nAttribuzione:\n%3$s\n\nSHA-256: %4$s</string>
+    <string name="dialog_knowledge_disable">Disattiva</string>
+    <string name="dialog_knowledge_enable">Attiva</string>
+    <string name="dialog_knowledge_open_source">Apri fonte</string>
+    <string name="dialog_knowledge_remove">Rimuovi</string>
+    <string name="dialog_knowledge_remove_title">Rimuovi riferimento offline</string>
+    <string name="dialog_knowledge_remove_message">Rimuovere %1$s %2$s e tutte le voci indicizzate localmente?</string>
+    <string name="dialog_knowledge_import_title">Importa riferimento offline</string>
+    <string name="dialog_knowledge_importing">Convalida e indicizzazione locale dei dati ufficiali...</string>
+    <string name="dialog_knowledge_import_complete">Importazione completata</string>
+    <string name="dialog_knowledge_import_complete_message">%1$s %2$s è stato importato con %3$d voci ed è pronto per l’uso offline.</string>
+</resources>

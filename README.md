@@ -14,6 +14,9 @@ to validate than a more ad hoc retrieval system.
   [`docs/GROSSER_KONTEXT.md`](docs/GROSSER_KONTEXT.md) explain the Android
   long-context architecture in accessible English and German, including its
   algorithm, runtime limits, and trade-offs.
+- [`docs/OFFLINE_WISSENSMODULE.md`](docs/OFFLINE_WISSENSMODULE.md) explains the
+  bilingual offline knowledge-module architecture, ICD-10-GM/ICD-11 import,
+  package format, retrieval path, attribution, and safety boundaries.
 - `docs/TARGET_STATE.md` is the concise capability target.
 - The code in `dmc/` and `cpp/` is the reference implementation.
 - The Android native runtime now compiles that same C++ DMC selector into
@@ -68,6 +71,14 @@ allow installation from the selected browser or file manager when Android asks,
 then import or download a compatible local GGUF model inside the app. Large
 models require several gigabytes of free storage.
 
+On Android, every file-opening flow prefers CX File Explorer when
+`com.cxinventor.file.explorer` is installed: model files and archives,
+offline-reference ZIP/XML files, images, audio, text, PDF, and general WebView
+attachments. If CX is absent or cannot handle a requested MIME type, DMC uses
+Android DocumentsUI automatically. Save/export dialogs remain on DocumentsUI
+because the current CX version does not implement Android's `CREATE_DOCUMENT`
+contract; camera capture is unchanged.
+
 Use these helpers from the repository root:
 
 1. `build-android.bat` to build the APK on Windows.
@@ -108,6 +119,23 @@ does not recursively summarize the conversation. The selected KV state is
 reused for subsequent turns and rebuilt only when the physical budget fills
 again, avoiding repeated long prefills.
 
+The Android API also isolates that state by conversation. A normal next turn
+with the same `X-Conversation-Id` keeps the fast incremental DMC/KV path. A new
+chat, switched chat, edited/retried turn, app/model reset, or request without a
+conversation ID rebuilds the native state from the complete OpenAI-compatible
+`messages` transcript before generation. This prevents offline-reference
+evidence, assistant output, and internal helper requests from leaking into a
+different chat while preserving fast continuation inside the active chat.
+
+Chat metadata and every message branch are stored persistently in the WebView's
+private IndexedDB. On Android startup, the app restores the last opened
+conversation (or the newest stored conversation if no last-chat marker exists)
+and reloads its selected message branch. Choosing **New chat** still opens an
+empty, isolated conversation. When an older chat is continued, its complete
+stored branch is sent with its stable conversation ID, so the native runtime
+rehydrates that chat's own DMC/KV context instead of borrowing state from the
+previously active chat.
+
 Normal chat generation has no implicit 512-token output cap. If a request does
 not explicitly provide `max_tokens`, `max_completion_tokens`, or `n_predict`,
 Android generates until the model emits its end-of-generation token. When an
@@ -135,6 +163,31 @@ existing on-device ML Kit OCR and image-labeling pipeline, and appends that
 analysis to the user's original question before DMC/Gemma inference. Raw image
 data never leaves the device and temporary files are deleted immediately.
 
+Android also supports installable offline knowledge modules. In Settings under
+`Import/Export`, the module manager imports ICD-10-GM ClaML ZIP/XML files or
+versioned `.dmcknowledge` packages for ICD-11 and generic sources. Each module
+is independently enabled, disabled, or removed. Enabled modules are searched
+locally with exact-code boosting and SQLite FTS4; a bounded, attributed evidence
+block is appended after the current user question so it remains in DMC's recent
+context window. Classification data is not bundled in the APK. Use
+`scripts/knowledge/build_knowledge_module.py` to package a lawful local ICD-11
+or generic JSONL export, and read `docs/OFFLINE_WISSENSMODULE.md` before
+redistributing any source data.
+
+Retrieval is deliberately relevance-gated. Greetings and common conversational
+words are removed, short terms require whole-word matches, and prefix search is
+allowed only for terms of at least seven characters. A record is injected only
+for an exact code, an exact title word, a sufficiently long medical prefix, or
+multiple matching content terms. This prevents collisions such as `Hallo`
+matching ICD-10's `Hallopeau` and avoids expensive irrelevant DMC prefills.
+
+The package builder has automated tests for deterministic output and rejection
+of unofficial WHO sources, invalid licences, missing official URIs, and missing
+unchanged-content confirmation. Android instrumentation tests cover package
+import, exact-code and free-text retrieval, enable/disable isolation,
+transactional rollback, and deletion. Classification data, WHO credentials,
+and redistribution rights are never included by the builder or APK.
+
 The current DMC-enabled debug APK was built successfully at:
 
 `android/llama.android/app/build/outputs/apk/debug/app-debug.apk`
@@ -153,13 +206,14 @@ Release AAB SHA-256:
 
 Debug APK SHA-256:
 
-`D663D4B60CAAA1C719ABDC9F5055AE36CA3AB309D84B22030F16D6AF9B4129C3`
+`10E119B8F6CE5E8C26C4F1B7332DEE5705C7D712604E9D317F3073F1CE06E86B`
 
 Published APK/AAB files are kept under the ignored `publish/` directory. The
-current debug APK, signed release APK, and signed release AAB were also copied
-to `\\diskstation.fritz.box\Dani` using versioned
-`com.inetconnector.dmc-1.0.0+1` names. Their hashes were verified again after
-copying.
+signed V1.0 release APK/AAB and the preceding debug APK were copied to
+`\\diskstation.fritz.box\Dani` using versioned `com.inetconnector.dmc-1.0.0+1`
+names. The debug hash above is the newer `offline-knowledge-modules` branch
+build from 2026-07-22. It is available separately at
+`\\diskstation.fritz.box\Dani\offline-knowledge-modules\com.inetconnector.dmc-1.0.0+1-offline-knowledge-modules-debug.apk`.
 
 If you want to check the launch without starting the server, use:
 
@@ -209,6 +263,8 @@ If you want to check the launch without starting the server, use:
 10. Read `docs/PUBLICATION_READINESS.md` for the release posture and checklist.
 11. Use `dmc/` and `cpp/` if you want the reference implementations.
 12. Use `scripts/windows/prepare-dev.ps1` to validate and run the local setup.
+13. Read `docs/OFFLINE_WISSENSMODULE.md` to install or build offline ICD and
+    other reference modules.
 
 ## Goals
 

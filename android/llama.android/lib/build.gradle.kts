@@ -7,7 +7,12 @@ android {
     namespace = "com.arm.aichat"
     compileSdk = 36
 
-    ndkVersion = "29.0.13113456"
+    val explicitNdkPath = providers.gradleProperty("dmcNdkPath").orNull
+    if (explicitNdkPath.isNullOrBlank()) {
+        ndkVersion = "29.0.13113456"
+    } else {
+        ndkPath = explicitNdkPath
+    }
 
     defaultConfig {
         minSdk = 33

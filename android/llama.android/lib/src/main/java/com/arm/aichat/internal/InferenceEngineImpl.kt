@@ -3,6 +3,7 @@ package com.arm.aichat.internal
 import android.content.Context
 import android.util.Log
 import com.arm.aichat.InferenceEngine
+import com.arm.aichat.ConversationMessage
 import com.arm.aichat.UnsupportedArchitectureException
 import com.arm.aichat.internal.InferenceEngineImpl.Companion.getInstance
 import dalvik.annotation.optimization.FastNative
@@ -102,6 +103,13 @@ internal class InferenceEngineImpl private constructor(
 
     @FastNative
     private external fun processUserPrompt(userPrompt: String, predictLength: Int): Int
+
+    @FastNative
+    private external fun processConversation(
+        roles: Array<String>,
+        contents: Array<String>,
+        predictLength: Int
+    ): Int
 
     @FastNative
     private external fun warmupModel(): Int
@@ -248,32 +256,47 @@ internal class InferenceEngineImpl private constructor(
         message: String,
         predictLength: Int,
         enableThinking: Boolean,
-    ): Flow<String> = flow {
+    ): Flow<String> = generateResponse(enableThinking) {
         require(message.isNotEmpty()) { "User prompt discarded due to being empty!" }
+        Log.i(TAG, "Sending incremental user prompt...")
+        processUserPrompt(message, predictLength)
+    }
+
+    override fun sendConversation(
+        messages: List<ConversationMessage>,
+        predictLength: Int,
+        enableThinking: Boolean,
+    ): Flow<String> = generateResponse(enableThinking) {
+        require(messages.isNotEmpty()) { "Conversation discarded because it is empty!" }
+        require(messages.last().role == "user") { "Conversation must end with a user message!" }
+        require(messages.last().content.isNotEmpty()) { "Final user prompt must not be empty!" }
+        Log.i(TAG, "Replacing native conversation with ${messages.size} messages...")
+        processConversation(
+            messages.map { it.role }.toTypedArray(),
+            messages.map { it.content }.toTypedArray(),
+            predictLength
+        )
+    }
+
+    private fun generateResponse(
+        enableThinking: Boolean,
+        processPrompt: () -> Int
+    ): Flow<String> = flow {
         check(_state.value is InferenceEngine.State.ModelReady) {
             "User prompt discarded due to: ${_state.value.javaClass.simpleName}"
         }
 
         try {
-            Log.i(TAG, "Sending user prompt...")
             _readyForSystemPrompt = false
             _state.value = InferenceEngine.State.ProcessingUserPrompt
 
-            setEnableThinking(enableThinking).let { result ->
-                if (result != 0) {
-                    Log.e(TAG, "Failed to set thinking mode: $result")
-                    return@flow
-                }
-            }
+            val thinkingResult = setEnableThinking(enableThinking)
+            check(thinkingResult == 0) { "Failed to set thinking mode: $thinkingResult" }
 
-            processUserPrompt(message, predictLength).let { result ->
-                if (result != 0) {
-                    Log.e(TAG, "Failed to process user prompt: $result")
-                    return@flow
-                }
-            }
+            val promptResult = processPrompt()
+            check(promptResult == 0) { "Failed to process conversation: $promptResult" }
 
-            Log.i(TAG, "User prompt processed. Generating assistant prompt...")
+            Log.i(TAG, "Conversation processed. Generating assistant prompt...")
             _state.value = InferenceEngine.State.Generating
             while (!_cancelGeneration) {
                 generateNextToken()?.let { utf8token ->

@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="dialog_knowledge_title">Çevrimdışı başvurular</string>
+    <string name="dialog_knowledge_empty">Yüklü çevrimdışı başvuru modülü yok.</string>
+    <string name="dialog_knowledge_import">Dosya içe aktar</string>
+    <string name="dialog_knowledge_sources">Resmî kaynaklar</string>
+    <string name="dialog_knowledge_terms_title">Resmî başvuru verilerini içe aktar</string>
+    <string name="dialog_knowledge_terms_message">DMC sınıflandırma verilerini içermez. Verileri resmî yayıncıdan indirin ve güncel koşulları inceleyin. Özgün kodlar, başlıklar ve kaynak URI’leri değiştirilmemelidir. Çeviriler ve eşlemeler için ayrı izin gerekebilir.</string>
+    <string name="dialog_knowledge_terms_confirm">Bu dosyayı resmî kaynaktan aldım, koşulları kabul ettim ve resmî içeriği değiştirmedim.</string>
+    <string name="dialog_continue">Devam et</string>
+    <string name="dialog_knowledge_source_bfarm">BfArM: ICD-10-GM indirmeleri</string>
+    <string name="dialog_knowledge_source_who">DSÖ: ICD-11 API ve belgeleri</string>
+    <string name="dialog_knowledge_sources_message">Bu bağlantılar resmî yayıncıları açar. DMC sınıflandırma verilerini otomatik olarak indirmez veya yeniden dağıtmaz.</string>
+    <string name="dialog_knowledge_records">%1$d kayıt</string>
+    <string name="dialog_knowledge_module_details">Kaynak: %1$s\nLisans: %2$s\n\nAtıf:\n%3$s\n\nSHA-256: %4$s</string>
+    <string name="dialog_knowledge_disable">Devre dışı bırak</string>
+    <string name="dialog_knowledge_enable">Etkinleştir</string>
+    <string name="dialog_knowledge_open_source">Kaynağı aç</string>
+    <string name="dialog_knowledge_remove">Kaldır</string>
+    <string name="dialog_knowledge_remove_title">Çevrimdışı başvuruyu kaldır</string>
+    <string name="dialog_knowledge_remove_message">%1$s %2$s ve yerel olarak dizinlenen tüm kayıtlar kaldırılsın mı?</string>
+    <string name="dialog_knowledge_import_title">Çevrimdışı başvuru içe aktar</string>
+    <string name="dialog_knowledge_importing">Resmî veriler doğrulanıyor ve yerel olarak dizinleniyor...</string>
+    <string name="dialog_knowledge_import_complete">İçe aktarma tamamlandı</string>
+    <string name="dialog_knowledge_import_complete_message">%1$s %2$s, %3$d kayıtla içe aktarıldı ve çevrimdışı kullanıma hazır.</string>
+</resources>

@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="dialog_knowledge_title">Referencias sin conexión</string>
+    <string name="dialog_knowledge_empty">No hay módulos de referencia sin conexión instalados.</string>
+    <string name="dialog_knowledge_import">Importar archivo</string>
+    <string name="dialog_knowledge_sources">Fuentes oficiales</string>
+    <string name="dialog_knowledge_terms_title">Importar datos de referencia oficiales</string>
+    <string name="dialog_knowledge_terms_message">DMC no incluye datos de clasificación. Descárgalos del editor oficial y revisa sus condiciones actuales. Los códigos, títulos y URI de origen deben permanecer sin cambios. Las traducciones y equivalencias pueden requerir un permiso aparte.</string>
+    <string name="dialog_knowledge_terms_confirm">Obtuve este archivo de la fuente oficial, acepté sus condiciones y no modifiqué el contenido oficial.</string>
+    <string name="dialog_continue">Continuar</string>
+    <string name="dialog_knowledge_source_bfarm">BfArM: descargas de ICD-10-GM</string>
+    <string name="dialog_knowledge_source_who">OMS: API y documentación de CIE-11</string>
+    <string name="dialog_knowledge_sources_message">Estos enlaces abren los editores oficiales. DMC no descarga ni redistribuye automáticamente datos de clasificación.</string>
+    <string name="dialog_knowledge_records">%1$d entradas</string>
+    <string name="dialog_knowledge_module_details">Fuente: %1$s\nLicencia: %2$s\n\nAtribución:\n%3$s\n\nSHA-256: %4$s</string>
+    <string name="dialog_knowledge_disable">Desactivar</string>
+    <string name="dialog_knowledge_enable">Activar</string>
+    <string name="dialog_knowledge_open_source">Abrir fuente</string>
+    <string name="dialog_knowledge_remove">Eliminar</string>
+    <string name="dialog_knowledge_remove_title">Eliminar referencia sin conexión</string>
+    <string name="dialog_knowledge_remove_message">¿Eliminar %1$s %2$s y todas las entradas indexadas localmente?</string>
+    <string name="dialog_knowledge_import_title">Importar referencia sin conexión</string>
+    <string name="dialog_knowledge_importing">Validando e indexando localmente los datos oficiales...</string>
+    <string name="dialog_knowledge_import_complete">Importación completada</string>
+    <string name="dialog_knowledge_import_complete_message">%1$s %2$s se importó con %3$d entradas y está listo para usarse sin conexión.</string>
+</resources>

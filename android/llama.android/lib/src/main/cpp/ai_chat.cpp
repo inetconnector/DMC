@@ -590,6 +590,10 @@ static void reset_short_term_states() {
     assistant_message_finalized = false;
     cached_token_chars.clear();
     assistant_ss.str("");
+    assistant_ss.clear();
+    if (g_sampler) {
+        common_sampler_reset(g_sampler);
+    }
 }
 
 static void finalize_assistant_message() {
@@ -690,6 +694,173 @@ static int rebuild_dmc_context(
     } catch (const std::exception &e) {
         LOGe("DMC_RUNTIME rebuild failed: %s", e.what());
         return 4;
+    }
+}
+
+static std::string apply_complete_chat_template(
+        const std::vector<common_chat_msg> &messages,
+        const bool add_generation_prompt) {
+    common_chat_templates_inputs inputs;
+    inputs.use_jinja = common_chat_templates_was_explicit(g_chat_templates.get());
+    if (g_model != nullptr) {
+        const auto *vocab = llama_model_get_vocab(g_model);
+        if (vocab != nullptr) {
+            inputs.add_bos = llama_vocab_get_add_bos(vocab);
+            inputs.add_eos = llama_vocab_get_add_eos(vocab);
+        }
+    }
+    inputs.enable_thinking = g_enable_thinking;
+    inputs.chat_template_kwargs["enable_thinking"] = g_enable_thinking ? "true" : "false";
+    inputs.messages = messages;
+    inputs.add_generation_prompt = add_generation_prompt;
+    return common_chat_templates_apply(g_chat_templates.get(), inputs).prompt;
+}
+
+static int replace_conversation(
+        const std::vector<common_chat_msg> &messages,
+        const int n_predict) {
+    if (messages.empty() || messages.back().role != ROLE_USER) {
+        LOGe("DMC_SESSION replacement requires a final user message");
+        return 1;
+    }
+
+    reset_long_term_states();
+    reset_short_term_states();
+
+    const bool has_chat_template = common_chat_templates_was_explicit(g_chat_templates.get());
+    std::string formatted_prompt;
+    if (has_chat_template) {
+        formatted_prompt = apply_complete_chat_template(messages, true);
+    } else {
+        for (const auto &message : messages) {
+            if (!formatted_prompt.empty()) {
+                formatted_prompt += "\n";
+            }
+            formatted_prompt += message.role;
+            formatted_prompt += ": ";
+            formatted_prompt += message.content;
+        }
+        formatted_prompt += "\nassistant: ";
+    }
+
+    auto logical_history = common_tokenize(
+        g_context,
+        formatted_prompt,
+        has_chat_template,
+        has_chat_template);
+    if (logical_history.empty()) {
+        LOGe("DMC_SESSION replacement produced no prompt tokens");
+        return 2;
+    }
+
+    std::vector<common_chat_msg> system_prefix;
+    for (const auto &message : messages) {
+        if (message.role != ROLE_SYSTEM) {
+            break;
+        }
+        system_prefix.push_back(message);
+    }
+    if (!system_prefix.empty()) {
+        const std::string system_prompt = has_chat_template
+            ? apply_complete_chat_template(system_prefix, false)
+            : system_prefix.front().content;
+        g_dmc_system_tokens = common_tokenize(
+            g_context,
+            system_prompt,
+            has_chat_template,
+            has_chat_template).size();
+    }
+
+    const int context_limit = runtime_context_limit(g_context);
+    const int requested_output_reserve = n_predict < 0
+        ? DMC_CONTINUATION_RESERVE
+        : std::max(DMC_MIN_OUTPUT_RESERVE, n_predict);
+    const int output_reserve = std::min(
+        requested_output_reserve,
+        std::max(1, context_limit / 2));
+    const int physical_prompt_budget = std::max(1, context_limit - output_reserve);
+
+    if (logical_history.size() > static_cast<std::size_t>(physical_prompt_budget)) {
+        const int rebuild_result = rebuild_dmc_context(
+            logical_history,
+            static_cast<std::size_t>(physical_prompt_budget),
+            true);
+        if (rebuild_result != 0) {
+            LOGe("DMC_SESSION replacement rebuild failed: %d", rebuild_result);
+            return 3;
+        }
+    } else {
+        if (decode_tokens_in_batches(g_context, g_batch, logical_history, 0, true)) {
+            LOGe("DMC_SESSION replacement decode failed");
+            return 4;
+        }
+        current_position = static_cast<llama_pos>(logical_history.size());
+        g_dmc_token_history = logical_history;
+        g_dmc_has_compacted = false;
+    }
+
+    chat_msgs = messages;
+    system_prompt_position = static_cast<llama_pos>(g_dmc_system_tokens);
+    generation_token_limit = n_predict > 0 ? n_predict : -1;
+    LOGi("DMC_SESSION replaced messages=%d logical=%d physical=%d compacted=%s",
+         (int) messages.size(),
+         (int) g_dmc_token_history.size(),
+         (int) current_position,
+         g_dmc_has_compacted ? "true" : "false");
+    return 0;
+}
+
+extern "C"
+JNIEXPORT jint JNICALL
+Java_com_arm_aichat_internal_InferenceEngineImpl_processConversation(
+        JNIEnv *env,
+        jobject /*unused*/,
+        jobjectArray jroles,
+        jobjectArray jcontents,
+        jint n_predict) {
+    try {
+        if (jroles == nullptr || jcontents == nullptr) {
+            return 1;
+        }
+        const jsize role_count = env->GetArrayLength(jroles);
+        const jsize content_count = env->GetArrayLength(jcontents);
+        if (role_count <= 0 || role_count != content_count) {
+            LOGe("DMC_SESSION invalid transcript arrays: roles=%d contents=%d",
+                 (int) role_count, (int) content_count);
+            return 2;
+        }
+
+        std::vector<common_chat_msg> messages;
+        messages.reserve(static_cast<std::size_t>(role_count));
+        for (jsize i = 0; i < role_count; ++i) {
+            auto jrole = static_cast<jstring>(env->GetObjectArrayElement(jroles, i));
+            auto jcontent = static_cast<jstring>(env->GetObjectArrayElement(jcontents, i));
+            if (jrole == nullptr || jcontent == nullptr) {
+                if (jrole != nullptr) env->DeleteLocalRef(jrole);
+                if (jcontent != nullptr) env->DeleteLocalRef(jcontent);
+                return 3;
+            }
+
+            const char *role_chars = env->GetStringUTFChars(jrole, nullptr);
+            const char *content_chars = env->GetStringUTFChars(jcontent, nullptr);
+            std::string role(role_chars != nullptr ? role_chars : "");
+            std::string content(content_chars != nullptr ? content_chars : "");
+            if (role_chars != nullptr) env->ReleaseStringUTFChars(jrole, role_chars);
+            if (content_chars != nullptr) env->ReleaseStringUTFChars(jcontent, content_chars);
+            env->DeleteLocalRef(jrole);
+            env->DeleteLocalRef(jcontent);
+
+            if (role != ROLE_SYSTEM && role != ROLE_USER && role != ROLE_ASSISTANT) {
+                LOGw("DMC_SESSION mapping unsupported role '%s' to user", role.c_str());
+                content = "[" + role + "]\n" + content;
+                role = ROLE_USER;
+            }
+            messages.push_back({role, content});
+        }
+        return replace_conversation(messages, n_predict);
+    } catch (const std::exception &e) {
+        LOGe("DMC_SESSION replacement failed: %s", e.what());
+        return 5;
     }
 }
 
