@@ -1,0 +1,264 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="dark light">
+  <meta name="description" content="Datenschutzerklärung und Privacy Policy für InetMind - Local AI.">
+  <title>InetMind - Datenschutz / Privacy</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg: #07101f;
+      --panel: #101b2e;
+      --text: #f8fafc;
+      --muted: #a8b3c7;
+      --line: #263751;
+      --accent: #5eead4;
+      --warm: #f4b96a;
+      font-family: "Segoe UI", "Aptos", sans-serif;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      background:
+        radial-gradient(circle at 82% 5%, rgba(20, 184, 166, .16), transparent 28rem),
+        linear-gradient(145deg, #101b31 0%, var(--bg) 45%, #020617 100%);
+      color: var(--text);
+      line-height: 1.65;
+    }
+    main { width: min(880px, calc(100% - 2rem)); margin: 0 auto; padding: 3rem 0 5rem; }
+    header { padding: 2.5rem; border: 1px solid var(--line); border-radius: 1.5rem; background: rgba(16, 27, 46, .88); }
+    .brand { display: flex; align-items: center; gap: 1rem; }
+    .mark {
+      display: grid; place-items: center; width: 3.5rem; height: 3.5rem; border-radius: 1rem;
+      color: #07101f; background: var(--text); font-weight: 800; font-size: 1.5rem;
+    }
+    h1 { margin: 0; font-size: clamp(2rem, 6vw, 3.5rem); line-height: 1.05; letter-spacing: -.04em; }
+    h2 { margin-top: 2.5rem; font-size: 1.35rem; }
+    h3 { margin-top: 1.75rem; font-size: 1.05rem; color: var(--accent); }
+    p, li { color: var(--muted); }
+    strong { color: var(--text); }
+    a { color: var(--accent); text-underline-offset: .2em; }
+    nav { display: flex; flex-wrap: wrap; gap: .65rem; margin-top: 1.5rem; }
+    nav a { padding: .55rem .9rem; border: 1px solid var(--line); border-radius: 999px; text-decoration: none; }
+    section {
+      margin-top: 1rem; padding: 1.5rem 2rem; border: 1px solid var(--line);
+      border-radius: 1.25rem; background: rgba(16, 27, 46, .72);
+    }
+    .notice { border-left: .3rem solid var(--warm); }
+    .meta { margin: .75rem 0 0; color: var(--muted); }
+    ul { padding-left: 1.25rem; }
+    footer { padding-top: 2rem; color: var(--muted); font-size: .9rem; }
+    @media (max-width: 600px) {
+      main { width: min(100% - 1rem, 880px); padding-top: .5rem; }
+      header, section { padding: 1.25rem; border-radius: 1rem; }
+    }
+  </style>
+</head>
+<body>
+<main>
+  <header>
+    <div class="brand">
+      <div class="mark" aria-hidden="true">M</div>
+      <div>
+        <h1>InetMind</h1>
+        <div class="meta">Local AI powered by the DMC context engine</div>
+      </div>
+    </div>
+    <p><strong>Datenschutzerklärung / Privacy Policy</strong><br>
+      App-Paket / App package: <code>com.inetconnector.dmc</code><br>
+      Stand / Effective date: 23. Juli 2026 / 23 July 2026
+    </p>
+    <nav aria-label="Sprachauswahl / Language selection">
+      <a href="#de">Deutsch</a>
+      <a href="#en">English</a>
+    </nav>
+  </header>
+
+  <section id="de" lang="de">
+    <h2>Datenschutzerklärung (Deutsch)</h2>
+    <h3>1. Verantwortlicher</h3>
+    <p>Herbert Daniel Frede, InetConnector<br>
+      Bismarckstr. 6, 97209 Veitshöchheim, Deutschland<br>
+      E-Mail: <a href="mailto:apps@inetconnector.com">apps@inetconnector.com</a><br>
+      Telefon: <a href="tel:+499312078432">+49 931 2078432</a>
+    </p>
+
+    <h3>2. Grundprinzip: lokale Verarbeitung</h3>
+    <p>InetMind führt das vom Nutzer ausgewählte GGUF-Sprachmodell grundsätzlich lokal auf dem
+      Android-Gerät aus. Chats, Systemnachrichten, Modelle, importierte Wissensmodule und
+      Anhänge werden im privaten App-Speicher verarbeitet. Für die Kernfunktion ist kein
+      InetMind-Konto erforderlich. Der Betreiber erhält diese Inhalte nicht automatisch.</p>
+    <p>Android-Cloud-Backups sind für die App deaktiviert. Lokale Daten können durch Löschen
+      einzelner Chats oder Module sowie durch Löschen der App-Daten beziehungsweise
+      Deinstallieren der App entfernt werden. Vorher selbst exportierte Dateien müssen am
+      jeweiligen Speicherort separat gelöscht werden.</p>
+
+    <h3>3. Bilder, Kamera und OCR</h3>
+    <p>Bilder und Kamerafotos werden auf dem Gerät mit Google ML Kit verarbeitet. Nach den
+      Angaben von Google werden die eigentlichen Bild- und Texteingaben sowie Ergebnisse
+      dabei nicht an Google übertragen. ML Kit kann jedoch technische Geräte- und
+      App-Informationen, eine Installationskennung, Leistungswerte, API-Konfigurationen,
+      Größenangaben, Ereignistypen und Fehlercodes für Diagnose und Nutzungsanalyse an
+      Google übertragen. Diese Übertragung ist per HTTPS verschlüsselt. Google gibt an,
+      diese SDK-Daten nicht an Dritte weiterzugeben.</p>
+
+    <h3>4. Spracheingabe</h3>
+    <p>Die Spracheingabe wird über den auf dem Gerät ausgewählten Android-Spracherkennungsdienst
+      gestartet. Je nach installierter und gewählter Erkennungs-App kann Sprache lokal oder
+      durch deren Anbieter verarbeitet werden. Für diese Verarbeitung gelten die
+      Datenschutzbedingungen dieses Anbieters. InetMind betreibt keinen eigenen
+      Spracherkennungsserver und erhält die Audioaufnahme nicht.</p>
+
+    <h3>5. Vom Nutzer ausgelöste Netzwerkverbindungen</h3>
+    <p>Netzwerkzugriffe erfolgen, wenn der Nutzer Modelle oder Referenzdaten herunterlädt,
+      externe Links öffnet, eigene MCP-Server oder andere Endpunkte konfiguriert oder eine
+      Meldung beziehungsweise Support-E-Mail absendet. Dabei gelten zusätzlich die
+      Bedingungen des jeweiligen Anbieters. InetMind sendet Chats nicht ohne eine solche
+      Nutzeraktion an einen Entwickler-Server.</p>
+
+    <h3>6. Meldungen und Support</h3>
+    <p>Über die Meldefahne unter einer KI-Antwort kann ein Inhalt gemeldet werden. Grund und
+      ein auf 4.000 Zeichen begrenzter Antwortauszug werden erst nach Bestätigung in einen
+      E-Mail-Entwurf eingefügt. Der Nutzer kann den Entwurf prüfen, ändern oder verwerfen.
+      Erst das aktive Absenden über die E-Mail-App überträgt die Angaben an InetConnector.
+      Support-E-Mails werden nur zur Bearbeitung der Anfrage und zur Erfüllung gesetzlicher
+      Pflichten gespeichert und anschließend gelöscht, sobald sie nicht mehr erforderlich
+      sind.</p>
+
+    <h3>7. Berechtigungen</h3>
+    <ul>
+      <li><strong>Internet:</strong> Downloads, freiwillige externe Verbindungen, technische ML-Kit-Diagnose.</li>
+      <li><strong>Kamera:</strong> nur für eine ausdrücklich gestartete Fotoaufnahme.</li>
+      <li><strong>Mikrofon:</strong> nur für eine ausdrücklich gestartete Spracheingabe.</li>
+      <li><strong>Dateizugriff:</strong> über Androids Dokumentauswahl für vom Nutzer ausgewählte Dateien.</li>
+    </ul>
+
+    <h3>8. Konten, Werbung und Verkauf</h3>
+    <p>InetMind enthält kein Werbenetzwerk, kein Entwickler-Analysekonto und keine
+      personalisierte Werbung. Der Betreiber verkauft keine personenbezogenen Daten.
+      Die App legt kein InetMind-Benutzerkonto an.</p>
+
+    <h3>9. KI- und Gesundheitshinweis</h3>
+    <p>KI-Ausgaben können falsch, unvollständig oder unangemessen sein und müssen vor
+      wichtigen Entscheidungen überprüft werden. Importierte ICD- oder andere medizinische
+      Referenzdaten dienen ausschließlich als Nachschlagewerk. Die App erbringt keine
+      medizinische Diagnose oder Behandlung und ersetzt keine Beratung durch qualifiziertes
+      medizinisches Fachpersonal. In Notfällen ist der örtliche Notruf zu kontaktieren.</p>
+
+    <h3>10. Kinder</h3>
+    <p>Die App richtet sich nicht gezielt an Kinder. Eltern und Erziehungsberechtigte sollten
+      die Auswahl lokaler Modelle sowie deren mögliche Ausgaben beaufsichtigen.</p>
+
+    <h3>11. Rechte und Kontakt</h3>
+    <p>Soweit der Betreiber personenbezogene Daten aus einer Support- oder Inhaltsmeldung
+      erhält, bestehen nach Maßgabe der DSGVO insbesondere Rechte auf Auskunft, Berichtigung,
+      Löschung, Einschränkung, Widerspruch und Datenübertragbarkeit sowie ein Beschwerderecht
+      bei einer Datenschutzaufsichtsbehörde. Anfragen bitte an
+      <a href="mailto:apps@inetconnector.com">apps@inetconnector.com</a>.</p>
+
+    <h3>12. Externe Informationen</h3>
+    <p>Google beschreibt die Datenverarbeitung seiner ML-Kit-Android-SDKs unter
+      <a href="https://developers.google.com/ml-kit/android-data-disclosure">ML Kit Android Data Disclosure</a>.
+      Der Quellcode von InetMind ist unter
+      <a href="https://github.com/inetconnector/DMC">github.com/inetconnector/DMC</a> verfügbar.</p>
+  </section>
+
+  <section id="en" lang="en">
+    <h2>Privacy Policy (English)</h2>
+    <h3>1. Controller</h3>
+    <p>Herbert Daniel Frede, InetConnector<br>
+      Bismarckstr. 6, 97209 Veitshöchheim, Germany<br>
+      Email: <a href="mailto:apps@inetconnector.com">apps@inetconnector.com</a><br>
+      Phone: <a href="tel:+499312078432">+49 931 2078432</a>
+    </p>
+
+    <h3>2. Local-first processing</h3>
+    <p>InetMind normally runs the GGUF language model selected by the user locally on the
+      Android device. Chats, system messages, models, imported knowledge modules and
+      attachments are processed in private app storage. The core feature requires no
+      InetMind account. The developer does not automatically receive this content.</p>
+    <p>Android cloud backup is disabled for the app. Local data can be removed by deleting
+      individual chats or modules, clearing app data, or uninstalling the app. Files
+      previously exported by the user must be deleted separately from their chosen location.</p>
+
+    <h3>3. Images, camera and OCR</h3>
+    <p>Images and camera photos are processed on the device with Google ML Kit. According
+      to Google, raw image or text inputs and results are not sent to Google. ML Kit may
+      transmit technical device and app information, a per-installation identifier,
+      performance metrics, API configuration, input and output sizes, event types and
+      error codes to Google for diagnostics and usage analytics. This data is encrypted
+      in transit with HTTPS. Google states that these SDK data are not shared with third
+      parties.</p>
+
+    <h3>4. Voice input</h3>
+    <p>Voice input launches the Android speech-recognition service selected on the device.
+      Depending on the installed and selected recognizer, speech may be processed locally
+      or by its provider. That provider's privacy terms apply. InetMind runs no speech
+      recognition server and does not receive the recording.</p>
+
+    <h3>5. User-initiated network connections</h3>
+    <p>Network access occurs when the user downloads models or reference data, opens an
+      external link, configures an MCP server or other endpoint, or sends a report or
+      support email. The relevant provider's terms also apply. InetMind does not send chats
+      to a developer server without such a user action.</p>
+
+    <h3>6. Reports and support</h3>
+    <p>The flag below an AI response can be used to report content. A reason and an excerpt
+      limited to 4,000 characters are added to an email draft only after confirmation.
+      The user can review, change or discard the draft. Information is transferred to
+      InetConnector only when the user actively sends it through the email app. Support
+      email is retained only to handle the request and meet legal obligations, then deleted
+      when no longer required.</p>
+
+    <h3>7. Permissions</h3>
+    <ul>
+      <li><strong>Internet:</strong> downloads, voluntary external connections and technical ML Kit diagnostics.</li>
+      <li><strong>Camera:</strong> only for a photo capture explicitly started by the user.</li>
+      <li><strong>Microphone:</strong> only for voice input explicitly started by the user.</li>
+      <li><strong>Files:</strong> through Android's document picker for files selected by the user.</li>
+    </ul>
+
+    <h3>8. Accounts, advertising and sale</h3>
+    <p>InetMind contains no advertising network, developer analytics account or personalized
+      advertising. The developer does not sell personal data. The app creates no InetMind
+      user account.</p>
+
+    <h3>9. AI and health disclaimer</h3>
+    <p>AI output can be inaccurate, incomplete or inappropriate and must be verified before
+      important decisions. Imported ICD or other medical reference data are reference
+      material only. The app does not provide medical diagnosis or treatment and is not a
+      substitute for qualified medical advice. Contact local emergency services in an emergency.</p>
+
+    <h3>10. Children</h3>
+    <p>The app is not specifically directed to children. Parents and guardians should
+      supervise the selection of local models and their possible outputs.</p>
+
+    <h3>11. Rights and contact</h3>
+    <p>Where the controller receives personal data in a support or content report, applicable
+      law may provide rights of access, correction, deletion, restriction, objection and
+      portability, as well as the right to complain to a supervisory authority. Contact
+      <a href="mailto:apps@inetconnector.com">apps@inetconnector.com</a>.</p>
+
+    <h3>12. External information</h3>
+    <p>Google describes its ML Kit Android SDK processing in the
+      <a href="https://developers.google.com/ml-kit/android-data-disclosure">ML Kit Android Data Disclosure</a>.
+      InetMind source code is available at
+      <a href="https://github.com/inetconnector/DMC">github.com/inetconnector/DMC</a>.</p>
+  </section>
+
+  <section class="notice">
+    <strong>Änderungen / Changes</strong>
+    <p>Diese Erklärung wird angepasst, wenn sich Funktionen oder Datenflüsse ändern. Das
+      Aktualisierungsdatum steht am Seitenanfang. / This policy is updated when features or
+      data flows change. The effective date appears at the top of the page.</p>
+  </section>
+
+  <footer>
+    © 2026 Herbert Daniel Frede / InetConnector. No cookies, analytics, remote fonts or
+    tracking scripts are used on this page.
+  </footer>
+</main>
+</body>
+</html>
