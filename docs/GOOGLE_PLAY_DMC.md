@@ -253,7 +253,11 @@ current app behavior:
   not a diagnostic or treatment device.
 - Complete the generative-AI declaration. InetMind provides a localized flag
   action below assistant responses; the reason is selected in-app and an email
-  report is sent only if the user confirms it in the chosen mail app.
+  report is sent only if the user confirms it in the chosen mail app. Because
+  Google explicitly requires reporting to the developer without leaving the
+  app, replace email delivery with an InetConnector-controlled in-app HTTPS
+  endpoint before production. The current path is suitable for testing, not a
+  claim of final production compliance.
 - Review target audience and content rating conservatively. The app is not
   designed for children.
 - Confirm that models and official classification data are downloaded or

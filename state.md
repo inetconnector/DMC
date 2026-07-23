@@ -309,6 +309,13 @@ Update this file and `README.md` together whenever behavior changes.
   Play permission propagation before retrying. A separate attempt to set
   support email, phone, website, and default language was rejected at edit
   validation with the same 403; its uncommitted edit was explicitly deleted.
+- The current generated-content report UI collects a reason in-app but delivers
+  through an external mail composer. Google Play's current AI-generated content
+  policy says reporting to the developer must work without leaving the app.
+  Production therefore remains blocked until an InetConnector-controlled HTTPS
+  report endpoint is available and wired into the native dialog with abuse
+  protection, retention/deletion handling, and updated privacy/Data safety
+  disclosures. Do not use an undisclosed third-party form relay as a shortcut.
 - The published `android-v1.0.0` tag predates the checked-in llama.cpp
   submodule pointer. Do not move that public tag. Publish the next Android
   patch release from the reproducible submodule-based source state.

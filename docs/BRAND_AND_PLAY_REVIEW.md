@@ -48,10 +48,19 @@ paid marketing launch, order a professional similarity search covering:
 ### AI-generated content
 
 Google Play requires generative-AI apps to provide an in-app way to report or
-flag offensive generated content. InetMind now shows a flag action below every
-nonempty assistant response. The Android dialog collects a reason in-app and,
-after confirmation, prepares an email draft containing at most 4,000
-characters. The user can review or discard the draft before anything is sent.
+flag offensive generated content without leaving the app. InetMind now shows a
+flag action below every nonempty assistant response. The Android dialog collects
+a reason in-app and, after confirmation, prepares an email draft containing at
+most 4,000 characters. The user can review or discard the draft before anything
+is sent.
+
+This is a useful reporting path but is not yet sufficient for a strict reading
+of the policy because delivery switches to the user's mail app. Treat this as a
+production blocker. Before production submission, provide an InetConnector-
+controlled HTTPS endpoint, submit the report from the native dialog, add abuse
+protection and retention/deletion handling, and update both the privacy policy
+and Data safety form. Do not add an undocumented third-party form relay merely
+to bypass this requirement.
 
 ### Data safety
 
