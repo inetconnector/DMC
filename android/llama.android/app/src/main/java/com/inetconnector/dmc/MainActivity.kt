@@ -139,6 +139,8 @@ class MainActivity : AppCompatActivity() {
         private const val PREF_KEY_PREFERRED_MODEL_PATH = "preferred_model_path"
         private const val PREF_KEY_FAILED_MODEL_PATHS = "failed_model_paths"
         private const val CX_FILE_EXPLORER_PACKAGE = "com.cxinventor.file.explorer"
+        private const val PRIVACY_POLICY_URL = "https://inetconnector.github.io/DMC/privacy/"
+        private const val SUPPORT_EMAIL = "apps@inetconnector.com"
         private const val TAG = "MainActivity"
     }
     private lateinit var webView: WebView
@@ -591,6 +593,7 @@ class MainActivity : AppCompatActivity() {
         webView.addJavascriptInterface(AndroidSpeechBridge(), "AndroidSpeechBridge")
         webView.addJavascriptInterface(AndroidModelBridge(), "AndroidModelBridge")
         webView.addJavascriptInterface(AndroidKnowledgeBridge(), "AndroidKnowledgeBridge")
+        webView.addJavascriptInterface(AndroidLegalBridge(), "AndroidLegalBridge")
         webView.setDownloadListener { url, _userAgent, contentDisposition, mimeType, _contentLength ->
             enqueueWebDownload(url, contentDisposition, mimeType)
         }
@@ -750,6 +753,99 @@ class MainActivity : AppCompatActivity() {
         fun openKnowledgeModules() {
             runOnUiThread { showKnowledgeModulesDialog() }
         }
+    }
+
+    private inner class AndroidLegalBridge {
+        @JavascriptInterface
+        fun openPrivacyPolicy() {
+            runOnUiThread { openExternalUrl(PRIVACY_POLICY_URL) }
+        }
+
+        @JavascriptInterface
+        fun contactSupport() {
+            runOnUiThread { openSupportEmail() }
+        }
+
+        @JavascriptInterface
+        fun reportContent(content: String) {
+            runOnUiThread { showContentReportDialog(content) }
+        }
+    }
+
+    private fun openExternalUrl(url: String) {
+        runCatching {
+            startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url)))
+        }.onFailure {
+            Log.e(TAG, "Failed to open external URL", it)
+        }
+    }
+
+    private fun openSupportEmail(subject: String = "InetMind support") {
+        val uri = Uri.parse("mailto:$SUPPORT_EMAIL").buildUpon()
+            .appendQueryParameter("subject", subject)
+            .build()
+        runCatching {
+            startActivity(Intent.createChooser(Intent(Intent.ACTION_SENDTO, uri), subject))
+        }.onFailure {
+            AlertDialog.Builder(this)
+                .setMessage(getString(R.string.report_no_email_app))
+                .setPositiveButton(android.R.string.ok, null)
+                .show()
+        }
+    }
+
+    private fun showContentReportDialog(content: String) {
+        val reasons = arrayOf(
+            getString(R.string.report_reason_harmful),
+            getString(R.string.report_reason_hateful),
+            getString(R.string.report_reason_sexual),
+            getString(R.string.report_reason_illegal),
+            getString(R.string.report_reason_inaccurate),
+            getString(R.string.report_reason_other)
+        )
+        var selectedReason = reasons.lastIndex
+
+        AlertDialog.Builder(this)
+            .setTitle(R.string.report_response_title)
+            .setMessage(R.string.report_response_message)
+            .setSingleChoiceItems(reasons, selectedReason) { _, which ->
+                selectedReason = which
+            }
+            .setNegativeButton(R.string.report_cancel, null)
+            .setPositiveButton(R.string.report_prepare_email) { _, _ ->
+                val excerpt = content.trim().take(4_000)
+                val packageInfo = packageManager.getPackageInfo(
+                    packageName,
+                    PackageManager.PackageInfoFlags.of(0)
+                )
+                val body = buildString {
+                    appendLine("Reason: ${reasons[selectedReason]}")
+                    appendLine("App: InetMind")
+                    appendLine("Package: $packageName")
+                    appendLine("Version: ${packageInfo.versionName} (${packageInfo.longVersionCode})")
+                    appendLine()
+                    appendLine("Reported response:")
+                    append(excerpt)
+                }
+                val uri = Uri.parse("mailto:$SUPPORT_EMAIL").buildUpon()
+                    .appendQueryParameter("subject", getString(R.string.report_email_subject))
+                    .appendQueryParameter("body", body)
+                    .build()
+                runCatching {
+                    startActivity(
+                        Intent.createChooser(
+                            Intent(Intent.ACTION_SENDTO, uri),
+                            getString(R.string.report_email_chooser)
+                        )
+                    )
+                }.onFailure {
+                    AlertDialog.Builder(this)
+                        .setMessage(getString(R.string.report_no_email_app))
+                        .setPositiveButton(android.R.string.ok, null)
+                        .show()
+                }
+            }
+            .show()
     }
 
     private fun createCxPreferredOpenDocumentIntent(mimeTypes: Array<String>): Intent {

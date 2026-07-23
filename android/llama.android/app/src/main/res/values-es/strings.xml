@@ -1,16 +1,30 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <string name="privacy_policy_title">Política de privacidad</string>
+    <string name="report_response_title">Denunciar respuesta de IA</string>
+    <string name="report_response_message">Elige un motivo. El texto de la respuesta solo se añadirá a un borrador de correo tras tu confirmación. Revísalo antes de enviarlo al desarrollador.</string>
+    <string name="report_reason_harmful">Dañino o peligroso</string>
+    <string name="report_reason_hateful">Odioso o abusivo</string>
+    <string name="report_reason_sexual">Contenido sexual</string>
+    <string name="report_reason_illegal">Contenido ilegal</string>
+    <string name="report_reason_inaccurate">Gravemente inexacto</string>
+    <string name="report_reason_other">Otro</string>
+    <string name="report_prepare_email">Preparar denuncia</string>
+    <string name="report_cancel">Cancelar</string>
+    <string name="report_email_subject">Denuncia de contenido de IA de InetMind</string>
+    <string name="report_email_chooser">Enviar denuncia de contenido</string>
+    <string name="report_no_email_app">No hay ninguna aplicación de correo disponible. Contacta con apps@inetconnector.com.</string>
     <string name="dialog_knowledge_title">Referencias sin conexión</string>
     <string name="dialog_knowledge_empty">No hay módulos de referencia sin conexión instalados.</string>
     <string name="dialog_knowledge_import">Importar archivo</string>
     <string name="dialog_knowledge_sources">Fuentes oficiales</string>
     <string name="dialog_knowledge_terms_title">Importar datos de referencia oficiales</string>
-    <string name="dialog_knowledge_terms_message">DMC no incluye datos de clasificación. Descárgalos del editor oficial y revisa sus condiciones actuales. Los códigos, títulos y URI de origen deben permanecer sin cambios. Las traducciones y equivalencias pueden requerir un permiso aparte.</string>
+    <string name="dialog_knowledge_terms_message">InetMind no incluye datos de clasificación. Descárgalos del editor oficial y revisa sus condiciones actuales. Los códigos, títulos y URI de origen deben permanecer sin cambios. Las traducciones y equivalencias pueden requerir un permiso aparte.</string>
     <string name="dialog_knowledge_terms_confirm">Obtuve este archivo de la fuente oficial, acepté sus condiciones y no modifiqué el contenido oficial.</string>
     <string name="dialog_continue">Continuar</string>
     <string name="dialog_knowledge_source_bfarm">BfArM: descargas de ICD-10-GM</string>
     <string name="dialog_knowledge_source_who">OMS: API y documentación de CIE-11</string>
-    <string name="dialog_knowledge_sources_message">Estos enlaces abren los editores oficiales. DMC no descarga ni redistribuye automáticamente datos de clasificación.</string>
+    <string name="dialog_knowledge_sources_message">Estos enlaces abren los editores oficiales. InetMind no descarga ni redistribuye automáticamente datos de clasificación.</string>
     <string name="dialog_knowledge_records">%1$d entradas</string>
     <string name="dialog_knowledge_module_details">Fuente: %1$s\nLicencia: %2$s\n\nAtribución:\n%3$s\n\nSHA-256: %4$s</string>
     <string name="dialog_knowledge_disable">Desactivar</string>

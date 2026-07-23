@@ -1,16 +1,30 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <string name="privacy_policy_title">Privacybeleid</string>
+    <string name="report_response_title">AI-antwoord melden</string>
+    <string name="report_response_message">Kies een reden. De antwoordtekst wordt pas na je bevestiging aan een e-mailconcept toegevoegd. Controleer het concept voordat je het naar de ontwikkelaar stuurt.</string>
+    <string name="report_reason_harmful">Schadelijk of gevaarlijk</string>
+    <string name="report_reason_hateful">Haatdragend of beledigend</string>
+    <string name="report_reason_sexual">Seksuele inhoud</string>
+    <string name="report_reason_illegal">Illegale inhoud</string>
+    <string name="report_reason_inaccurate">Ernstig onnauwkeurig</string>
+    <string name="report_reason_other">Overig</string>
+    <string name="report_prepare_email">Melding voorbereiden</string>
+    <string name="report_cancel">Annuleren</string>
+    <string name="report_email_subject">InetMind-melding over AI-inhoud</string>
+    <string name="report_email_chooser">Inhoudsmelding verzenden</string>
+    <string name="report_no_email_app">Er is geen e-mailapp beschikbaar. Neem contact op via apps@inetconnector.com.</string>
     <string name="dialog_knowledge_title">Offline referenties</string>
     <string name="dialog_knowledge_empty">Er zijn geen offline referentiemodules geïnstalleerd.</string>
     <string name="dialog_knowledge_import">Bestand importeren</string>
     <string name="dialog_knowledge_sources">Officiële bronnen</string>
     <string name="dialog_knowledge_terms_title">Officiële referentiegegevens importeren</string>
-    <string name="dialog_knowledge_terms_message">DMC bevat geen classificatiegegevens. Download deze bij de officiële uitgever en lees de actuele voorwaarden. De oorspronkelijke codes, titels en bron-URI’s moeten ongewijzigd blijven. Voor vertalingen en koppelingen kan afzonderlijke toestemming nodig zijn.</string>
+    <string name="dialog_knowledge_terms_message">InetMind bevat geen classificatiegegevens. Download deze bij de officiële uitgever en lees de actuele voorwaarden. De oorspronkelijke codes, titels en bron-URI’s moeten ongewijzigd blijven. Voor vertalingen en koppelingen kan afzonderlijke toestemming nodig zijn.</string>
     <string name="dialog_knowledge_terms_confirm">Ik heb dit bestand van de officiële bron verkregen, de voorwaarden geaccepteerd en de officiële inhoud niet gewijzigd.</string>
     <string name="dialog_continue">Doorgaan</string>
     <string name="dialog_knowledge_source_bfarm">BfArM: ICD-10-GM-downloads</string>
     <string name="dialog_knowledge_source_who">WHO: ICD-11-API en documentatie</string>
-    <string name="dialog_knowledge_sources_message">Deze koppelingen openen de officiële uitgevers. DMC downloadt of verspreidt classificatiegegevens niet automatisch.</string>
+    <string name="dialog_knowledge_sources_message">Deze koppelingen openen de officiële uitgevers. InetMind downloadt of verspreidt classificatiegegevens niet automatisch.</string>
     <string name="dialog_knowledge_records">%1$d vermeldingen</string>
     <string name="dialog_knowledge_module_details">Bron: %1$s\nLicentie: %2$s\n\nNaamsvermelding:\n%3$s\n\nSHA-256: %4$s</string>
     <string name="dialog_knowledge_disable">Uitschakelen</string>

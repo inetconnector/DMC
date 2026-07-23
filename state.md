@@ -35,23 +35,36 @@ Update this file and `README.md` together whenever behavior changes.
   metadata with the 131072-token context and vision/audio modalities, and the
   installed ICD-10-GM 2026 module with 12606 entries. The temporary display
   size, rotation, app locale, and locale-config overrides were restored.
-- `play/metadata/` contains validated title, short-description, and full-
-  description files for `en-US`, `de-DE`, `fr-FR`, `es-ES`, `it-IT`, `nl-NL`,
-  `pl-PL`, `pt-BR`, and `tr-TR`. `play/release-notes/1.0.0.json` covers the
-  same nine locales. `play/graphics/` contains the final 512x512 icon,
+- `play/metadata/` contains validated InetMind title, short-description, and
+  full-description files for `en-US`, `de-DE`, `fr-FR`, `es-ES`, `it-IT`,
+  `nl-NL`, `pl-PL`, `pt-BR`, and `tr-TR`. Release notes exist for `1.0.0` and
+  `1.0.1`. `play/graphics/` contains the final 512x512 icon, InetMind-branded
   1024x500 feature graphic, and editable SVG sources.
 - The Play Console app `com.inetconnector.dmc` now exists as the draft
-  "Offline KI - OLLAMA UI -DMC". The existing publishing service account can
-  access it and read the alpha, beta, internal, and production tracks. A local
-  `dmc` profile alias now references the same credential as the existing
+  originally created as "Offline KI - OLLAMA UI -DMC". The intended public
+  name is now **InetMind - Local AI** / **InetMind - Lokale KI**; the package
+  remains immutable. The existing publishing service account can access it and
+  read the alpha, beta, internal, and production tracks. A local `dmc` profile
+  alias references the same external credential as the existing
   `activitylauncher` profile without changing the default profile.
-- Fresh signed version `1.0.0 (1)` was uploaded on 2026-07-23 and is processed
-  with status `completed` on the internal track. Google remotely reports all
-  nine localized release notes. The shared service account can manage releases
-  but cannot commit store-listing/media edits; Play Console must grant it the
-  DMC-specific **Manage store presence** permission before `play/metadata/`,
-  screenshots, icon, and feature graphic can be synced. The failed media edit
-  was discarded, leaving no active edit.
+- Signed version `1.0.1 (2)` was uploaded on 2026-07-23 and is processed with
+  status `completed` on the internal track; it replaces internal version code
+  `1`. Google remotely reports the release name `1.0.1` and version code `2`.
+  The shared service account can manage releases but a live metadata commit
+  still returned `403 forbidden`; Play Console must make the app-specific
+  **Manage store presence** permission effective before `play/metadata/`,
+  screenshots, icon, and feature graphic can be synced. A remote metadata pull
+  consequently still returns only `en-US` with the old draft title
+  "Offline KI - OLLAMA UI -DMC".
+- The bilingual, tracker-free privacy policy is versioned in
+  `privacy/index.html` and published by GitHub Pages at
+  `https://inetconnector.github.io/DMC/privacy/`. GitHub reported the latest
+  Pages build as `built`, and the public URL returned HTTP 200.
+- `play/DATA_SAFETY.md` contains the conservative Play Data safety answer
+  matrix. It accounts for ML Kit diagnostics/per-installation identifiers,
+  optional user-sent report emails, device speech-recognizer behavior, and
+  user-configured external endpoints instead of incorrectly claiming that no
+  data can ever be collected.
 - The fresh APK, AAB, and a ZIP of `play/` were copied to
   `\\diskstation.fritz.box\Dani\offline-knowledge-modules\` and read back with
   matching SHA-256 hashes.
@@ -284,10 +297,18 @@ Update this file and `README.md` together whenever behavior changes.
   load must be treated as a regression and reproduced before fixing.
 - The stop/pause button state after sending a message should be verified after
   each release build.
-- The Web UI release build succeeds but currently reports non-fatal warnings
-  for duplicate `MCP Resources` translation keys, missing ARIA roles on swipe
-  containers, one Svelte state-capture warning, and a Rollup circular re-export.
-  These warnings should be cleaned up before the next release.
+- The Web UI `svelte-check` run reports 0 errors and 0 warnings. Duplicate
+  `MCP Resources` translation keys, missing ARIA roles on swipe containers, and
+  a capture-prop typing issue were fixed. The production bundle still reports
+  one Svelte state-capture warning, one Rollup circular re-export warning, and
+  a large-chunk warning; these are non-fatal but remain technical debt.
+- Google Play metadata validation and both German/English screenshot validators
+  pass. A live metadata push still fails at edit commit with `403 forbidden`
+  despite the service account being able to list the app and tracks. Recheck
+  that **Manage store presence** is enabled for this exact app and allow for
+  Play permission propagation before retrying. A separate attempt to set
+  support email, phone, website, and default language was rejected at edit
+  validation with the same 403; its uncommitted edit was explicitly deleted.
 - The published `android-v1.0.0` tag predates the checked-in llama.cpp
   submodule pointer. Do not move that public tag. Publish the next Android
   patch release from the reproducible submodule-based source state.
@@ -302,6 +323,41 @@ Update this file and `README.md` together whenever behavior changes.
 
 ## Recent Change
 
+- Renamed the consumer-facing app from the misleading
+  "Offline KI - OLLAMA UI -DMC" to **InetMind - Local AI** while preserving
+  `com.inetconnector.dmc` and DMC as the native context-engine name. All nine
+  Play titles/descriptions, Android app labels, feature graphics, and visible
+  knowledge-module notices were updated. Technical DMC documentation remains
+  intact.
+- Added a localized in-app generated-content report action below assistant
+  responses. Android collects the reason in a native dialog and prepares a
+  bounded email draft only after confirmation. Added privacy/support controls
+  to settings and localized them across all supported UI languages.
+- Added the bilingual privacy policy, published it through GitHub Pages, added
+  the maintained Data safety matrix, documented the preliminary InetMind name
+  screening, and removed Ollama from consumer-facing branding. Android backup
+  is disabled so chats, models, and imported modules are not copied through
+  normal Android backup.
+- Bumped the release candidate to `1.0.1 (2)`. The first full release build
+  exposed an invalid `BuildConfig` reference in the new report body; this was
+  replaced with the installed package metadata, and isolated Kotlin release
+  compilation then completed successfully.
+- The final signed release build completed with R8, release lint, APK/AAB
+  signing, and the native DMC marker gate. `aapt2` reports package
+  `com.inetconnector.dmc`, version `1.0.1 (2)`, and application label
+  `InetMind`. `gplay preflight` found 0 issues, and the complete strict
+  readiness check found 0 blockers and 0 warnings across the artifact, nine
+  listings, seven screenshots, and nine localized release notes. Manual Data
+  safety and policy review remain Console-only.
+- Current release hashes are
+  `45882B5CD40792FDA3273C94B0DA6296BFD3C04C9AFBD8CF09CE0F921F6A1707`
+  (APK) and
+  `5D3B820572CB866C729D5CF362A23E34BAD6BDC94926075C3B33FF467B4E7905`
+  (AAB).
+- APK, AAB, and the Play/privacy submission archive were copied to
+  `\\diskstation.fritz.box\Dani\offline-knowledge-modules\1.0.1+2\` and read
+  back byte-for-byte with matching SHA-256 hashes. No ADB device was connected
+  during this release, so the signed APK was not installed on a phone.
 - Built and independently verified a fresh signed APK/AAB, passed `gplay
   preflight` with zero findings, and published version `1.0.0 (1)` to the
   internal Google Play track. Added nine localized listings/release notes,
@@ -359,7 +415,7 @@ Update this file and `README.md` together whenever behavior changes.
 
 - The formerly ignored `upstream/llama.cpp` working tree was converted into a
   real Git submodule. It is pinned to commit
-  `404affccbd730d2fb9a2ad20e4c66f0c46ea1809` on the `dmc-android` branch of
+  `35c0cc14426e3bd37cbbef7d77a237d216404c01` on the `dmc-android` branch of
   `https://github.com/inetconnector/llama.cpp.git`; that repository is a public
   fork of `ggml-org/llama.cpp` and preserves the complete DMC Android diff.
 - `build-android.bat` now initializes and validates that exact submodule commit

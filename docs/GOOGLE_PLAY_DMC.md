@@ -1,17 +1,18 @@
-# Google Play publishing for DMC
+# Google Play publishing for InetMind / DMC
 
-This guide configures Google Play Developer API access specifically for the DMC
-Android app. The public Android package is `com.inetconnector.dmc`.
+This guide configures Google Play Developer API access for the InetMind Android
+app. DMC remains the native long-context engine and the public Android package
+remains `com.inetconnector.dmc`.
 
 ## Fixed DMC values
 
 | Purpose | Value |
 | --- | --- |
-| Play app name | DMC - Local AI Chat |
+| Play app name | InetMind - Local AI / InetMind - Lokale KI |
 | Android package | `com.inetconnector.dmc` |
-| Suggested Cloud project name | DMC Play Publishing |
+| Suggested Cloud project name | InetMind Play Publishing |
 | Suggested Cloud project ID | `inetconnector-dmc-play` (must be globally unique) |
-| Service account name/ID | `dmc-gplay` |
+| Service account name/ID | Existing shared publisher account or `inetmind-gplay` |
 | Local gplay profile | `dmc` |
 | Private JSON key | `C:\Users\frede\.gplay\keys\dmc-play.json` |
 | Repository package pin | `.gplay/config.yaml` |
@@ -19,17 +20,24 @@ Android app. The public Android package is `com.inetconnector.dmc`.
 ## Current publication state
 
 - Play app `com.inetconnector.dmc` exists.
-- Signed version `1.0.0 (1)` is processed with status `completed` in the
-  internal test track.
+- Signed version `1.0.1 (2)` is processed with status `completed` in the
+  internal test track. It contains the InetMind branding, privacy links,
+  generated-content reporting, disabled Android backup, and the maintained
+  privacy/Data safety disclosures.
 - Localized release notes for nine locales are attached to that release.
 - Validated store listings for the same nine locales, German and English phone
   screenshots, the icon, and the feature graphic are versioned under `play/`.
-- The shared service account can manage releases but currently lacks the
-  DMC-specific **Manage store presence** permission. Until that permission is
-  granted, Google rejects commits containing store text or media. The local
-  files are complete; no secret or generated bundle is committed.
+- The shared service account can list the app and manage releases. A live
+  metadata commit still returned `403 forbidden` on 2026-07-23, so
+  app-specific **Manage store presence** is not yet effective or has not
+  propagated. App contact details were rejected at edit validation for the same
+  reason; the temporary edit was discarded. The local files validate
+  successfully; no secret or generated bundle is committed.
 - Price `4.99 EUR`, Data safety, content declarations, target audience, ads,
   app access, and the final production review remain Console-only work.
+- The privacy policy is published at
+  `https://inetconnector.github.io/DMC/privacy/`. Enter this exact URL in the
+  Play Console privacy-policy field.
 
 A dedicated service account is optional. Google Play allows the existing
 publishing service account to receive access to several selected apps. This
@@ -52,7 +60,8 @@ The Android Publisher API cannot create a normal public Play app. Before API
 access can be tested, create the app manually in Google Play Console:
 
 1. Select **Create app**.
-2. Use **DMC - Local AI Chat** as the initial name.
+2. Use **InetMind - Local AI** as the initial English name or
+   **InetMind - Lokale KI** when German is the default language.
 3. Choose **App**, not Game, and select the default language.
 4. Select **Paid** before the first publication if DMC is to cost `4.99 EUR`.
    A Play app that has once been offered for free cannot later become paid.
@@ -102,7 +111,7 @@ Copy the service-account email ending in
 `@<project-id>.iam.gserviceaccount.com`, then open **Users and permissions** in
 Google Play Console and invite it.
 
-Restrict app access to **DMC - Local AI Chat** / `com.inetconnector.dmc` and
+Restrict app access to **InetMind - Local AI** / `com.inetconnector.dmc` and
 grant only what the publishing workflow needs:
 
 - View app information.
@@ -168,7 +177,7 @@ Then validate the exact current artifact before any upload:
 ```powershell
 gplay validate `
   --package com.inetconnector.dmc `
-  --bundle ".\publish\com.inetconnector.dmc\1.0.0+1\com.inetconnector.dmc-1.0.0+1-release.aab" `
+  --bundle ".\publish\com.inetconnector.dmc\1.0.1+2\com.inetconnector.dmc-1.0.1+2-release.aab" `
   --track internal `
   --strict
 ```
@@ -207,15 +216,15 @@ Use the high-level command only after the validation report is clean:
 gplay release `
   --package com.inetconnector.dmc `
   --track internal `
-  --bundle ".\publish\com.inetconnector.dmc\1.0.0+1\com.inetconnector.dmc-1.0.0+1-release.aab" `
+  --bundle ".\publish\com.inetconnector.dmc\1.0.1+2\com.inetconnector.dmc-1.0.1+2-release.aab" `
   --listings-dir .\play\metadata `
   --screenshots-dir .\play\screenshots `
-  --release-notes '@.\play\release-notes\1.0.0.json' `
+  --release-notes '@.\play\release-notes\1.0.1.json' `
   --wait
 ```
 
-Version code `1` has already been uploaded and cannot be reused. The next
-bundle must increment `versionCode` before upload.
+Version code `1` has already been uploaded and cannot be reused. The current
+candidate uses version code `2`; every later bundle must increment it again.
 
 After granting **Manage store presence**, push the local listings and media.
 Use a fresh edit for the graphics and commit only after `images sync` reports
@@ -227,6 +236,31 @@ merchant/payments profile, set the app price to `4.99 EUR`, review generated
 local prices, and only then prepare production. New personal developer accounts
 may need a closed test with 12 continuously opted-in testers for 14 days before
 production access is granted.
+
+## 8. Complete policy declarations
+
+These declarations are not inferred safely from an AAB and must match the
+current app behavior:
+
+- Enter `https://inetconnector.github.io/DMC/privacy/` as the privacy-policy
+  URL.
+- Complete Data safety from `play/DATA_SAFETY.md`. Do not select "no data
+  collected": bundled ML Kit components document diagnostics, usage analytics,
+  and a per-installation identifier.
+- Declare no ads and no account/login requirement.
+- Complete the Health apps declaration because optional ICD modules can expose
+  medical reference information. The app is a general-purpose reference tool,
+  not a diagnostic or treatment device.
+- Complete the generative-AI declaration. InetMind provides a localized flag
+  action below assistant responses; the reason is selected in-app and an email
+  report is sent only if the user confirms it in the chosen mail app.
+- Review target audience and content rating conservatively. The app is not
+  designed for children.
+- Confirm that models and official classification data are downloaded or
+  imported separately and retain their publishers' licences.
+
+The public policy text is versioned in `privacy/index.html`; the brand and
+policy rationale is in `docs/BRAND_AND_PLAY_REVIEW.md`.
 
 ## Security checklist
 

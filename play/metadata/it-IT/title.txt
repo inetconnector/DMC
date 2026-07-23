@@ -1,1 +1,1 @@
-DMC - IA locale
+InetMind - IA locale

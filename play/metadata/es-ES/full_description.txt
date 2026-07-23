@@ -1,7 +1,7 @@
-DMC lleva conversaciones de IA potentes directamente a tu dispositivo Android. Ejecuta modelos de lenguaje GGUF compatibles de forma local, conserva conversaciones largas en contexto y observa las respuestas mientras se generan.
+InetMind lleva conversaciones de IA potentes directamente a tu dispositivo Android. Ejecuta modelos de lenguaje GGUF compatibles de forma local, conserva conversaciones largas en contexto y observa las respuestas mientras se generan.
 
 IA LOCAL
-El modelo y las conversaciones permanecen en el dispositivo durante la inferencia local. No necesitas una cuenta en la nube para chatear. Solo hace falta conexión a Internet cuando decides descargar un modelo o datos de referencia externos.
+El modelo, las conversaciones y los archivos adjuntos permanecen en el dispositivo durante la inferencia de IA local. No necesitas una cuenta en la nube para chatear. Hay acceso a la red para las descargas o conexiones externas que tú inicias y para los datos técnicos de diagnóstico y uso de las funciones de Google ML Kit incluidas. ML Kit procesa el contenido de imágenes y textos en el dispositivo.
 
 CONTEXTO LARGO Y FIABLE
 Deterministic Multiresolution Context (DMC) conserva las partes importantes de historiales largos cuando se llena la caché física del modelo. Combina un prefijo global estable, los detalles recientes y niveles de repetición deterministas sin resumir de forma recursiva tus textos originales. El tamaño disponible depende del modelo y de los recursos del dispositivo.
@@ -10,7 +10,7 @@ ENTRADAS MULTIMODALES
 Adjunta imágenes, toma una foto, añade documentos de texto o PDF y utiliza la entrada de voz. Las funciones de imagen y audio dependen del modelo seleccionado. Las respuestas aparecen progresivamente durante el cálculo.
 
 MÓDULOS DE CONOCIMIENTO SIN CONEXIÓN
-Importa paquetes de referencia compatibles y actívalos o desactívalos cuando los necesites. DMC no incluye datos oficiales de clasificación: obténlos del editor correspondiente y respeta sus licencias. Los módulos importados permanecen en el dispositivo.
+Importa paquetes de referencia compatibles y actívalos o desactívalos cuando los necesites. InetMind no incluye datos oficiales de clasificación: obténlos del editor correspondiente y respeta sus licencias. Los módulos importados permanecen en el dispositivo.
 
 FUNCIONES PRINCIPALES
 - Gestión local de modelos GGUF
@@ -21,4 +21,4 @@ FUNCIONES PRINCIPALES
 - Opciones configurables de generación y muestreo
 - Inferencia Android orientada a CPU
 
-La compatibilidad, la velocidad y el contexto máximo varían según el modelo, la cuantización, la memoria disponible y el dispositivo. DMC es una herramienta de IA de uso general. Las clasificaciones médicas importadas son material de referencia y no sustituyen el consejo, diagnóstico o tratamiento de un profesional sanitario.
+La compatibilidad, la velocidad y el contexto máximo varían según el modelo, la cuantización, la memoria disponible y el dispositivo. InetMind es una herramienta de IA de uso general. Las clasificaciones médicas importadas son material de referencia y no sustituyen el consejo, diagnóstico o tratamiento de un profesional sanitario.

@@ -36,7 +36,7 @@
     <circle cx="101" cy="56" r="6.5" fill="#14b8a6"/>
     <circle cx="101" cy="78" r="6.5" fill="#14b8a6"/>
   </g>
-  <text x="82" y="280" fill="#f8fafc" font-family="Segoe UI, Arial, sans-serif" font-size="92" font-weight="700" letter-spacing="3">DMC</text>
+  <text x="82" y="280" fill="#f8fafc" font-family="Segoe UI, Arial, sans-serif" font-size="72" font-weight="700" letter-spacing="2">INETMIND</text>
   <text x="86" y="336" fill="#5eead4" font-family="Segoe UI, Arial, sans-serif" font-size="25" font-weight="600" letter-spacing="4">LOCAL AI. LONG MEMORY.</text>
   <text x="86" y="382" fill="#a8b3c7" font-family="Segoe UI, Arial, sans-serif" font-size="22">Private chat, vision and offline knowledge.</text>
 </svg>

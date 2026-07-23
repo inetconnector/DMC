@@ -1,16 +1,30 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <string name="privacy_policy_title">Gizlilik politikası</string>
+    <string name="report_response_title">Yapay zeka yanıtını bildir</string>
+    <string name="report_response_message">Bir neden seçin. Yanıt metni yalnızca onayınızdan sonra bir e-posta taslağına eklenir. Geliştiriciye göndermeden önce taslağı inceleyin.</string>
+    <string name="report_reason_harmful">Zararlı veya tehlikeli</string>
+    <string name="report_reason_hateful">Nefret dolu veya taciz edici</string>
+    <string name="report_reason_sexual">Cinsel içerik</string>
+    <string name="report_reason_illegal">Yasa dışı içerik</string>
+    <string name="report_reason_inaccurate">Ciddi ölçüde yanlış</string>
+    <string name="report_reason_other">Diğer</string>
+    <string name="report_prepare_email">Bildirimi hazırla</string>
+    <string name="report_cancel">İptal</string>
+    <string name="report_email_subject">InetMind yapay zeka içerik bildirimi</string>
+    <string name="report_email_chooser">İçerik bildirimini gönder</string>
+    <string name="report_no_email_app">Kullanılabilir e-posta uygulaması yok. apps@inetconnector.com ile iletişime geçin.</string>
     <string name="dialog_knowledge_title">Çevrimdışı başvurular</string>
     <string name="dialog_knowledge_empty">Yüklü çevrimdışı başvuru modülü yok.</string>
     <string name="dialog_knowledge_import">Dosya içe aktar</string>
     <string name="dialog_knowledge_sources">Resmî kaynaklar</string>
     <string name="dialog_knowledge_terms_title">Resmî başvuru verilerini içe aktar</string>
-    <string name="dialog_knowledge_terms_message">DMC sınıflandırma verilerini içermez. Verileri resmî yayıncıdan indirin ve güncel koşulları inceleyin. Özgün kodlar, başlıklar ve kaynak URI’leri değiştirilmemelidir. Çeviriler ve eşlemeler için ayrı izin gerekebilir.</string>
+    <string name="dialog_knowledge_terms_message">InetMind sınıflandırma verilerini içermez. Verileri resmî yayıncıdan indirin ve güncel koşulları inceleyin. Özgün kodlar, başlıklar ve kaynak URI’leri değiştirilmemelidir. Çeviriler ve eşlemeler için ayrı izin gerekebilir.</string>
     <string name="dialog_knowledge_terms_confirm">Bu dosyayı resmî kaynaktan aldım, koşulları kabul ettim ve resmî içeriği değiştirmedim.</string>
     <string name="dialog_continue">Devam et</string>
     <string name="dialog_knowledge_source_bfarm">BfArM: ICD-10-GM indirmeleri</string>
     <string name="dialog_knowledge_source_who">DSÖ: ICD-11 API ve belgeleri</string>
-    <string name="dialog_knowledge_sources_message">Bu bağlantılar resmî yayıncıları açar. DMC sınıflandırma verilerini otomatik olarak indirmez veya yeniden dağıtmaz.</string>
+    <string name="dialog_knowledge_sources_message">Bu bağlantılar resmî yayıncıları açar. InetMind sınıflandırma verilerini otomatik olarak indirmez veya yeniden dağıtmaz.</string>
     <string name="dialog_knowledge_records">%1$d kayıt</string>
     <string name="dialog_knowledge_module_details">Kaynak: %1$s\nLisans: %2$s\n\nAtıf:\n%3$s\n\nSHA-256: %4$s</string>
     <string name="dialog_knowledge_disable">Devre dışı bırak</string>

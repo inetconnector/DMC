@@ -1,7 +1,7 @@
-DMC bringt leistungsfähige KI-Unterhaltungen direkt auf dein Android-Gerät. Führe kompatible GGUF-Sprachmodelle lokal aus, behalte lange Gespräche im Kontext und lies Antworten bereits während der Erzeugung.
+InetMind bringt leistungsfähige KI-Unterhaltungen direkt auf dein Android-Gerät. Führe kompatible GGUF-Sprachmodelle lokal aus, behalte lange Gespräche im Kontext und lies Antworten bereits während der Erzeugung.
 
 LOKALE KI
-Modell und Unterhaltungen bleiben bei der lokalen Verarbeitung auf deinem Gerät. Für Chats ist kein Cloud-Konto erforderlich. Eine Internetverbindung wird nur benötigt, wenn du ein Modell oder externe Referenzdaten herunterladen möchtest.
+Modell, Unterhaltungen und Anhänge bleiben bei der lokalen KI-Verarbeitung auf deinem Gerät. Für Chats ist kein Cloud-Konto erforderlich. Netzwerkzugriffe erfolgen bei von dir gestarteten Downloads oder externen Verbindungen sowie für technische Diagnose- und Nutzungsdaten der eingebundenen Google-ML-Kit-Funktionen. Bild- und Textinhalte werden von ML Kit auf dem Gerät verarbeitet.
 
 LANGER, ZUVERLÄSSIGER KONTEXT
 Deterministic Multiresolution Context (DMC) bewahrt wichtige Teile langer Verläufe, wenn der physische Modellspeicher voll wird. Dafür kombiniert DMC einen stabilen globalen Anfang, aktuelle Gesprächsdetails und deterministische Wiederholungsebenen, ohne deine Originaltexte rekursiv zusammenzufassen. Die verfügbare Kontextgröße hängt vom Modell und den Geräteressourcen ab.
@@ -10,7 +10,7 @@ MULTIMODALE EINGABEN
 Füge Bilder, ein neues Kamerafoto, Textdokumente oder PDFs hinzu und nutze die Spracheingabe. Bild- und Audiofunktionen hängen vom ausgewählten Modell ab. Antworten erscheinen per Streaming direkt während der Berechnung.
 
 OFFLINE-WISSENSMODULE
-Importiere unterstützte Referenzpakete und schalte sie bei Bedarf an oder aus. Offizielle Klassifikationsdaten sind nicht in DMC enthalten. Beziehe sie vom jeweiligen Herausgeber und beachte dessen Lizenzbedingungen. Importierte Module bleiben auf dem Gerät.
+Importiere unterstützte Referenzpakete und schalte sie bei Bedarf an oder aus. Offizielle Klassifikationsdaten sind nicht in InetMind enthalten. Beziehe sie vom jeweiligen Herausgeber und beachte dessen Lizenzbedingungen. Importierte Module bleiben auf dem Gerät.
 
 KONTROLLE UND FLEXIBILITÄT
 - Lokale Verwaltung von GGUF-Modellen
@@ -21,4 +21,4 @@ KONTROLLE UND FLEXIBILITÄT
 - Einstellbare Generierungs- und Sampling-Optionen
 - CPU-orientierte Android-Inferenz
 
-Modellkompatibilität, Geschwindigkeit und maximaler Kontext unterscheiden sich je nach Modell, Quantisierung, verfügbarem Speicher und Gerät. DMC ist ein allgemeines KI-Werkzeug. Importierte medizinische Klassifikationen dienen als Referenz und ersetzen keine professionelle medizinische Beratung, Diagnose oder Behandlung.
+Modellkompatibilität, Geschwindigkeit und maximaler Kontext unterscheiden sich je nach Modell, Quantisierung, verfügbarem Speicher und Gerät. InetMind ist ein allgemeines KI-Werkzeug. Importierte medizinische Klassifikationen dienen als Referenz und ersetzen keine professionelle medizinische Beratung, Diagnose oder Behandlung.

@@ -1,0 +1,38 @@
+[
+  {
+    "language": "en-US",
+    "text": "Renamed to InetMind. Adds an in-app AI response reporting action, a direct privacy-policy and support section, clearer local-processing disclosures, and disables Android cloud backup for private app data."
+  },
+  {
+    "language": "de-DE",
+    "text": "Umbenennung in InetMind. Neu sind das Melden von KI-Antworten direkt in der App, ein Datenschutz- und Supportbereich, klarere Hinweise zur lokalen Verarbeitung und deaktivierte Android-Cloud-Backups für private App-Daten."
+  },
+  {
+    "language": "fr-FR",
+    "text": "L’application devient InetMind. Ajout du signalement des réponses IA dans l’application, d’un accès direct à la confidentialité et à l’assistance, d’informations plus claires et désactivation de la sauvegarde cloud Android."
+  },
+  {
+    "language": "es-ES",
+    "text": "La aplicación pasa a llamarse InetMind. Añade denuncia de respuestas de IA en la app, acceso directo a privacidad y asistencia, información local más clara y desactiva la copia de seguridad en la nube de Android."
+  },
+  {
+    "language": "it-IT",
+    "text": "L’app diventa InetMind. Aggiunge la segnalazione delle risposte IA nell’app, accesso diretto a privacy e assistenza, informazioni locali più chiare e disattiva il backup cloud Android."
+  },
+  {
+    "language": "nl-NL",
+    "text": "De app heet nu InetMind. Nieuw zijn melden van AI-antwoorden in de app, directe privacy- en supportlinks, duidelijkere uitleg over lokale verwerking en uitgeschakelde Android-cloudback-up."
+  },
+  {
+    "language": "pl-PL",
+    "text": "Nowa nazwa to InetMind. Dodano zgłaszanie odpowiedzi AI w aplikacji, bezpośredni dostęp do prywatności i pomocy, jaśniejsze informacje o przetwarzaniu lokalnym oraz wyłączono kopię w chmurze Androida."
+  },
+  {
+    "language": "pt-BR",
+    "text": "O app agora se chama InetMind. Adiciona denúncia de respostas de IA no app, acesso direto à privacidade e suporte, informações locais mais claras e desativa o backup na nuvem do Android."
+  },
+  {
+    "language": "tr-TR",
+    "text": "Uygulamanın adı InetMind oldu. Uygulama içi yapay zeka yanıtı bildirimi, doğrudan gizlilik ve destek erişimi, daha açık yerel işleme bilgileri eklendi ve Android bulut yedeklemesi kapatıldı."
+  }
+]

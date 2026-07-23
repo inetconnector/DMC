@@ -112,8 +112,8 @@ goto :wait_for_file_loop
 :main
 for %%I in ("%~dp0.") do set "ROOT=%%~fI"
 set "APP_ID=com.inetconnector.dmc"
-set "APP_VERSION_NAME=1.0.0"
-set "APP_VERSION_CODE=1"
+set "APP_VERSION_NAME=1.0.1"
+set "APP_VERSION_CODE=2"
 set "ANDROID_DIR=%ROOT%\android\llama.android"
 set "WRAPPER_JAR=%ANDROID_DIR%\gradle\wrapper\gradle-wrapper.jar"
 set "VARIANT=debug"
@@ -124,7 +124,7 @@ if /I "%ANDROID_BUILD_OFFLINE%"=="1" set "GRADLE_OFFLINE_ARGS=--offline"
 if /I "%ANDROID_BUILD_VARIANT%"=="release" set "VARIANT=release"
 
 echo ============================================================
-echo Build Android APK - DMC AI Chat
+echo Build Android APK - InetMind Local AI
 echo ============================================================
 echo Root: %ROOT%
 echo Android project: %ANDROID_DIR%

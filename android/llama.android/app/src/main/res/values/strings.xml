@@ -1,5 +1,19 @@
 <resources>
-    <string name="app_name">DMC</string>
+    <string name="app_name">InetMind</string>
+    <string name="privacy_policy_title">Privacy policy</string>
+    <string name="report_response_title">Report AI response</string>
+    <string name="report_response_message">Choose a reason. The response text is added to an email draft only after you confirm. Review the draft before sending it to the developer.</string>
+    <string name="report_reason_harmful">Harmful or dangerous</string>
+    <string name="report_reason_hateful">Hateful or abusive</string>
+    <string name="report_reason_sexual">Sexual content</string>
+    <string name="report_reason_illegal">Illegal content</string>
+    <string name="report_reason_inaccurate">Seriously inaccurate</string>
+    <string name="report_reason_other">Other</string>
+    <string name="report_prepare_email">Prepare report</string>
+    <string name="report_cancel">Cancel</string>
+    <string name="report_email_subject">InetMind AI content report</string>
+    <string name="report_email_chooser">Send content report</string>
+    <string name="report_no_email_app">No email app is available. Contact apps@inetconnector.com.</string>
     <string name="dictation_prompt">Speak now</string>
     <string name="error_no_gguf_in_models_dir">No GGUF model found in app models directory: %1$s</string>
     <string name="error_no_mobile_gguf">No mobile GGUF found (max 5 GiB). Please use a smaller model such as Gemma 4 E2B/E4B Q4_0 or a 3B/4B Q4_K_M model.</string>
@@ -103,12 +117,12 @@
     <string name="dialog_knowledge_import">Import file</string>
     <string name="dialog_knowledge_sources">Official sources</string>
     <string name="dialog_knowledge_terms_title">Import official reference data</string>
-    <string name="dialog_knowledge_terms_message">DMC does not include classification data. Download it from the official publisher and review its current terms. The original codes, titles and source URIs must remain unchanged. Translations and crosswalks may require separate permission.</string>
+    <string name="dialog_knowledge_terms_message">InetMind does not include classification data. Download it from the official publisher and review its current terms. The original codes, titles and source URIs must remain unchanged. Translations and crosswalks may require separate permission.</string>
     <string name="dialog_knowledge_terms_confirm">I obtained this file from the official source, accepted its terms and did not alter the official content.</string>
     <string name="dialog_continue">Continue</string>
     <string name="dialog_knowledge_source_bfarm">BfArM: ICD-10-GM downloads</string>
     <string name="dialog_knowledge_source_who">WHO: ICD-11 API and documentation</string>
-    <string name="dialog_knowledge_sources_message">These links open the official publishers. DMC neither downloads nor redistributes classification data automatically.</string>
+    <string name="dialog_knowledge_sources_message">These links open the official publishers. InetMind neither downloads nor redistributes classification data automatically.</string>
     <string name="dialog_knowledge_records">%1$d entries</string>
     <string name="dialog_knowledge_module_details">Source: %1$s\nLicense: %2$s\n\nAttribution:\n%3$s\n\nSHA-256: %4$s</string>
     <string name="dialog_knowledge_disable">Disable</string>

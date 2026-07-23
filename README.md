@@ -1,7 +1,8 @@
-# DMC
+# InetMind / DMC
 
-Deterministic Multiresolution Context (DMC) is the active clean-room target for
-this repository.
+**InetMind** is the consumer-facing Android app in this repository.
+**Deterministic Multiresolution Context (DMC)** is its native long-context
+engine and the clean-room technical target of the project.
 
 In plain terms: DMC is a design for a local AI system that can keep much more
 conversation history in working memory, stay deterministic, and remain easier
@@ -24,7 +25,10 @@ to validate than a more ad hoc retrieval system.
 - The local runtime in `scripts/windows/` runs `llama.cpp` on your own machine.
 - The Android app lives in `android/llama.android/` and is built from the root
   helper scripts.
-- DMC Android V1.0 is available as a signed APK from GitHub Releases.
+- The Android package remains `com.inetconnector.dmc`; the visible app and
+  Google Play name is **InetMind - Local AI** / **InetMind - Lokale KI**.
+- The current release candidate is `1.0.1 (2)`. Android V1.0 remains available
+  as a signed APK from GitHub Releases.
 - The design focuses on long context first, quality second, speed third.
 - DMC's original code is licensed under MIT. Bundled third-party components
   retain their own licenses and terms; see `THIRD_PARTY_NOTICES.md`.
@@ -64,9 +68,9 @@ The standalone Android app now lives in `android/llama.android/` and is
 checked in alongside the DMC stack.
 
 For Google Play automation, the repository includes a non-secret package pin
-at `.gplay/config.yaml` and the DMC-specific setup guide
+at `.gplay/config.yaml` and the InetMind/DMC-specific setup guide
 [`docs/GOOGLE_PLAY_DMC.md`](docs/GOOGLE_PLAY_DMC.md). Service-account JSON keys
-must remain outside the repository under `C:\Users\frede\.gplay\keys\`; use
+must remain outside the repository; use
 `scripts/windows/setup-gplay-dmc.ps1` to register and verify the app-scoped
 `dmc` profile without printing the private key.
 
@@ -78,12 +82,26 @@ privacy-checked 1080x1920 captures from a Samsung S25. Subjects and suggested
 accessibility text are documented in
 [`play/screenshots/README.md`](play/screenshots/README.md).
 
-Version `1.0.0 (1)` is uploaded and processed in Google Play's internal test
-track. Publishing the localized store presence still requires the shared
-service account to receive the app-specific **Manage store presence**
-permission. Pricing (`4.99 EUR`), Data safety, content declarations, and the
-final production submission remain Play Console steps; see
-[`docs/GOOGLE_PLAY_DMC.md`](docs/GOOGLE_PLAY_DMC.md).
+Version `1.0.1 (2)` is uploaded, processed, and active in Google Play's
+internal test track. It adds the InetMind branding, an in-app generated-content
+reporting path, privacy/support links, conservative privacy disclosures, and
+disabled Android backup. The shared service account can read the app and manage
+releases, but Google still returns `403 forbidden` when it commits store text;
+the app-specific **Manage store presence** permission must be corrected or
+allowed time to propagate. The remotely visible English title therefore
+remains the old draft name until that permission is fixed. Pricing (`4.99
+EUR`), Data safety, health/content declarations, target audience, and the final
+production submission remain Play Console steps.
+
+The maintained Play submission sources are:
+
+- [`play/DATA_SAFETY.md`](play/DATA_SAFETY.md) for the exact Data safety answer
+  matrix;
+- [`docs/BRAND_AND_PLAY_REVIEW.md`](docs/BRAND_AND_PLAY_REVIEW.md) for the name,
+  trademark-screening limits, and policy review;
+- [`privacy/index.html`](privacy/index.html), published at
+  <https://inetconnector.github.io/DMC/privacy/>, for the bilingual privacy
+  policy.
 
 **Download:** [DMC Android V1.0 release](https://github.com/inetconnector/DMC/releases/tag/android-v1.0.0)
 or [download the signed APK directly](https://github.com/inetconnector/DMC/releases/download/android-v1.0.0/com.inetconnector.dmc-1.0.0%2B1-release.apk).
@@ -96,7 +114,7 @@ models require several gigabytes of free storage.
 On Android, every file-opening flow prefers CX File Explorer when
 `com.cxinventor.file.explorer` is installed: model files and archives,
 offline-reference ZIP/XML files, images, audio, text, PDF, and general WebView
-attachments. If CX is absent or cannot handle a requested MIME type, DMC uses
+attachments. If CX is absent or cannot handle a requested MIME type, InetMind uses
 Android DocumentsUI automatically. Save/export dialogs remain on DocumentsUI
 because the current CX version does not implement Android's `CREATE_DOCUMENT`
 contract; camera capture is unchanged.
@@ -210,34 +228,28 @@ import, exact-code and free-text retrieval, enable/disable isolation,
 transactional rollback, and deletion. Classification data, WHO credentials,
 and redistribution rights are never included by the builder or APK.
 
-The current DMC-enabled debug APK was built successfully at:
-
-`android/llama.android/app/build/outputs/apk/debug/app-debug.apk`
-
-The current signed release was built successfully at:
+The current signed InetMind/DMC release was built successfully at:
 
 `android/llama.android/app/build/outputs/apk/release/app-release.apk`
 
+Versioned release artifacts:
+
+- `publish/com.inetconnector.dmc/1.0.1+2/com.inetconnector.dmc-1.0.1+2-release.apk`
+- `publish/com.inetconnector.dmc/1.0.1+2/com.inetconnector.dmc-1.0.1+2-release.aab`
+
 Release APK SHA-256:
 
-`80AF50622903FBCD154C4A36E68859107DB1514646DA68E18949A6014EB6D656`
+`45882B5CD40792FDA3273C94B0DA6296BFD3C04C9AFBD8CF09CE0F921F6A1707`
 
 Release AAB SHA-256:
 
-`A5A910A5D706A9705CC0F8D7DB6F16949ED65947682413EBF855CF24F0455357`
+`5D3B820572CB866C729D5CF362A23E34BAD6BDC94926075C3B33FF467B4E7905`
 
-Debug APK SHA-256:
-
-`10E119B8F6CE5E8C26C4F1B7332DEE5705C7D712604E9D317F3073F1CE06E86B`
-
-Published APK/AAB files are kept under the ignored `publish/` directory. The
-signed V1.0 release APK/AAB and the preceding debug APK were copied to
-`\\diskstation.fritz.box\Dani` using versioned `com.inetconnector.dmc-1.0.0+1`
-names. The debug hash above is the newer `offline-knowledge-modules` branch
-build from 2026-07-22. It is available separately at
-`\\diskstation.fritz.box\Dani\offline-knowledge-modules\com.inetconnector.dmc-1.0.0+1-offline-knowledge-modules-debug.apk`.
-The fresh 2026-07-23 release APK/AAB and a ZIP of the complete Play Store asset
-set are also hash-verified in that `offline-knowledge-modules` directory.
+Published APK/AAB files are kept under the ignored `publish/` directory and
+must not be committed. The current signed release and Play submission archive
+are mirrored to the branch directory on the DiskStation after verification.
+Google Play internal testing currently serves `1.0.1 (2)` with status
+`completed`.
 
 If you want to check the launch without starting the server, use:
 
