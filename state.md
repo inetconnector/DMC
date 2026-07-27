@@ -1,6 +1,6 @@
 # State
 
-Last updated: 2026-07-23
+Last updated: 2026-07-27
 
 This file is the live development log for the repository.
 Update this file and `README.md` together whenever behavior changes.
@@ -25,6 +25,13 @@ Update this file and `README.md` together whenever behavior changes.
 - `docs/OFFLINE_WISSENSMODULE.md` documents the implemented offline module
   format, ICD-10-GM/ICD-11 flows, retrieval behavior, and licensing boundary in
   German and English.
+- `docs/MEDIZINISCHE_WISSENSQUELLEN.md` documents the shared 16-source medical
+  catalog, recommended knowledge layers, Android and Windows workflows,
+  supported converters, update strategy, and source-specific legal boundaries
+  in German and English.
+- `knowledge/source-catalog.json` is the machine-readable source of truth used
+  by Android and Windows. Ten clinically useful sources are preselected on
+  first use; selection never downloads data or accepts third-party terms.
 - `docs/GOOGLE_PLAY_DMC.md` is the DMC-specific Google Play service-account and
   publication handoff. `.gplay/config.yaml` pins `com.inetconnector.dmc` but
   contains no credential path or secret.
@@ -171,9 +178,11 @@ Update this file and `README.md` together whenever behavior changes.
 - Android now has a generic offline knowledge-module subsystem. It stores
   module metadata and records in a private SQLite database, uses FTS4 plus
   exact-code boosting, and searches enabled modules only.
-- The app directly imports ICD-10-GM ClaML XML or ZIP archives. ICD-11 and
-  generic modules use the validated `.dmcknowledge` ZIP format with explicit
-  version, language, jurisdiction, source, license, record count, and SHA-256.
+- The app directly imports ICD-10-GM, OPS, ICF, and ICD-O-3 ClaML XML or ZIP
+  archives. BfArM source types use stable module IDs, and a successful new
+  edition removes older modules of the same classification. ICD-11 and generic
+  modules use the validated `.dmcknowledge` ZIP format with explicit version,
+  language, jurisdiction, source, license, record count, and SHA-256.
 - Imports are size/path/schema checked and transactional. A failed import cannot
   leave a partial active index, and a retrieval failure falls back to ordinary
   chat generation.
@@ -187,22 +196,63 @@ Update this file and `README.md` together whenever behavior changes.
   chat from activating large ICD prompt blocks.
 - Settings > Import/Export now exposes a localized Offline Knowledge manager.
   Installed modules can be imported, enabled, disabled, and removed separately.
+  The **Official sources** action loads the shared catalog from the APK assets,
+  displays a persistent multi-selection with important sources checked on first
+  use, saves the selection, opens the chosen official source or licence page,
+  and then returns to the existing safe file-import path.
+- Android retrieval queries all enabled modules. Relevant records are merged
+  round-robin across matching modules, limited to twelve records and 16,000
+  characters, and keep module/version/source/URI attribution. This prevents a
+  large ICD or literature index from suppressing every smaller specialist
+  module.
+- Exact-code recognition is aligned across Android and Windows for ICD,
+  OPS (`5-010`), LOINC (`1234-5`), ORPHA (`ORPHA:123`), and numeric SNOMED CT
+  identifiers instead of assuming every medical code starts with a letter.
 - `scripts/knowledge/build_knowledge_module.py` produces deterministic ICD-11
   or generic packages from lawful local JSONL. For ICD-11 it requires unchanged
   string fields `id`, `code`, `title`, and the official `id.who.int`
   `uri`; unofficial hosts, wrong licence metadata, and missing explicit
   unchanged-content confirmation are rejected.
-- All nine Android locale XML files parse and contain the same 22
-  offline-reference keys. The complete Svelte production build passes and its
-  output is synchronized to the Android server assets.
-- A dependency-free Python smoke test confirms deterministic package bytes,
-  unchanged record values, and rejection of an unofficial source and wrong
-  licence. The repository pytest suite could not run in this session because
-  the bundled Python runtime has no pytest package and network installation is
-  disabled.
-- Android instrumentation coverage now exists for import, exact-code and FTS
-  retrieval, enable/disable, rollback, and deletion. It has not been executed
-  for this branch.
+- `scripts/knowledge/prepare_knowledge_file.py` converts lawfully obtained
+  BfArM ClaML, LOINC ZIP/CSV, Orphadata ZIP/XML, SNOMED RF2 description
+  snapshots, and structured CSV/TXT/JSONL files into deterministic shared
+  packages. It requires an explicit lawful-source confirmation and embeds the
+  catalog's source, licence, and attribution metadata.
+- `scripts/knowledge/knowledge_runtime.py` provides the Windows SQLite
+  FTS5/fallback index, package installation, enable/disable/list/query commands,
+  the same relevance gate and fair multi-module merge, and a streaming
+  OpenAI-compatible proxy. It appends evidence only to the latest user message
+  and forwards SSE bytes incrementally. Windows now enforces the same official
+  BfArM/WHO hosts, unmodified-content declaration, WHO licence/attribution, and
+  per-record ICD-11 URI requirements as Android.
+- `manage-knowledge.bat` opens the Windows checked-source manager. It stores
+  local selection under ignored `runtime/knowledge`, opens official source and
+  licence pages, converts/imports supported files, and toggles installed
+  modules. `run.bat` and `run-phone.bat` automatically use the proxy when
+  modules are installed and otherwise retain the direct llama.cpp path.
+- All nine Android locale XML files parse. The new source-manager strings have
+  native translations in English, German, French, Spanish, Italian, Dutch,
+  Polish, Brazilian Portuguese, and Turkish. Catalog descriptions remain
+  technical metadata and are not exposed as untranslated UI prose.
+- The full repository Python suite passes: `23 passed in 3.39s`. Coverage
+  includes deterministic packages, catalog validation, fair retrieval from
+  multiple enabled modules, greeting rejection, ClaML conversion, shared
+  ICD-10-GM/ICD-11 type and licence metadata, and latest-user-only evidence
+  injection. A real loopback HTTP integration test also verifies that the
+  proxy injects evidence and forwards the upstream SSE payload byte-for-byte
+  through `/v1/chat/completions`.
+- Android instrumentation coverage now includes package import, exact-code and
+  FTS retrieval, enable/disable, rollback, deletion, catalog/default validation,
+  and OPS ClaML recognition. `:app:compileDebugAndroidTestKotlin` completes
+  successfully; connected execution remains intentionally pending on an
+  emulator or disposable installation.
+- A complete `build-android.bat` run succeeded on 2026-07-27 after resolving
+  the official Android Gradle plugin. Kotlin, native ARM64/x86_64 packaging,
+  Web UI synchronization, `:app:assembleDebug`, and the APK DMC marker gate all
+  passed. The current debug artifact is
+  `android/llama.android/app/build/outputs/apk/debug/app-debug.apk`, SHA-256
+  `A75A112F618BB4089BB12A8918204F5C838C5A4709BA147557531253E8F654E6`.
+  ZIP inspection confirms `assets/source-catalog.json` is packaged.
 - The `offline-knowledge-modules` branch debug APK was built successfully on
   2026-07-22. Its SHA-256 is
   `10E119B8F6CE5E8C26C4F1B7332DEE5705C7D712604E9D317F3073F1CE06E86B`.
@@ -279,8 +329,16 @@ Update this file and `README.md` together whenever behavior changes.
 - Run the Android instrumentation tests on an emulator or disposable install;
   do not run them on the user's model-bearing phone because test deployment can
   clear private app data. Do not run them on the user's installed Samsung app.
-- The Windows LAN launcher still runs standard dense llama.cpp context. The
-  DMC adapter implemented here is currently Android-specific.
+- The Windows llama.cpp backend still uses standard dense KV context. The new
+  knowledge proxy is functional and preserves streaming, but it is not a native
+  Windows DMC KV adapter.
+- Direct scheduled API snapshot builders for WHO ICD-11, EMA, PubMed,
+  ClinicalTrials.gov, DailyMed, and openFDA are not implemented. The current
+  lawful workflow opens the official source and imports a locally prepared,
+  bounded JSONL or `.dmcknowledge` snapshot. Do not describe source selection
+  as automatic bulk mirroring.
+- The Android catalog and controls have compiled, but their final visual flow
+  and source-selection persistence still need a data-preserving device QA pass.
 - The first request after a fresh model download previously showed reconnecting
   and stream-resume failures. It still needs a clean-device regression test
   after the SSE buffering fix.
@@ -330,6 +388,28 @@ Update this file and `README.md` together whenever behavior changes.
 
 ## Recent Change
 
+- Added one validated medical-source catalog shared by Android and Windows.
+  It currently covers ICD-10-GM, ICD-11, OPS, Alpha-ID-SE, Orphanet, LOINC,
+  EMA PMS, AWMF guidelines, PubMed, the eligible PMC OA subset,
+  ClinicalTrials.gov, DailyMed, openFDA, SNOMED CT, ICF, and selected RKI open
+  data. The catalog records publisher, purpose, official source, licence page,
+  access mode, import mode, update cadence, default selection, and platform
+  support.
+- Added the Android official-source selection/update flow without removing the
+  existing import and module controls. Added native ClaML recognition for OPS,
+  ICF, and ICD-O-3, stable BfArM source IDs, atomic edition replacement, larger
+  bounded evidence, and fair retrieval across all enabled modules. The source
+  lists intentionally avoid combining `AlertDialog.setMessage()` with
+  `setMultiChoiceItems()`/`setItems()`, because Android can otherwise suppress
+  the list; this repeats the earlier import-confirmation failure mode.
+- Added the Windows source manager, source-file converter, persistent index,
+  CLI, and transparent streaming knowledge proxy. Installed modules now
+  participate automatically when the Windows launchers start, while a setup
+  without modules remains unchanged.
+- Added the bilingual medical-source guide and updated both living project
+  documents. The implementation deliberately does not bypass accounts,
+  credentials, document-specific rights, or source terms and does not bundle
+  third-party medical datasets in the APK or repository.
 - Renamed the consumer-facing app from the misleading
   "Offline KI - OLLAMA UI -DMC" to **InetMind - Local AI** while preserving
   `com.inetconnector.dmc` and DMC as the native context-engine name. All nine
@@ -515,6 +595,13 @@ Update this file and `README.md` together whenever behavior changes.
 - The latest debug APK, including the explicit-value dictation submit change,
   was rebuilt and installed successfully. A final spoken-input test still
   requires speaking into the device recognizer.
+- On 2026-07-27, the current debug APK was deployed to
+  `\\diskstation.fritz.box\Dani\offline-knowledge-modules\com.inetconnector.dmc-1.0.1+2-offline-knowledge-modules-debug.apk`
+  and installed data-preservingly on Samsung `SM-S931B`. The local and NAS
+  copies both have SHA-256
+  `A75A112F618BB4089BB12A8918204F5C838C5A4709BA147557531253E8F654E6`.
+  Device verification reported `versionName=1.0.1`, `versionCode=2`,
+  `MainActivity` in the foreground, and no fatal startup exception.
 
 ## Planned Checks
 

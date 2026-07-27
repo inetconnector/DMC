@@ -98,12 +98,19 @@ Lizenzmetadaten, Datensatzanzahl und Pflichtfelder. Erst danach ersetzt eine
 SQLite-Transaktion eine vorhandene Modulversion. Bei einem Fehler bleibt der
 alte Index vollständig erhalten.
 
-Aktivierte Module werden mit exakter Code-Suche und SQLite FTS4 durchsucht.
-Höchstens acht Treffer und maximal 12.000 Zeichen werden als nicht
+Alle aktivierten Module werden gemeinsam mit exakter Code-Suche und SQLite
+FTS4 durchsucht. Treffer werden fair im Rundlauf zwischen den passenden
+Modulen gemischt, damit ein großer Index kleinere Quellen nicht verdrängt.
+Höchstens zwölf Treffer und maximal 16.000 Zeichen werden als nicht
 vertrauenswürdige, belegte Referenzdaten an die aktuelle Frage angefügt. Die
 Quellenangabe, Ausgabe und URI bleiben im Kontext sichtbar. Dieser zusätzliche
 Kontext läuft anschließend durch denselben DMC- und Streaming-Pfad wie normale
 Nachrichten.
+
+Der gemeinsame kuratierte Quellenkatalog, die Windows-Verwaltung und die
+rechtlichen Grenzen weiterer medizinischer Quellen sind ausführlich in
+[`MEDIZINISCHE_WISSENSQUELLEN.md`](MEDIZINISCHE_WISSENSQUELLEN.md)
+dokumentiert.
 
 ### Sicherheits- und Qualitätsgrenzen
 
@@ -195,10 +202,16 @@ record count, and required fields. A SQLite transaction replaces an existing
 module only after every record passes validation. A failed import leaves the
 previous index intact.
 
-Enabled modules use exact-code lookup and SQLite FTS4. At most eight hits and
-12,000 characters are appended as attributed, untrusted reference evidence to
-the current request. Source, edition, and URI remain visible. Generation then
-uses the same DMC and streaming path as an ordinary message.
+All enabled modules participate in exact-code lookup and SQLite FTS4 search.
+Matching records are merged fairly in round-robin order so a large index cannot
+crowd out smaller sources. At most twelve hits and 16,000 characters are
+appended as attributed, untrusted reference evidence to the current request.
+Source, edition, and URI remain visible. Generation then uses the same DMC and
+streaming path as an ordinary message.
+
+The shared curated source catalog, Windows manager, and source-specific rights
+boundaries are documented in
+[`MEDIZINISCHE_WISSENSQUELLEN.md`](MEDIZINISCHE_WISSENSQUELLEN.md).
 
 ### Safety and quality boundaries
 
@@ -213,6 +226,5 @@ uses the same DMC and streaming path as an ordinary message.
 ## Official references
 
 - [BfArM download portal](https://www.bfarm.de/DE/Kodiersysteme/Services/Downloads/_verteilerseite.html)
-- [BfArM 2025 download terms](https://www.bfarm.de/SharedDocs/Downloads/DE/Kodiersysteme/downloadbedingungen-2025.pdf?__blob=publicationFile)
-- [WHO ICD-11 API](https://icd.who.int/icdapi)
-- [WHO ICD-11 licence](https://icd.who.int/en/docs/icd11-license.pdf)
+- [WHO ICD-11 API](https://icd.who.int/docs/icd-api/APIDoc-Version2/)
+- [WHO ICD-11 licence](https://icd.who.int/docs/icd-api/license/)

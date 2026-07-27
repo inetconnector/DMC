@@ -18,6 +18,10 @@ to validate than a more ad hoc retrieval system.
 - [`docs/OFFLINE_WISSENSMODULE.md`](docs/OFFLINE_WISSENSMODULE.md) explains the
   bilingual offline knowledge-module architecture, ICD-10-GM/ICD-11 import,
   package format, retrieval path, attribution, and safety boundaries.
+- [`docs/MEDIZINISCHE_WISSENSQUELLEN.md`](docs/MEDIZINISCHE_WISSENSQUELLEN.md)
+  documents the curated medical source catalog, Android and Windows update
+  workflow, supported source converters, combined retrieval, and
+  source-specific rights boundaries in German and English.
 - `docs/TARGET_STATE.md` is the concise capability target.
 - The code in `dmc/` and `cpp/` is the reference implementation.
 - The Android native runtime now compiles that same C++ DMC selector into
@@ -44,6 +48,10 @@ to validate than a more ad hoc retrieval system.
 - Optional editor integration through Continue.
 - A phone-friendly LAN interface if you want to use the model from the same
   network.
+- A shared catalog of 16 official medical sources and one portable,
+  versioned `.dmcknowledge` package format for Android and Windows.
+- Fair local retrieval across every enabled knowledge module instead of
+  allowing the largest index to suppress smaller specialist sources.
 
 ## Fast Start
 
@@ -61,6 +69,13 @@ What it does:
 `run-phone.bat` also sets up the Windows firewall for the local network, then
 starts the same server.
 It prints the primary LAN IPv4 address that the phone can use.
+
+Run `manage-knowledge.bat` to select official medical sources, open their
+current download/licence pages, convert supported lawfully obtained source
+files, import packages, and enable or disable installed modules. If at least one
+module is installed, `run.bat` and `run-phone.bat` automatically place the
+local knowledge proxy in front of `llama.cpp` while retaining the same
+OpenAI-compatible endpoint and SSE streaming behavior.
 
 ## Android APK
 
@@ -204,15 +219,23 @@ analysis to the user's original question before DMC/Gemma inference. Raw image
 data never leaves the device and temporary files are deleted immediately.
 
 Android also supports installable offline knowledge modules. In Settings under
-`Import/Export`, the module manager imports ICD-10-GM ClaML ZIP/XML files or
-versioned `.dmcknowledge` packages for ICD-11 and generic sources. Each module
-is independently enabled, disabled, or removed. Enabled modules are searched
-locally with exact-code boosting and SQLite FTS4; a bounded, attributed evidence
-block is appended after the current user question so it remains in DMC's recent
-context window. Classification data is not bundled in the APK. Use
-`scripts/knowledge/build_knowledge_module.py` to package a lawful local ICD-11
-or generic JSONL export, and read `docs/OFFLINE_WISSENSMODULE.md` before
-redistributing any source data.
+`Import/Export`, the module manager presents the same 16-source catalog as the
+Windows tools; the most useful clinical core is preselected on first use.
+Buttons save the selection, open the selected official download/update and
+licence pages, and import a local file. The app directly recognizes official
+BfArM ClaML ZIP/XML files for ICD-10-GM, OPS, ICF, and ICD-O-3, or imports
+versioned `.dmcknowledge` packages for ICD-11 and other sources. Each module is
+independently enabled, disabled, or removed.
+
+All enabled modules are searched locally with exact-code boosting and SQLite
+FTS4. Relevant hits are merged round-robin across modules, then a bounded,
+attributed evidence block of at most twelve records and 16,000 characters is
+appended after the current user question so it remains in DMC's recent context
+window. Classification data is not bundled in the APK. Use
+`scripts/knowledge/prepare_knowledge_file.py` for supported official raw files
+or `scripts/knowledge/build_knowledge_module.py` for controlled JSONL exports.
+Read `docs/MEDIZINISCHE_WISSENSQUELLEN.md` and
+`docs/OFFLINE_WISSENSMODULE.md` before redistributing any source data.
 
 Retrieval is deliberately relevance-gated. Greetings and common conversational
 words are removed, short terms require whole-word matches, and prefix search is
@@ -277,8 +300,10 @@ If you want to check the launch without starting the server, use:
    over those selected tokens.
 5. Short Android chats stay dense; long chats switch to DMC without recursive
    summarization.
-6. The Windows LAN launcher currently remains the standard dense llama.cpp
-   runtime; its DMC adapter is still a separate follow-up task.
+6. Windows keeps the standard dense llama.cpp runtime. When offline modules are
+   installed, a local transparent proxy adds the same attributed knowledge
+   evidence to `/v1/chat/completions` without buffering its SSE stream. A
+   native Windows DMC KV adapter remains a separate follow-up task.
 
 ## Start Here
 

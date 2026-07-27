@@ -9,6 +9,9 @@ param(
     [string]$Reasoning = "off",
     [string]$CudaFlavor = "12.4",
     [int]$Port = 8080,
+    [int]$KnowledgeBackendPort = 8081,
+    [string]$KnowledgeRoot = (Join-Path $PSScriptRoot "..\..\runtime\knowledge"),
+    [switch]$DisableOfflineKnowledge,
     [int]$ContextSize = 32768,
     [switch]$Use64KContext,
     [switch]$Use128KContext,
@@ -271,6 +274,37 @@ function Resolve-ContextCandidates {
 Ensure-Directory -Path $RuntimeRoot
 Ensure-Directory -Path $CacheRoot
 
+$knowledgeProxyScript = Join-Path $PSScriptRoot "..\knowledge\knowledge_runtime.py"
+$knowledgePackages = @()
+if (Test-Path -LiteralPath (Join-Path $KnowledgeRoot "modules")) {
+    $knowledgePackages = @(
+        Get-ChildItem -LiteralPath (Join-Path $KnowledgeRoot "modules") `
+            -Filter "*.dmcknowledge" -File -ErrorAction SilentlyContinue
+    )
+}
+$pythonCommand = Get-Command python -ErrorAction SilentlyContinue
+$pythonExecutable = if ($pythonCommand) { $pythonCommand.Source } else { $null }
+if (-not $pythonCommand) {
+    $pythonPath = @(
+        (Join-Path $env:LOCALAPPDATA "Programs\Python\Python313\python.exe"),
+        (Join-Path $env:LOCALAPPDATA "Programs\Python\Python312\python.exe"),
+        (Join-Path $env:LOCALAPPDATA "Programs\Python\Python311\python.exe"),
+        "C:\Program Files\Python313\python.exe",
+        "C:\Program Files\Python312\python.exe",
+        "C:\Program Files\Python311\python.exe"
+    ) | Where-Object { Test-Path -LiteralPath $_ -PathType Leaf } | Select-Object -First 1
+    if ($pythonPath) {
+        $pythonExecutable = $pythonPath
+    }
+}
+$useKnowledgeProxy = (
+    -not $DisableOfflineKnowledge -and
+    $knowledgePackages.Count -gt 0 -and
+    $pythonExecutable -and
+    (Test-Path -LiteralPath $knowledgeProxyScript -PathType Leaf)
+)
+$serverPort = if ($useKnowledgeProxy) { $KnowledgeBackendPort } else { $Port }
+
 $explicitContextRequested = $Use64KContext -or `
     $Use128KContext -or `
     $Use256KContext -or `
@@ -306,6 +340,11 @@ if ($DryRun) {
     Write-Host "[alias] $Alias"
     Write-Host "[reasoning] $Reasoning"
     Write-Host "[port] $Port"
+    Write-Host "[offline-knowledge] $(if ($useKnowledgeProxy) { 'enabled' } else { 'disabled' })"
+    if ($useKnowledgeProxy) {
+        Write-Host "[offline-knowledge-modules] $($knowledgePackages.Count)"
+        Write-Host "[backend-port] $serverPort"
+    }
     Write-Host "[context] $($contextCandidates[0])"
     Write-Host "[context-fallback] $($contextCandidates -join ', ')"
     if ($Use64KContext) {
@@ -375,7 +414,7 @@ foreach ($candidateContext in $contextCandidates) {
     $args += "--host"
     $args += "0.0.0.0"
     $args += "--port"
-    $args += $Port
+    $args += $serverPort
     $args += "--alias"
     $args += $Alias
     $args += "--tags"
@@ -391,7 +430,7 @@ foreach ($candidateContext in $contextCandidates) {
     Write-Host "[model] $selectedModelName"
     Write-Host "[alias] $Alias"
     Write-Host "[reasoning] $Reasoning"
-    Write-Host "[port] $Port"
+    Write-Host "[port] $serverPort"
     Write-Host "[status] trying context $candidateContext"
     Write-Host "[context-attempt] $candidateContext"
     if ($candidateContext -eq 262144) {
@@ -418,7 +457,7 @@ foreach ($candidateContext in $contextCandidates) {
 
         Write-Host "[pid] $($proc.Id)"
 
-        Wait-ForServer -Port $Port -ProcessId $proc.Id
+        Wait-ForServer -Port $serverPort -ProcessId $proc.Id
         $selectedContextSize = $candidateContext
         break
     } catch {
@@ -444,6 +483,44 @@ if (-not $selectedContextSize) {
 
 Write-Host "[context] $selectedContextSize"
 Write-Host "[status] running with context $selectedContextSize"
+
+$knowledgeProxyProcess = $null
+if ($useKnowledgeProxy) {
+    if ($KnowledgeBackendPort -eq $Port) {
+        Stop-Process -Id $proc.Id -Force -ErrorAction SilentlyContinue
+        throw "KnowledgeBackendPort must differ from the public Port."
+    }
+    Ensure-Directory -Path $KnowledgeRoot
+    $proxyLogRoot = Join-Path $KnowledgeRoot "logs"
+    Ensure-Directory -Path $proxyLogRoot
+    $proxyArguments = @(
+        $knowledgeProxyScript,
+        "proxy",
+        "--listen", "0.0.0.0",
+        "--port", [string]$Port,
+        "--upstream", "http://127.0.0.1:$serverPort",
+        "--root", $KnowledgeRoot
+    )
+    $knowledgeProxyProcess = Start-Process `
+        -FilePath $pythonExecutable `
+        -ArgumentList $proxyArguments `
+        -WindowStyle Hidden `
+        -RedirectStandardOutput (Join-Path $proxyLogRoot "knowledge-proxy.out.log") `
+        -RedirectStandardError (Join-Path $proxyLogRoot "knowledge-proxy.err.log") `
+        -PassThru
+    try {
+        Wait-ForServer -Port $Port -ProcessId $knowledgeProxyProcess.Id -MaxAttempts 30
+    } catch {
+        Stop-Process -Id $proc.Id -Force -ErrorAction SilentlyContinue
+        Stop-Process -Id $knowledgeProxyProcess.Id -Force -ErrorAction SilentlyContinue
+        throw
+    }
+    Write-Host "[offline-knowledge] enabled"
+    Write-Host "[knowledge-proxy-pid] $($knowledgeProxyProcess.Id)"
+    Write-Host "[knowledge-modules] $($knowledgePackages.Count)"
+} elseif ($knowledgePackages.Count -gt 0 -and -not $DisableOfflineKnowledge) {
+    Write-Warning "Knowledge packages exist, but Python or the proxy script is unavailable. Starting llama.cpp without offline modules."
+}
 
 if ($SmokeTest) {
     $body = @{
@@ -485,5 +562,11 @@ foreach ($ip in $lanIps) {
 
 if ($StayAlive) {
     Write-Host "[hold] waiting for llama-server to exit"
-    Wait-Process -Id $proc.Id
+    try {
+        Wait-Process -Id $proc.Id
+    } finally {
+        if ($knowledgeProxyProcess) {
+            Stop-Process -Id $knowledgeProxyProcess.Id -Force -ErrorAction SilentlyContinue
+        }
+    }
 }

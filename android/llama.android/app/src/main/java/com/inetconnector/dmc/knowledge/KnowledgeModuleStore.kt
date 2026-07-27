@@ -18,8 +18,8 @@ class KnowledgeModuleStore(context: Context) : SQLiteOpenHelper(
         private const val TAG = "KnowledgeModuleStore"
         private const val DATABASE_NAME = "offline-knowledge.db"
         private const val DATABASE_VERSION = 2
-        private const val DEFAULT_MAX_RESULTS = 8
-        private const val DEFAULT_CONTEXT_BUDGET = 12_000
+        private const val DEFAULT_MAX_RESULTS = 12
+        private const val DEFAULT_CONTEXT_BUDGET = 16_000
         private const val MIN_PREFIX_TERM_LENGTH = 7
     }
 
@@ -110,6 +110,31 @@ class KnowledgeModuleStore(context: Context) : SQLiteOpenHelper(
             val deleted = db.delete("knowledge_modules", "id = ?", arrayOf(moduleId)) > 0
             db.setTransactionSuccessful()
             deleted
+        } finally {
+            db.endTransaction()
+        }
+    }
+
+    fun deleteModulesByKindExcept(kind: KnowledgeModuleKind, retainedModuleId: String) {
+        val db = writableDatabase
+        db.beginTransaction()
+        try {
+            val obsoleteIds = db.query(
+                "knowledge_modules",
+                arrayOf("id"),
+                "kind = ? AND id <> ?",
+                arrayOf(kind.wireName, retainedModuleId),
+                null,
+                null,
+                null
+            ).use { cursor ->
+                buildList { while (cursor.moveToNext()) add(cursor.string("id")) }
+            }
+            obsoleteIds.forEach { moduleId ->
+                db.delete("knowledge_records_fts", "module_id = ?", arrayOf(moduleId))
+                db.delete("knowledge_modules", "id = ?", arrayOf(moduleId))
+            }
+            db.setTransactionSuccessful()
         } finally {
             db.endTransaction()
         }
@@ -211,7 +236,7 @@ class KnowledgeModuleStore(context: Context) : SQLiteOpenHelper(
         }
 
         val normalizedQuery = KnowledgeText.normalize(query)
-        return candidates.entries.mapNotNull { (key, record) ->
+        val ranked = candidates.entries.mapNotNull { (key, record) ->
             val module = modules[key.first] ?: return@mapNotNull null
             val normalizedCode = record.code.uppercase(Locale.ROOT)
             val titleTokens = KnowledgeText.tokens(record.title)
@@ -249,7 +274,8 @@ class KnowledgeModuleStore(context: Context) : SQLiteOpenHelper(
             compareByDescending<KnowledgeHit> { it.score }
                 .thenBy { it.module.name }
                 .thenBy { it.record.code }
-        ).take(maxResults.coerceIn(1, 32))
+        )
+        return fairMerge(ranked, maxResults.coerceIn(1, 32))
     }
 
     fun buildEvidenceContext(
@@ -273,8 +299,32 @@ class KnowledgeModuleStore(context: Context) : SQLiteOpenHelper(
         }
         if (included == 0) return ""
         builder.append("</dmc_offline_knowledge>")
-        Log.i(TAG, "Retrieved offline knowledge hits=$included contextChars=${builder.length}")
+        Log.i(
+            TAG,
+            "Retrieved offline knowledge hits=$included modules=${hits.map { it.module.id }.distinct().size} " +
+                "enabledModules=${listModules().count { it.enabled }} contextChars=${builder.length}"
+        )
         return builder.toString()
+    }
+
+    private fun fairMerge(ranked: List<KnowledgeHit>, limit: Int): List<KnowledgeHit> {
+        val groups = linkedMapOf<String, MutableList<KnowledgeHit>>()
+        ranked.forEach { hit -> groups.getOrPut(hit.module.id) { mutableListOf() }.add(hit) }
+        val merged = mutableListOf<KnowledgeHit>()
+        var position = 0
+        while (merged.size < limit) {
+            var added = false
+            for (group in groups.values) {
+                if (position < group.size) {
+                    merged.add(group[position])
+                    added = true
+                    if (merged.size == limit) break
+                }
+            }
+            if (!added) break
+            position += 1
+        }
+        return merged
     }
 
     private fun buildEvidenceEntry(index: Int, hit: KnowledgeHit): String = buildString {

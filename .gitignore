@@ -336,6 +336,7 @@ upstream/*
 cuda13/
 runtime/llama.cpp/
 runtime/huggingface/
+runtime/knowledge/
 cpp/build/
 .codex-remote-attachments/
 

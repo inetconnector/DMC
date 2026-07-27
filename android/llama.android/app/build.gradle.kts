@@ -78,6 +78,7 @@ android {
         getByName("main") {
             assets.srcDir(layout.buildDirectory.dir("generated/webuiAssets"))
             assets.srcDir(layout.buildDirectory.dir("generated/licenseAssets"))
+            assets.srcDir(layout.projectDirectory.dir("../../../knowledge"))
         }
     }
 

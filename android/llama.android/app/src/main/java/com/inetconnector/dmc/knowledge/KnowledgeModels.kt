@@ -7,6 +7,9 @@ import java.util.Locale
 enum class KnowledgeModuleKind(val wireName: String) {
     ICD10("icd10"),
     ICD11("icd11"),
+    OPS("ops"),
+    ICF("icf"),
+    ICDO("icdo"),
     GENERIC("generic");
 
     companion object {
@@ -86,7 +89,8 @@ data class KnowledgeImportResult(
 object KnowledgeText {
     private val whitespace = Regex("\\s+")
     private val punctuation = Regex("[^\\p{L}\\p{N}.]+")
-    private val codePattern = Regex("(?i)\\b[A-Z][0-9]{2}(?:\\.[0-9A-Z]{1,4})?\\b")
+    private val codePattern =
+        Regex("(?i)(?<![\\p{L}\\p{N}])[A-Z0-9][A-Z0-9:.-]{1,23}(?![\\p{L}\\p{N}:.-])")
     private val stopWords = setOf(
         // Conversational and grammatical words must never activate a large reference lookup.
         "hallo", "hello", "hi", "hey", "hola", "bonjour", "salut", "ciao", "ola",
@@ -125,7 +129,8 @@ object KnowledgeText {
         .toList()
 
     fun codes(value: String): Set<String> = codePattern.findAll(value)
-        .map { it.value.uppercase(Locale.ROOT) }
+        .map { it.value.trimEnd('.', ':', '-').uppercase(Locale.ROOT) }
+        .filter { code -> code.any(Char::isDigit) }
         .toSet()
 
     fun tokens(value: String): Set<String> = normalize(value)

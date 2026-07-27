@@ -30,9 +30,15 @@ class KnowledgePackageImporter(
         private const val BFARM_SOURCE =
             "https://www.bfarm.de/DE/Kodiersysteme/Klassifikationen/ICD/ICD-10-GM/_node.html"
         private const val BFARM_LICENSE =
-            "https://www.bfarm.de/SharedDocs/Downloads/DE/Kodiersysteme/downloadbedingungen-2025.pdf?__blob=publicationFile"
+            "https://www.bfarm.de/DE/Kodiersysteme/Services/Downloads/_verteilerseite.html"
         private const val BFARM_ATTRIBUTION =
             "Herausgegeben vom Bundesinstitut für Arzneimittel und Medizinprodukte (BfArM) im Auftrag des Bundesministeriums für Gesundheit (BMG). Die Erstellung bzw. der Druck erfolgt unter Verwendung der maschinenlesbaren Fassung des Bundesinstituts für Arzneimittel und Medizinprodukte (BfArM)."
+        private val BFARM_KINDS = setOf(
+            KnowledgeModuleKind.ICD10,
+            KnowledgeModuleKind.OPS,
+            KnowledgeModuleKind.ICF,
+            KnowledgeModuleKind.ICDO
+        )
     }
 
     fun import(uri: Uri, termsAcceptedAt: Long): KnowledgeImportResult {
@@ -90,7 +96,11 @@ class KnowledgePackageImporter(
                     .filter { it.isNotBlank() }
                     .mapIndexed { index, line -> parseRecord(JSONObject(line), index + 1, module.kind) }
                 val declaredCount = manifest.optInt("recordCount", 0)
-                store.replaceModule(module, records, declaredCount.takeIf { it > 0 })
+                val result = store.replaceModule(module, records, declaredCount.takeIf { it > 0 })
+                if (module.kind in BFARM_KINDS) {
+                    store.deleteModulesByKindExcept(module.kind, module.id)
+                }
+                result
             }
         } else {
             val clamlEntry = entries.asSequence()
@@ -119,23 +129,63 @@ class KnowledgePackageImporter(
         termsAcceptedAt: Long
     ): KnowledgeImportResult {
         val version = Regex("20[0-9]{2}").find(displayName)?.value ?: "unknown"
+        val profile = clamlProfile(displayName)
         val module = KnowledgeModule(
-            id = "icd10-gm-$version-de",
-            name = "ICD-10-GM $version",
-            kind = KnowledgeModuleKind.ICD10,
+            id = profile.id,
+            name = "${profile.name} $version",
+            kind = profile.kind,
             version = version,
             language = "de",
             jurisdiction = "DE",
             sourceName = "Bundesinstitut für Arzneimittel und Medizinprodukte (BfArM)",
-            sourceUrl = BFARM_SOURCE,
-            licenseName = "BfArM Downloadbedingungen für ICD-10-GM",
+            sourceUrl = profile.sourceUrl,
+            licenseName = "BfArM Downloadbedingungen",
             licenseUrl = BFARM_LICENSE,
             attributionText = BFARM_ATTRIBUTION,
             termsAcceptedAt = termsAcceptedAt,
             checksum = checksum
         )
-        return input.buffered().use { store.replaceModule(module, parseClamlRecords(it)) }
+        val result = input.buffered().use { store.replaceModule(module, parseClamlRecords(it)) }
+        store.deleteModulesByKindExcept(profile.kind, module.id)
+        return result
     }
+
+    private fun clamlProfile(displayName: String): ClamlProfile {
+        val normalized = displayName.lowercase(Locale.ROOT)
+        return when {
+            Regex("(^|[/_.-])ops([/_.-]|20|$)").containsMatchIn(normalized) -> ClamlProfile(
+                id = "bfarm.ops.de",
+                name = "OPS",
+                kind = KnowledgeModuleKind.OPS,
+                sourceUrl = "https://www.bfarm.de/DE/Kodiersysteme/Klassifikationen/OPS-ICHI/OPS/_node.html"
+            )
+            normalized.contains("icf") -> ClamlProfile(
+                id = "bfarm.icf.de",
+                name = "ICF",
+                kind = KnowledgeModuleKind.ICF,
+                sourceUrl = "https://www.bfarm.de/DE/Kodiersysteme/Services/Downloads/_verteilerseite.html"
+            )
+            normalized.contains("icdo") || normalized.contains("icd-o") -> ClamlProfile(
+                id = "bfarm.icdo3.de",
+                name = "ICD-O-3",
+                kind = KnowledgeModuleKind.ICDO,
+                sourceUrl = "https://www.bfarm.de/DE/Kodiersysteme/Services/Downloads/_verteilerseite.html"
+            )
+            else -> ClamlProfile(
+                id = "bfarm.icd10gm.de",
+                name = "ICD-10-GM",
+                kind = KnowledgeModuleKind.ICD10,
+                sourceUrl = BFARM_SOURCE
+            )
+        }
+    }
+
+    private data class ClamlProfile(
+        val id: String,
+        val name: String,
+        val kind: KnowledgeModuleKind,
+        val sourceUrl: String
+    )
 
     private fun parseManifest(
         json: JSONObject,
@@ -170,9 +220,12 @@ class KnowledgePackageImporter(
 
     private fun validateOfficialMetadata(module: KnowledgeModule) {
         when (module.kind) {
-            KnowledgeModuleKind.ICD10 -> {
-                require(officialHost(module.sourceUrl, "bfarm.de")) { "ICD-10-GM source must be BfArM" }
-                require(officialHost(module.licenseUrl, "bfarm.de")) { "ICD-10-GM license must be BfArM" }
+            KnowledgeModuleKind.ICD10,
+            KnowledgeModuleKind.OPS,
+            KnowledgeModuleKind.ICF,
+            KnowledgeModuleKind.ICDO -> {
+                require(officialHost(module.sourceUrl, "bfarm.de")) { "BfArM source is required" }
+                require(officialHost(module.licenseUrl, "bfarm.de")) { "BfArM license is required" }
                 require(module.attributionText.contains("BfArM")) { "BfArM attribution is required" }
             }
             KnowledgeModuleKind.ICD11 -> {

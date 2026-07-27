@@ -24,7 +24,13 @@
     <string name="dialog_continue">Devam et</string>
     <string name="dialog_knowledge_source_bfarm">BfArM: ICD-10-GM indirmeleri</string>
     <string name="dialog_knowledge_source_who">DSÖ: ICD-11 API ve belgeleri</string>
-    <string name="dialog_knowledge_sources_message">Bu bağlantılar resmî yayıncıları açar. InetMind sınıflandırma verilerini otomatik olarak indirmez veya yeniden dağıtmaz.</string>
+    <string name="dialog_knowledge_sources_message">Bakımını yapmak istediğiniz resmî kaynakları seçin. Önerilen temel kaynaklar başlangıçta işaretlidir. Seçim hiçbir lisansı otomatik olarak kabul etmez.</string>
+    <string name="dialog_knowledge_save_selection">Seçimi kaydet</string>
+    <string name="dialog_knowledge_download_update">İndir / güncelle</string>
+    <string name="dialog_knowledge_no_sources_selected">Hiçbir kaynak seçilmedi.</string>
+    <string name="dialog_knowledge_choose_source">Bir kaynak seçin. InetMind resmî indirme veya API sayfasını açar; ardından Dosya içe aktar seçeneğini kullanın. Oturum açma, API erişimi ve belgeye özgü haklar kullanıcının sorumluluğundadır.</string>
+    <string name="dialog_knowledge_source_details">Yayıncı: %1$s\nİçe aktarma biçimi: %2$s\n\nHer zaman güncel kaynak ve lisans sayfasını kontrol edin. Oturum açma, API bilgileri veya belgeye özgü izin gerekebilir.</string>
+    <string name="dialog_knowledge_open_license">Lisansı aç</string>
     <string name="dialog_knowledge_records">%1$d kayıt</string>
     <string name="dialog_knowledge_module_details">Kaynak: %1$s\nLisans: %2$s\n\nAtıf:\n%3$s\n\nSHA-256: %4$s</string>
     <string name="dialog_knowledge_disable">Devre dışı bırak</string>

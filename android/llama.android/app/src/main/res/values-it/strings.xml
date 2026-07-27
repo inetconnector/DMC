@@ -24,7 +24,13 @@
     <string name="dialog_continue">Continua</string>
     <string name="dialog_knowledge_source_bfarm">BfArM: download ICD-10-GM</string>
     <string name="dialog_knowledge_source_who">OMS: API e documentazione ICD-11</string>
-    <string name="dialog_knowledge_sources_message">Questi collegamenti aprono gli editori ufficiali. InetMind non scarica né ridistribuisce automaticamente i dati di classificazione.</string>
+    <string name="dialog_knowledge_sources_message">Seleziona le fonti ufficiali da mantenere. Le fonti principali consigliate sono selezionate inizialmente. La selezione non accetta mai automaticamente una licenza.</string>
+    <string name="dialog_knowledge_save_selection">Salva selezione</string>
+    <string name="dialog_knowledge_download_update">Scarica / aggiorna</string>
+    <string name="dialog_knowledge_no_sources_selected">Nessuna fonte selezionata.</string>
+    <string name="dialog_knowledge_choose_source">Scegli una fonte. InetMind apre la pagina ufficiale di download o API; poi usa Importa file. Accesso, credenziali API e diritti specifici dei documenti restano a carico dell’utente.</string>
+    <string name="dialog_knowledge_source_details">Editore: %1$s\nFormato di importazione: %2$s\n\nControlla sempre la fonte e la licenza correnti. Possono essere richiesti accesso, credenziali API o permessi specifici del documento.</string>
+    <string name="dialog_knowledge_open_license">Apri licenza</string>
     <string name="dialog_knowledge_records">%1$d voci</string>
     <string name="dialog_knowledge_module_details">Fonte: %1$s\nLicenza: %2$s\n\nAttribuzione:\n%3$s\n\nSHA-256: %4$s</string>
     <string name="dialog_knowledge_disable">Disattiva</string>

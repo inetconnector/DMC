@@ -24,7 +24,13 @@
     <string name="dialog_continue">Doorgaan</string>
     <string name="dialog_knowledge_source_bfarm">BfArM: ICD-10-GM-downloads</string>
     <string name="dialog_knowledge_source_who">WHO: ICD-11-API en documentatie</string>
-    <string name="dialog_knowledge_sources_message">Deze koppelingen openen de officiële uitgevers. InetMind downloadt of verspreidt classificatiegegevens niet automatisch.</string>
+    <string name="dialog_knowledge_sources_message">Selecteer de officiële bronnen die je wilt onderhouden. Aanbevolen kernbronnen zijn aanvankelijk aangevinkt. Een selectie accepteert nooit automatisch een licentie.</string>
+    <string name="dialog_knowledge_save_selection">Selectie opslaan</string>
+    <string name="dialog_knowledge_download_update">Downloaden / bijwerken</string>
+    <string name="dialog_knowledge_no_sources_selected">Er is geen bron geselecteerd.</string>
+    <string name="dialog_knowledge_choose_source">Kies een bron. InetMind opent de officiële download- of API-pagina; gebruik daarna Bestand importeren. Aanmelding, API-toegang en documentspecifieke rechten blijven de verantwoordelijkheid van de gebruiker.</string>
+    <string name="dialog_knowledge_source_details">Uitgever: %1$s\nImportformaat: %2$s\n\nControleer altijd de actuele bron- en licentiepagina. Aanmelding, API-gegevens of documentspecifieke toestemming kunnen vereist zijn.</string>
+    <string name="dialog_knowledge_open_license">Licentie openen</string>
     <string name="dialog_knowledge_records">%1$d vermeldingen</string>
     <string name="dialog_knowledge_module_details">Bron: %1$s\nLicentie: %2$s\n\nNaamsvermelding:\n%3$s\n\nSHA-256: %4$s</string>
     <string name="dialog_knowledge_disable">Uitschakelen</string>

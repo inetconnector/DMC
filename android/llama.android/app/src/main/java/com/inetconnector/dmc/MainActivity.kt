@@ -117,6 +117,8 @@ import com.google.mlkit.vision.text.latin.TextRecognizerOptions
 import com.inetconnector.dmc.knowledge.KnowledgeModule
 import com.inetconnector.dmc.knowledge.KnowledgeModuleStore
 import com.inetconnector.dmc.knowledge.KnowledgePackageImporter
+import com.inetconnector.dmc.knowledge.KnowledgeSource
+import com.inetconnector.dmc.knowledge.KnowledgeSourceCatalog
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.locks.ReentrantLock
@@ -138,6 +140,7 @@ class MainActivity : AppCompatActivity() {
         private const val PREFS_NAME = "model_selection_prefs"
         private const val PREF_KEY_PREFERRED_MODEL_PATH = "preferred_model_path"
         private const val PREF_KEY_FAILED_MODEL_PATHS = "failed_model_paths"
+        private const val PREF_KEY_SELECTED_KNOWLEDGE_SOURCES = "selected_knowledge_sources"
         private const val CX_FILE_EXPLORER_PACKAGE = "com.cxinventor.file.explorer"
         private const val PRIVACY_POLICY_URL = "https://inetconnector.github.io/DMC/privacy/"
         private const val SUPPORT_EMAIL = "apps@inetconnector.com"
@@ -155,6 +158,7 @@ class MainActivity : AppCompatActivity() {
     private val modelPrefs by lazy { getSharedPreferences(PREFS_NAME, MODE_PRIVATE) }
     private val knowledgeStore by lazy { KnowledgeModuleStore(applicationContext) }
     private val knowledgeImporter by lazy { KnowledgePackageImporter(applicationContext, knowledgeStore) }
+    private val knowledgeSourceCatalog by lazy { KnowledgeSourceCatalog(applicationContext) }
     @Volatile
     private var localServersStarted = false
 
@@ -955,18 +959,74 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun showOfficialKnowledgeSources() {
-        val labels = arrayOf(
-            getString(R.string.dialog_knowledge_source_bfarm),
-            getString(R.string.dialog_knowledge_source_who)
-        )
-        val urls = arrayOf(
-            "https://www.bfarm.de/DE/Kodiersysteme/Services/Downloads/_verteilerseite.html",
-            "https://icd.who.int/icdapi"
-        )
+        val sources = runCatching { knowledgeSourceCatalog.load() }.getOrElse {
+            showSimpleError(getString(R.string.dialog_knowledge_sources), it)
+            return
+        }
+        val saved = modelPrefs.getStringSet(PREF_KEY_SELECTED_KNOWLEDGE_SOURCES, null)
+        val selected = (saved ?: sources.filter { it.defaultSelected }.map { it.id }.toSet())
+            .toMutableSet()
+        val labels = sources.map { source ->
+            "${source.name} · ${source.publisher}"
+        }.toTypedArray()
+        val checked = sources.map { it.id in selected }.toBooleanArray()
         AlertDialog.Builder(this)
             .setTitle(getString(R.string.dialog_knowledge_sources))
-            .setMessage(getString(R.string.dialog_knowledge_sources_message))
-            .setItems(labels) { _, which -> urls.getOrNull(which)?.let(::openOfficialKnowledgeUrl) }
+            .setMultiChoiceItems(labels, checked) { _, which, isChecked ->
+                sources.getOrNull(which)?.let { source ->
+                    if (isChecked) selected.add(source.id) else selected.remove(source.id)
+                }
+            }
+            .setPositiveButton(getString(R.string.dialog_knowledge_save_selection)) { _, _ ->
+                saveKnowledgeSourceSelection(selected)
+            }
+            .setNeutralButton(getString(R.string.dialog_knowledge_download_update)) { _, _ ->
+                saveKnowledgeSourceSelection(selected)
+                showSelectedKnowledgeSourceActions(sources.filter { it.id in selected })
+            }
+            .setNegativeButton(getString(R.string.dialog_close), null)
+            .show()
+    }
+
+    private fun saveKnowledgeSourceSelection(selected: Set<String>) {
+        modelPrefs.edit()
+            .putStringSet(PREF_KEY_SELECTED_KNOWLEDGE_SOURCES, selected.toSet())
+            .apply()
+    }
+
+    private fun showSelectedKnowledgeSourceActions(sources: List<KnowledgeSource>) {
+        if (sources.isEmpty()) {
+            AlertDialog.Builder(this)
+                .setTitle(getString(R.string.dialog_knowledge_sources))
+                .setMessage(getString(R.string.dialog_knowledge_no_sources_selected))
+                .setPositiveButton(getString(R.string.dialog_ok), null)
+                .show()
+            return
+        }
+        AlertDialog.Builder(this)
+            .setTitle(getString(R.string.dialog_knowledge_download_update))
+            .setItems(sources.map { "${it.name} · ${it.publisher}" }.toTypedArray()) { _, which ->
+                sources.getOrNull(which)?.let(::showKnowledgeSourceDetails)
+            }
+            .setNegativeButton(getString(R.string.dialog_close), null)
+            .show()
+    }
+
+    private fun showKnowledgeSourceDetails(source: KnowledgeSource) {
+        val message = getString(
+            R.string.dialog_knowledge_source_details,
+            source.publisher,
+            source.importMode
+        )
+        AlertDialog.Builder(this)
+            .setTitle(source.name)
+            .setMessage(message)
+            .setPositiveButton(getString(R.string.dialog_knowledge_open_source)) { _, _ ->
+                openOfficialKnowledgeUrl(source.officialUrl)
+            }
+            .setNeutralButton(getString(R.string.dialog_knowledge_open_license)) { _, _ ->
+                openOfficialKnowledgeUrl(source.licenseUrl)
+            }
             .setNegativeButton(getString(R.string.dialog_close), null)
             .show()
     }

@@ -22,6 +22,16 @@ class KnowledgeModuleIntegrationTest {
     private lateinit var store: KnowledgeModuleStore
     private lateinit var importer: KnowledgePackageImporter
 
+    @Test
+    fun loadsSharedOfficialSourceCatalogWithRecommendedDefaults() {
+        val sources = KnowledgeSourceCatalog(context).load()
+        assertTrue(sources.size >= 12)
+        assertTrue(sources.count { it.defaultSelected } >= 8)
+        assertTrue(sources.any { it.id == "bfarm.icd10gm" && it.defaultSelected })
+        assertTrue(sources.any { it.id == "who.icd11" && it.defaultSelected })
+        assertTrue(sources.any { it.id == "loinc.core" && it.defaultSelected })
+    }
+
     @Before
     fun setUp() {
         context = ApplicationProvider.getApplicationContext()
@@ -118,6 +128,38 @@ class KnowledgeModuleIntegrationTest {
         assertEquals(KnowledgeModuleKind.ICD10, result.module.kind)
         assertEquals("2026", result.module.version)
         assertEquals("A00", store.retrieve("Cholera").single().record.code)
+        archive.delete()
+    }
+
+    @Test
+    fun recognizesOpsClamlInsteadOfMislabelingItAsIcd10() {
+        val archive = File.createTempFile("ops2026syst-claml-", ".zip", context.cacheDir)
+        ZipOutputStream(archive.outputStream().buffered()).use { zip ->
+            zip.putNextEntry(ZipEntry("Klassifikationsdateien/ops2026syst_claml.xml"))
+            zip.write(
+                """
+                <?xml version="1.0" encoding="UTF-8"?>
+                <ClaML>
+                  <Class code="5-010" kind="category">
+                    <Rubric kind="preferred"><Label>Schädeloperation</Label></Rubric>
+                  </Class>
+                </ClaML>
+                """.trimIndent().toByteArray()
+            )
+            zip.closeEntry()
+        }
+
+        val result = importer.importFile(
+            archive,
+            archive.name,
+            sha256(archive),
+            System.currentTimeMillis()
+        )
+
+        assertEquals(KnowledgeModuleKind.OPS, result.module.kind)
+        assertEquals("bfarm.ops.de", result.module.id)
+        assertEquals("5-010", store.retrieve("Schädeloperation").single().record.code)
+        assertEquals("5-010", store.retrieve("5-010").single().record.code)
         archive.delete()
     }
 
