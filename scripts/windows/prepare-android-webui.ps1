@@ -43,9 +43,27 @@ if ($null -eq $node -and $null -ne $npm) {
     }
 }
 if ($null -eq $node) {
+    foreach ($nodeCandidate in @(
+        $env:NODE_EXE,
+        "${env:ProgramFiles}\Microsoft Visual Studio\18\Community\MSBuild\Microsoft\VisualStudio\NodeJs\node.exe",
+        "${env:ProgramFiles(x86)}\Microsoft Visual Studio\18\Community\MSBuild\Microsoft\VisualStudio\NodeJs\node.exe",
+        "${env:ProgramFiles}\nodejs\node.exe",
+        "${env:ProgramFiles(x86)}\nodejs\node.exe"
+    )) {
+        if ($nodeCandidate -and (Test-Path -LiteralPath $nodeCandidate -PathType Leaf)) {
+            $node = Get-Item -LiteralPath $nodeCandidate
+            break
+        }
+    }
+}
+if ($null -eq $node) {
     throw 'node.exe was not found next to npm or on PATH.'
 }
 $nodePath = if ($node -is [System.IO.FileInfo]) { $node.FullName } else { $node.Source }
+$nodeDirectory = Split-Path -Parent $nodePath
+if (($env:PATH -split ';') -notcontains $nodeDirectory) {
+    $env:PATH = "$nodeDirectory;$env:PATH"
+}
 
 $viteCommand = Join-Path $uiDirectory 'node_modules\.bin\vite.cmd'
 $assetsCommand = Join-Path $uiDirectory 'node_modules\.bin\pwa-assets-generator.cmd'

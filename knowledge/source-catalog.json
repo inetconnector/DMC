@@ -68,11 +68,11 @@
       "publisher": "Orphadata / INSERM",
       "category": "rare-diseases",
       "description": "Multilingual ORPHA codes, names, classifications and official ICD mappings for rare diseases.",
-      "officialUrl": "https://sciences.orphadata.com/_pack-nomenclature/",
+      "officialUrl": "https://sciences.orphadata.com/alignments/",
       "licenseUrl": "https://creativecommons.org/licenses/by/4.0/",
       "access": "open-download",
       "importMode": "dmcknowledge",
-      "updateCadence": "annual",
+      "updateCadence": "semiannual",
       "defaultSelected": true,
       "android": true,
       "windows": true

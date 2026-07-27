@@ -75,6 +75,16 @@ Update this file and `README.md` together whenever behavior changes.
 - The fresh APK, AAB, and a ZIP of `play/` were copied to
   `\\diskstation.fritz.box\Dani\offline-knowledge-modules\` and read back with
   matching SHA-256 hashes.
+- On 2026-07-27 the current Orphadata July 2026 German and English alignment
+  XML files were downloaded completely from the official Orphadata endpoints,
+  converted into two `.dmcknowledge` packages with 11645 records each, and
+  copied to `\\diskstation.fritz.box\Dani\Offline-ki-modules\`. The original
+  XML files are preserved below its `sources\` directory. Matching copies are
+  in `/sdcard/Download/Offline-ki-modules/` on Samsung `SM-S931B`.
+- The S25 private offline database now contains three active modules:
+  ICD-10-GM 2026 with 12606 records plus Orphadata July 2026 in German and
+  English with 11645 records each. A before/after database backup is retained
+  only under ignored `runtime/knowledge/phone-backup/`.
 
 ## Verified Working
 
@@ -251,7 +261,8 @@ Update this file and `README.md` together whenever behavior changes.
   Web UI synchronization, `:app:assembleDebug`, and the APK DMC marker gate all
   passed. The current debug artifact is
   `android/llama.android/app/build/outputs/apk/debug/app-debug.apk`, SHA-256
-  `A75A112F618BB4089BB12A8918204F5C838C5A4709BA147557531253E8F654E6`.
+  `F41C19145C5DE0377417E05FC5379373DF9FE1D552B0FCE20C769A1E1B62C770`
+  (196027881 bytes).
   ZIP inspection confirms `assets/source-catalog.json` is packaged.
 - The `offline-knowledge-modules` branch debug APK was built successfully on
   2026-07-22. Its SHA-256 is
@@ -323,9 +334,10 @@ Update this file and `README.md` together whenever behavior changes.
 
 - Run a context-pressure request large enough to produce a `DMC_RUNTIME
   rebuild=` marker and verify that streaming still terminates with `[DONE]`.
-- Import a real licensed ICD-10-GM ClaML archive and a real licensed ICD-11
-  package on the Samsung device, verify enable/disable isolation, and compare
-  exact-code and natural-language retrieval against the source editions.
+- Import a real lawfully obtained ICD-11 package on the Samsung device, verify
+  enable/disable isolation, and compare exact-code and natural-language
+  retrieval against the source edition. Real ICD-10-GM 2026 and Orphadata
+  July 2026 DE/EN imports are already installed and count-verified.
 - Run the Android instrumentation tests on an emulator or disposable install;
   do not run them on the user's model-bearing phone because test deployment can
   clear private app data. Do not run them on the user's installed Samsung app.
@@ -337,8 +349,9 @@ Update this file and `README.md` together whenever behavior changes.
   lawful workflow opens the official source and imports a locally prepared,
   bounded JSONL or `.dmcknowledge` snapshot. Do not describe source selection
   as automatic bulk mirroring.
-- The Android catalog and controls have compiled, but their final visual flow
-  and source-selection persistence still need a data-preserving device QA pass.
+- The Android catalog and controls have compiled, and the production importer
+  installed complete Orphadata DE/EN packages without disturbing ICD-10.
+  Source-selection persistence still needs a final visual device QA pass.
 - The first request after a fresh model download previously showed reconnecting
   and stream-resume failures. It still needs a clean-device regression test
   after the SSE buffering fix.
@@ -388,6 +401,33 @@ Update this file and `README.md` together whenever behavior changes.
 
 ## Recent Change
 
+- Corrected Orphadata's retired catalog URL to its current official alignment
+  page and changed its recorded update cadence from annual to semiannual.
+  Rebuilt the July 2026 German and English packages from the complete official
+  XML files. Local, NAS, and phone file sizes and SHA-256 values match:
+  `68AA42D62D3F00B385FBFCD206E8D4E4FF7A1B0109F8067CBC3018C47F99C981`
+  (DE package),
+  `250DDECC22E94B7522DC1CA2BC10E0375B7D84090C50A24E23FBBB49F50D77FE`
+  (EN package),
+  `B9B8FC5EF45B3B8F68DA652B33F1F49D8F0CCAF8A8ED892BC9C0EA594208C2DB`
+  (DE XML), and
+  `DF8D562A0C6011AF36A74EB4000CE81CA7D723E8031010819FB71727C0962BBB`
+  (EN XML).
+- Added a debug-only, private-cache-confined ADB knowledge import action. It
+  calls the same `KnowledgePackageImporter` as the UI, writes a machine-readable
+  result, and is rejected in non-debuggable release builds. This allowed
+  repeatable provisioning without coordinates or direct SQLite modification.
+  The post-import Android database passed `PRAGMA integrity_check`; normal
+  records and FTS4 shadow content both contain 12606/11645/11645 records.
+- Fixed `prepare-android-webui.ps1` so the root Android batch finds Node.js via
+  `NODE_EXE`, Visual Studio's bundled Node.js, or standard Program Files paths
+  and adds only that directory to the child build environment. A final,
+  unabridged `.\build-android.bat` run completed successfully from Web UI
+  generation through `:app:assembleDebug` and the DMC binary marker gate. The
+  APK was installed with `adb install -r`, preserving models, chats, settings,
+  and the prior ICD-10 database.
+  A normal post-import launch remained alive after 20 seconds, and filtered
+  Logcat contained no `FATAL EXCEPTION` or AndroidRuntime crash.
 - Added one validated medical-source catalog shared by Android and Windows.
   It currently covers ICD-10-GM, ICD-11, OPS, Alpha-ID-SE, Orphanet, LOINC,
   EMA PMS, AWMF guidelines, PubMed, the eligible PMC OA subset,

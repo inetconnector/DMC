@@ -77,6 +77,14 @@ module is installed, `run.bat` and `run-phone.bat` automatically place the
 local knowledge proxy in front of `llama.cpp` while retaining the same
 OpenAI-compatible endpoint and SSE streaming behavior.
 
+Source selection is intentionally not a blanket "download everything" action.
+Some catalog entries require a personal account, API credentials, licence
+acceptance, or document-specific permission, and the complete PubMed/PMC
+corpora are too large for one mobile module. Freely downloadable, mobile-sized
+sources can be converted without weakening those boundaries. The current
+Orphadata alignment feed provides complete German and English nomenclature XML
+files under CC BY 4.0 and is tracked as a semiannual source.
+
 ## Android APK
 
 The standalone Android app now lives in `android/llama.android/` and is
@@ -145,6 +153,11 @@ files into the Android assets before Gradle runs. This prevents an APK from
 silently containing an older UI bundle. Set `ANDROID_SKIP_WEBUI_BUILD=1` only
 for a deliberate native-only rebuild when the synchronized UI is already
 current.
+
+The Web UI preparation helper resolves Node.js from `PATH`, `NODE_EXE`, a
+standard Node.js installation, or Visual Studio's bundled Node.js runtime.
+This keeps the root build batch usable on Visual Studio workstations where
+`node.exe` is installed but not globally registered.
 
 The Android project is wired against the pinned `upstream/llama.cpp` Git
 submodule. It points to the DMC Android branch of the public
@@ -250,6 +263,11 @@ unchanged-content confirmation. Android instrumentation tests cover package
 import, exact-code and free-text retrieval, enable/disable isolation,
 transactional rollback, and deletion. Classification data, WHO credentials,
 and redistribution rights are never included by the builder or APK.
+
+Debug APKs also expose a deliberately restricted ADB-assisted import action for
+device provisioning and QA. It accepts only an existing package inside the
+app's private cache, invokes the normal validated transactional importer, and
+is disabled automatically in non-debuggable release builds.
 
 The current signed InetMind/DMC release was built successfully at:
 

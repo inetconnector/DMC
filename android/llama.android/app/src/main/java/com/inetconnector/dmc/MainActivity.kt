@@ -6,6 +6,7 @@ import android.app.AlertDialog
 import android.app.DownloadManager
 import android.content.Intent
 import android.content.DialogInterface
+import android.content.pm.ApplicationInfo
 import android.content.pm.PackageManager
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
@@ -144,6 +145,10 @@ class MainActivity : AppCompatActivity() {
         private const val CX_FILE_EXPLORER_PACKAGE = "com.cxinventor.file.explorer"
         private const val PRIVACY_POLICY_URL = "https://inetconnector.github.io/DMC/privacy/"
         private const val SUPPORT_EMAIL = "apps@inetconnector.com"
+        private const val ACTION_DEBUG_IMPORT_KNOWLEDGE =
+            "com.inetconnector.dmc.action.DEBUG_IMPORT_KNOWLEDGE"
+        private const val EXTRA_DEBUG_IMPORT_PATH = "path"
+        private const val DEBUG_IMPORT_RESULT_FILE = "knowledge-import-result.json"
         private const val TAG = "MainActivity"
     }
     private lateinit var webView: WebView
@@ -303,6 +308,10 @@ class MainActivity : AppCompatActivity() {
         Log.i(TAG, "onCreate: views ready")
         setupWebView()
         Log.i(TAG, "onCreate: webview configured")
+
+        if (handleDebugKnowledgeImport(intent)) {
+            return
+        }
 
         lifecycleScope.launch(Dispatchers.IO) {
             try {
@@ -757,6 +766,66 @@ class MainActivity : AppCompatActivity() {
         fun openKnowledgeModules() {
             runOnUiThread { showKnowledgeModulesDialog() }
         }
+    }
+
+    private fun handleDebugKnowledgeImport(request: Intent): Boolean {
+        if (request.action != ACTION_DEBUG_IMPORT_KNOWLEDGE) return false
+        if ((applicationInfo.flags and ApplicationInfo.FLAG_DEBUGGABLE) == 0) {
+            Log.e(TAG, "DMC_KNOWLEDGE_IMPORT_RESULT disabled_in_release_build")
+            finish()
+            return true
+        }
+
+        lifecycleScope.launch(Dispatchers.IO) {
+            val resultFile = File(cacheDir, DEBUG_IMPORT_RESULT_FILE)
+            resultFile.delete()
+            val result = runCatching {
+                val requestedPath = request.getStringExtra(EXTRA_DEBUG_IMPORT_PATH)
+                    ?: throw IllegalArgumentException("Missing knowledge package path")
+                val packageFile = File(requestedPath).canonicalFile
+                val allowedRoot = cacheDir.canonicalFile
+                require(
+                    packageFile.path.startsWith("${allowedRoot.path}${File.separator}") &&
+                        packageFile.isFile
+                ) {
+                    "Debug knowledge imports must use an existing file inside the app cache"
+                }
+                val digest = MessageDigest.getInstance("SHA-256")
+                packageFile.inputStream().buffered().use { input ->
+                    val buffer = ByteArray(DEFAULT_BUFFER_SIZE)
+                    while (true) {
+                        val read = input.read(buffer)
+                        if (read < 0) break
+                        digest.update(buffer, 0, read)
+                    }
+                }
+                val checksum = digest.digest().joinToString("") { "%02x".format(it.toInt() and 0xff) }
+                knowledgeImporter.importFile(
+                    packageFile,
+                    packageFile.name,
+                    checksum,
+                    System.currentTimeMillis()
+                )
+            }
+
+            val payload = result.fold(
+                onSuccess = {
+                    JSONObject()
+                        .put("success", true)
+                        .put("moduleId", it.module.id)
+                        .put("recordCount", it.module.recordCount)
+                },
+                onFailure = {
+                    JSONObject()
+                        .put("success", false)
+                        .put("error", it.message ?: it.javaClass.simpleName)
+                }
+            )
+            resultFile.writeText(payload.toString(), Charsets.UTF_8)
+            Log.i(TAG, "DMC_KNOWLEDGE_IMPORT_RESULT $payload")
+            runOnUiThread { finish() }
+        }
+        return true
     }
 
     private inner class AndroidLegalBridge {

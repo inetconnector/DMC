@@ -179,7 +179,7 @@ bestmögliche relevante Index sinnvoll:
 - [BfArM-Downloadportal](https://www.bfarm.de/DE/Kodiersysteme/Services/Downloads/_verteilerseite.html)
 - [WHO ICD API](https://icd.who.int/docs/icd-api/APIDoc-Version2/)
 - [WHO ICD-11-Lizenz](https://icd.who.int/docs/icd-api/license/)
-- [Orphadata-Nomenklatur](https://sciences.orphadata.com/_pack-nomenclature/)
+- [Orphadata-Nomenklatur und Klassifikationsabgleiche](https://sciences.orphadata.com/alignments/)
 - [LOINC-Downloads](https://loinc.org/downloads/)
 - [LOINC-Lizenz](https://loinc.org/license/)
 - [EMA PMS API](https://api.pms.ema.europa.eu/public/v1/swagger)
