@@ -21,6 +21,11 @@ val releaseSigningReady =
 android {
     namespace = "com.inetconnector.dmc"
     compileSdk = 36
+    flavorDimensions += "distribution"
+
+    buildFeatures {
+        buildConfig = true
+    }
 
     defaultConfig {
         applicationId = "com.inetconnector.dmc"
@@ -28,12 +33,29 @@ android {
         minSdk = 33
         targetSdk = 36
 
-        versionCode = 2
-        versionName = "1.0.1"
+        versionCode = 3
+        versionName = "1.1.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+        buildConfigField("String", "PLAY_PRODUCT_ID", "\"inetmind_full_unlock\"")
+        buildConfigField("String", "INETMIND_API_BASE_URL", "\"https://apps.inetconnector.com/inetmind/v1\"")
         vectorDrawables {
             useSupportLibrary = true
+        }
+    }
+
+    productFlavors {
+        create("full") {
+            dimension = "distribution"
+            buildConfigField("Boolean", "ENABLE_PLAY_BILLING", "false")
+            buildConfigField("Boolean", "ENABLE_OFFLINE_KNOWLEDGE", "true")
+            buildConfigField("String", "PRIVACY_POLICY_URL", "\"https://inetconnector.github.io/DMC/privacy/\"")
+        }
+        create("play") {
+            dimension = "distribution"
+            buildConfigField("Boolean", "ENABLE_PLAY_BILLING", "true")
+            buildConfigField("Boolean", "ENABLE_OFFLINE_KNOWLEDGE", "false")
+            buildConfigField("String", "PRIVACY_POLICY_URL", "\"https://inetconnector.github.io/DMC/privacy/play/\"")
         }
     }
 
@@ -76,9 +98,14 @@ android {
 
     sourceSets {
         getByName("main") {
-            assets.srcDir(layout.buildDirectory.dir("generated/webuiAssets"))
             assets.srcDir(layout.buildDirectory.dir("generated/licenseAssets"))
+        }
+        getByName("full") {
+            assets.srcDir(layout.buildDirectory.dir("generated/webuiAssets"))
             assets.srcDir(layout.projectDirectory.dir("../../../knowledge"))
+        }
+        getByName("play") {
+            assets.srcDir(layout.buildDirectory.dir("generated/playWebuiAssets"))
         }
     }
 
@@ -100,6 +127,30 @@ val copyWebUiAssets by tasks.registering(Copy::class) {
     into(layout.buildDirectory.dir("generated/webuiAssets/webui"))
 }
 
+val playExcludedTerms = mapOf(
+    "ICD-10" to "reference data",
+    "ICD-11" to "reference data",
+    "icd10" to "reference",
+    "icd11" to "reference",
+    "BfArM" to "official publisher",
+    "Orphadata" to "official publisher",
+    "medical classifications" to "specialized reference data",
+    "medizinische Klassifikationen" to "spezialisierte Referenzdaten"
+)
+
+val copyPlayWebUiAssets by tasks.registering(Copy::class) {
+    from(layout.projectDirectory.dir("../../../upstream/llama.cpp/tools/server/public"))
+    into(layout.buildDirectory.dir("generated/playWebuiAssets/webui"))
+    filteringCharset = "UTF-8"
+    filesMatching(listOf("**/*.html", "**/*.js", "**/*.json", "**/*.txt")) {
+        filter { line: String ->
+            playExcludedTerms.entries.fold(line) { content, (term, replacement) ->
+                content.replace(term, replacement)
+            }
+        }
+    }
+}
+
 val copyLicenseAssets by tasks.registering(Copy::class) {
     into(layout.buildDirectory.dir("generated/licenseAssets/licenses"))
     from(layout.projectDirectory.file("../../../LICENSE")) {
@@ -116,6 +167,7 @@ val copyLicenseAssets by tasks.registering(Copy::class) {
 
 tasks.named("preBuild") {
     dependsOn(copyWebUiAssets)
+    dependsOn(copyPlayWebUiAssets)
     dependsOn(copyLicenseAssets)
 }
 
@@ -125,6 +177,7 @@ dependencies {
     implementation("org.nanohttpd:nanohttpd:2.3.1")
     implementation("com.google.mlkit:text-recognition:16.0.1")
     implementation("com.google.mlkit:image-labeling:17.0.9")
+    implementation("com.android.billingclient:billing:9.1.0")
 
     implementation(project(":lib"))
 

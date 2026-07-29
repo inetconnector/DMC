@@ -31,8 +31,8 @@ to validate than a more ad hoc retrieval system.
   helper scripts.
 - The Android package remains `com.inetconnector.dmc`; the visible app and
   Google Play name is **InetMind - Local AI** / **InetMind - Lokale KI**.
-- The current release candidate is `1.0.1 (2)`. Android V1.0 remains available
-  as a signed APK from GitHub Releases.
+- The current Google Play candidate is `1.1.0 (3)`. Its immutable source tag
+  is planned as `android-play-v1.1.0`.
 - The design focuses on long context first, quality second, speed third.
 - DMC's original code is licensed under MIT. Bundled third-party components
   retain their own licenses and terms; see `THIRD_PARTY_NOTICES.md`.
@@ -98,23 +98,31 @@ must remain outside the repository; use
 `dmc` profile without printing the private key.
 
 The complete version-controlled Google Play source set lives under `play/`:
-nine localized listings and release notes, five reviewed German phone
+nine localized listings and release notes, four reviewed German phone
 screenshots, two English phone screenshots, a 512x512 RGB icon, a 1024x500 RGB
 feature graphic, and the editable SVG artwork. The screenshots are direct,
 privacy-checked 1080x1920 captures from a Samsung S25. Subjects and suggested
 accessibility text are documented in
 [`play/screenshots/README.md`](play/screenshots/README.md).
 
-Version `1.0.1 (2)` is uploaded, processed, and active in Google Play's
-internal test track. It adds the InetMind branding, an in-app generated-content
-reporting path, privacy/support links, conservative privacy disclosures, and
-disabled Android backup. The shared service account can read the app and manage
-releases, but Google still returns `403 forbidden` when it commits store text;
-the app-specific **Manage store presence** permission must be corrected or
-allowed time to propagate. The remotely visible English title therefore
-remains the old draft name until that permission is fixed. Pricing (`4.99
-EUR`), Data safety, health/content declarations, target audience, and the final
-production submission remain Play Console steps.
+Version `1.0.1 (2)` remains active on the internal test track. The next
+candidate is `1.1.0 (3)` and is built in two deliberately separate flavors:
+
+- `playRelease` is the Google Play artifact. It contains no offline medical
+  modules, medical import path, diagnosis feature, or treatment feature. It is
+  free to install, starts one server-backed three-day trial, and then requires
+  the non-consumable Play Billing product `inetmind_full_unlock` (base price
+  `4.99 EUR`) for permanent use.
+- `fullRelease` retains the existing optional offline knowledge-module system
+  for direct distribution. It does not activate Play Billing or the trial gate.
+
+The Play app now reports generated responses directly to the
+InetConnector-controlled HTTPS endpoint without leaving the app. Localized
+listings and release notes for all nine supported locales validate locally.
+Production is intentionally not submitted yet: the shared service account
+still receives `403 forbidden` when creating the one-time product or changing
+store presence, and the dedicated Play privacy URL must return HTTP 200 before
+submission. These are release blockers, not silently skipped steps.
 
 The maintained Play submission sources are:
 
@@ -122,9 +130,9 @@ The maintained Play submission sources are:
   matrix;
 - [`docs/BRAND_AND_PLAY_REVIEW.md`](docs/BRAND_AND_PLAY_REVIEW.md) for the name,
   trademark-screening limits, and policy review;
-- [`privacy/index.html`](privacy/index.html), published at
-  <https://inetconnector.github.io/DMC/privacy/>, for the bilingual privacy
-  policy.
+- [`privacy/play/index.html`](privacy/play/index.html), intended for
+  <https://inetconnector.github.io/DMC/privacy/play/>, for the medical-free
+  Play flavor's bilingual privacy policy.
 
 **Download:** [DMC Android V1.0 release](https://github.com/inetconnector/DMC/releases/tag/android-v1.0.0)
 or [download the signed APK directly](https://github.com/inetconnector/DMC/releases/download/android-v1.0.0/com.inetconnector.dmc-1.0.0%2B1-release.apk).
@@ -144,9 +152,25 @@ contract; camera capture is unchanged.
 
 Use these helpers from the repository root:
 
-1. `build-android.bat` to build the APK on Windows.
-2. `install-android.bat` to build, install, and launch the app on a connected
-   device.
+1. `build-android.bat` builds the default `fullDebug` APK.
+2. Set `ANDROID_DISTRIBUTION=play` to build the medical-free Play flavor.
+3. Set `ANDROID_BUILD_VARIANT=release` for APK and AAB release artifacts.
+4. `install-android.bat` builds, installs, and launches the selected flavor on
+   a connected device.
+
+Example for the Google Play bundle:
+
+```powershell
+$env:ANDROID_DISTRIBUTION = "play"
+$env:ANDROID_BUILD_VARIANT = "release"
+.\build-android.bat
+```
+
+Release signing uses `DMC_RELEASE_STORE_FILE`,
+`DMC_RELEASE_STORE_PASSWORD`, `DMC_RELEASE_KEY_ALIAS`, and
+`DMC_RELEASE_KEY_PASSWORD`. Secrets remain outside Git. The signed Play bundle
+is written below
+`publish/com.inetconnector.dmc/1.1.0+3/` and is never committed.
 
 Both helpers rebuild the Svelte Web UI and synchronize the resulting `dist/`
 files into the Android assets before Gradle runs. This prevents an APK from

@@ -2,7 +2,7 @@
 <resources>
     <string name="privacy_policy_title">Gizlilik politikası</string>
     <string name="report_response_title">Yapay zeka yanıtını bildir</string>
-    <string name="report_response_message">Bir neden seçin. Yanıt metni yalnızca onayınızdan sonra bir e-posta taslağına eklenir. Geliştiriciye göndermeden önce taslağı inceleyin.</string>
+    <string name="report_response_message">Bir neden seçin. Onaydan sonra bu yanıtın en fazla 4.000 karakteri doğrudan InetConnector’a gönderilir. Diğer sohbetler ve model verileri bu cihazda kalır.</string>
     <string name="report_reason_harmful">Zararlı veya tehlikeli</string>
     <string name="report_reason_hateful">Nefret dolu veya taciz edici</string>
     <string name="report_reason_sexual">Cinsel içerik</string>
@@ -14,6 +14,24 @@
     <string name="report_email_subject">InetMind yapay zeka içerik bildirimi</string>
     <string name="report_email_chooser">İçerik bildirimini gönder</string>
     <string name="report_no_email_app">Kullanılabilir e-posta uygulaması yok. apps@inetconnector.com ile iletişime geçin.</string>
+    <string name="report_send">Bildirimi gönder</string>
+    <string name="report_sent_title">Bildirim gönderildi</string>
+    <string name="report_sent_message">Teşekkürler. Bildirim kimliğiniz: %1$s.</string>
+    <string name="report_failed_title">Bildirim gönderilmedi</string>
+    <string name="report_failed_message">Bildirim gönderilemedi. Bağlantınızı kontrol edip yeniden deneyin.\n\n%1$s</string>
+    <string name="trial_intro_title">InetMind’ı 3 gün ücretsiz deneyin</string>
+    <string name="trial_intro_message">Play Store sürümündeki tüm özellikleri üç gün ücretsiz kullanın. Ardından InetMind’ı tek seferlik satın almayla kalıcı olarak açın (%1$s; nihai yerel fiyatı Google Play gösterir).\n\nTekrarlanan denemeleri önlemek için InetMind, InetConnector’a takma adlı bir kurulum kimliği, uygulama sürümü ve dil gönderir. Deneme etkinleştirmesi için sohbetler, dosyalar, modeller ve istemler hiçbir zaman gönderilmez.\n\n<a href="%2$s">Gizlilik politikasını okuyun</a></string>
+    <string name="trial_start_button">3 günlük denemeyi başlat</string>
+    <string name="trial_expired_title">Deneme süresi sona erdi</string>
+    <string name="trial_expired_message">Üç günlük deneme süreniz sona erdi. InetMind’ı tek seferlik satın almayla kalıcı olarak açın (%1$s; nihai yerel fiyatı Google Play gösterir).</string>
+    <string name="unlock_button">Kalıcı olarak aç</string>
+    <string name="restore_purchase_button">Satın almayı geri yükle</string>
+    <string name="unlock_price_fallback">4,99 EUR</string>
+    <string name="trial_activation_failed_message">Deneme etkinleştirilemedi. Başlangıçta bir kez İnternet bağlantısı gerekir.\n\n%1$s</string>
+    <string name="purchase_error_title">Erişim kullanılamıyor</string>
+    <string name="purchase_unavailable_message">Google Play kalıcı kilit açma ürününü yükleyemedi. Play Store sürümünü yükleyin, bağlantınızı kontrol edin ve yeniden deneyin.\n\n%1$s</string>
+    <string name="purchase_pending_message">Ödeme beklemede. Google Play ödemeyi onayladıktan sonra erişim açılacaktır.</string>
+    <string name="purchase_failed_message">Satın alma tamamlanamadı.\n\n%1$s</string>
     <string name="dialog_knowledge_title">Çevrimdışı başvurular</string>
     <string name="dialog_knowledge_empty">Yüklü çevrimdışı başvuru modülü yok.</string>
     <string name="dialog_knowledge_import">Dosya içe aktar</string>

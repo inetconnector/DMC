@@ -106,28 +106,41 @@ set /a WAIT_COUNT=0
 if exist "%WAIT_FILE%" exit /b 0
 set /a WAIT_COUNT+=1
 if %WAIT_COUNT% GEQ %WAIT_SECONDS% exit /b 1
-timeout /t 1 /nobreak >nul
+powershell.exe -NoProfile -Command "Start-Sleep -Seconds 1" >nul 2>nul
 goto :wait_for_file_loop
 
 :main
 for %%I in ("%~dp0.") do set "ROOT=%%~fI"
 set "APP_ID=com.inetconnector.dmc"
-set "APP_VERSION_NAME=1.0.1"
-set "APP_VERSION_CODE=2"
+set "APP_VERSION_NAME=1.1.0"
+set "APP_VERSION_CODE=3"
 set "ANDROID_DIR=%ROOT%\android\llama.android"
 set "WRAPPER_JAR=%ANDROID_DIR%\gradle\wrapper\gradle-wrapper.jar"
 set "VARIANT=debug"
-set "PUBLISH_DIR=%ROOT%\publish\%APP_ID%\%APP_VERSION_NAME%+%APP_VERSION_CODE%"
+set "DISTRIBUTION=full"
+set "GRADLE_FLAVOR=Full"
 set "GRADLE_OFFLINE_ARGS="
+set "CLEAN_TASK="
 if /I "%ANDROID_BUILD_OFFLINE%"=="1" set "GRADLE_OFFLINE_ARGS=--offline"
+if /I "%ANDROID_CLEAN_BUILD%"=="1" set "CLEAN_TASK=:app:clean"
 
 if /I "%ANDROID_BUILD_VARIANT%"=="release" set "VARIANT=release"
+if /I "%ANDROID_DISTRIBUTION%"=="play" (
+  set "DISTRIBUTION=play"
+  set "GRADLE_FLAVOR=Play"
+)
+if defined ANDROID_DISTRIBUTION if /I not "%ANDROID_DISTRIBUTION%"=="full" if /I not "%ANDROID_DISTRIBUTION%"=="play" (
+  echo [ERROR] ANDROID_DISTRIBUTION must be full or play.
+  exit /b 1
+)
+set "PUBLISH_DIR=%ROOT%\publish\%APP_ID%\%APP_VERSION_NAME%+%APP_VERSION_CODE%"
 
 echo ============================================================
 echo Build Android APK - InetMind Local AI
 echo ============================================================
 echo Root: %ROOT%
 echo Android project: %ANDROID_DIR%
+echo Distribution: %DISTRIBUTION%
 echo Variant: %VARIANT%
 
 powershell.exe -NoProfile -ExecutionPolicy Bypass -File "%ROOT%\scripts\windows\prepare-llama-submodule.ps1" -RepositoryRoot "%ROOT%"
@@ -169,15 +182,15 @@ if errorlevel 1 exit /b 1
 pushd "%ANDROID_DIR%"
 if /I "%VARIANT%"=="release" (
   if defined GRADLE_EXE (
-    call "%GRADLE_EXE%" --no-daemon %GRADLE_OFFLINE_ARGS% -PaiChatHostToolchainFile=%HOST_TOOLCHAIN_FILE% :app:clean :app:assembleRelease :app:bundleRelease --console=plain
+    call "%GRADLE_EXE%" --no-daemon %GRADLE_OFFLINE_ARGS% -PaiChatHostToolchainFile=%HOST_TOOLCHAIN_FILE% %CLEAN_TASK% :app:assemble%GRADLE_FLAVOR%Release :app:bundle%GRADLE_FLAVOR%Release --console=plain
   ) else (
-    "%JAVA_EXE%" -classpath gradle\wrapper\gradle-wrapper.jar org.gradle.wrapper.GradleWrapperMain --no-daemon %GRADLE_OFFLINE_ARGS% -PaiChatHostToolchainFile=%HOST_TOOLCHAIN_FILE% :app:clean :app:assembleRelease :app:bundleRelease --console=plain
+    "%JAVA_EXE%" -classpath gradle\wrapper\gradle-wrapper.jar org.gradle.wrapper.GradleWrapperMain --no-daemon %GRADLE_OFFLINE_ARGS% -PaiChatHostToolchainFile=%HOST_TOOLCHAIN_FILE% %CLEAN_TASK% :app:assemble%GRADLE_FLAVOR%Release :app:bundle%GRADLE_FLAVOR%Release --console=plain
   )
 ) else (
   if defined GRADLE_EXE (
-    call "%GRADLE_EXE%" --no-daemon %GRADLE_OFFLINE_ARGS% -PaiChatHostToolchainFile=%HOST_TOOLCHAIN_FILE% :app:clean :app:assembleDebug --console=plain
+    call "%GRADLE_EXE%" --no-daemon %GRADLE_OFFLINE_ARGS% -PaiChatHostToolchainFile=%HOST_TOOLCHAIN_FILE% %CLEAN_TASK% :app:assemble%GRADLE_FLAVOR%Debug --console=plain
   ) else (
-    "%JAVA_EXE%" -classpath gradle\wrapper\gradle-wrapper.jar org.gradle.wrapper.GradleWrapperMain --no-daemon %GRADLE_OFFLINE_ARGS% -PaiChatHostToolchainFile=%HOST_TOOLCHAIN_FILE% :app:clean :app:assembleDebug --console=plain
+    "%JAVA_EXE%" -classpath gradle\wrapper\gradle-wrapper.jar org.gradle.wrapper.GradleWrapperMain --no-daemon %GRADLE_OFFLINE_ARGS% -PaiChatHostToolchainFile=%HOST_TOOLCHAIN_FILE% %CLEAN_TASK% :app:assemble%GRADLE_FLAVOR%Debug --console=plain
   )
 )
 set "BUILD_EXIT=%ERRORLEVEL%"
@@ -189,11 +202,14 @@ if not "%BUILD_EXIT%"=="0" (
 )
 
 if /I "%VARIANT%"=="release" (
-  set "APK_PATH=%ANDROID_DIR%\app\build\outputs\apk\release\app-release.apk"
+  set "APK_PATH=%ANDROID_DIR%\app\build\outputs\apk\%DISTRIBUTION%\release\app-%DISTRIBUTION%-release.apk"
   call :wait_for_file "!APK_PATH!" 15
-  if not exist "!APK_PATH!" set "APK_PATH=%ANDROID_DIR%\app\build\outputs\apk\release\app-release-unsigned.apk"
+  if not exist "!APK_PATH!" (
+    set "APK_PATH=%ANDROID_DIR%\app\build\outputs\apk\%DISTRIBUTION%\release\app-%DISTRIBUTION%-release-unsigned.apk"
+    if exist "!APK_PATH!" echo [WARN] Release signing was not configured; publishing an unsigned APK.
+  )
 ) else (
-  set "APK_PATH=%ANDROID_DIR%\app\build\outputs\apk\debug\app-debug.apk"
+  set "APK_PATH=%ANDROID_DIR%\app\build\outputs\apk\%DISTRIBUTION%\debug\app-%DISTRIBUTION%-debug.apk"
 )
 
 if not exist "%APK_PATH%" (
@@ -207,14 +223,26 @@ if errorlevel 1 (
   echo [ERROR] APK does not contain the required DMC runtime.
   exit /b 1
 )
+if /I "%DISTRIBUTION%"=="play" (
+  powershell.exe -NoProfile -ExecutionPolicy Bypass -File "%ROOT%\scripts\windows\verify-android-play.ps1" -ArtifactPath "%APK_PATH%"
+  if errorlevel 1 (
+    echo [ERROR] Play APK contains excluded functionality or lacks required Play markers.
+    exit /b 1
+  )
+)
 
 if not exist "%PUBLISH_DIR%" mkdir "%PUBLISH_DIR%" >nul 2>nul
 if /I "%VARIANT%"=="release" (
-  if exist "%ANDROID_DIR%\app\build\outputs\bundle\release\app-release.aab" (
-    copy /Y "%ANDROID_DIR%\app\build\outputs\bundle\release\app-release.aab" "%PUBLISH_DIR%\%APP_ID%-%APP_VERSION_NAME%+%APP_VERSION_CODE%-release.aab" >nul
+  set "AAB_PATH=%ANDROID_DIR%\app\build\outputs\bundle\%DISTRIBUTION%Release\app-%DISTRIBUTION%-release.aab"
+  if exist "!AAB_PATH!" (
+    if /I "%DISTRIBUTION%"=="play" (
+      powershell.exe -NoProfile -ExecutionPolicy Bypass -File "%ROOT%\scripts\windows\verify-android-play.ps1" -ArtifactPath "!AAB_PATH!"
+      if errorlevel 1 exit /b 1
+    )
+    copy /Y "!AAB_PATH!" "%PUBLISH_DIR%\%APP_ID%-%APP_VERSION_NAME%+%APP_VERSION_CODE%-%DISTRIBUTION%-release.aab" >nul
   )
 )
-copy /Y "%APK_PATH%" "%PUBLISH_DIR%\%APP_ID%-%APP_VERSION_NAME%+%APP_VERSION_CODE%-%VARIANT%.apk" >nul
+copy /Y "%APK_PATH%" "%PUBLISH_DIR%\%APP_ID%-%APP_VERSION_NAME%+%APP_VERSION_CODE%-%DISTRIBUTION%-%VARIANT%.apk" >nul
 
 echo.
 echo [OK] Build completed.

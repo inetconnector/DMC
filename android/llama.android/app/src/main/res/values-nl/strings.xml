@@ -2,7 +2,7 @@
 <resources>
     <string name="privacy_policy_title">Privacybeleid</string>
     <string name="report_response_title">AI-antwoord melden</string>
-    <string name="report_response_message">Kies een reden. De antwoordtekst wordt pas na je bevestiging aan een e-mailconcept toegevoegd. Controleer het concept voordat je het naar de ontwikkelaar stuurt.</string>
+    <string name="report_response_message">Kies een reden. Na bevestiging worden maximaal 4.000 tekens van dit antwoord rechtstreeks naar InetConnector gestuurd. Andere chats en modelgegevens blijven op dit apparaat.</string>
     <string name="report_reason_harmful">Schadelijk of gevaarlijk</string>
     <string name="report_reason_hateful">Haatdragend of beledigend</string>
     <string name="report_reason_sexual">Seksuele inhoud</string>
@@ -14,6 +14,24 @@
     <string name="report_email_subject">InetMind-melding over AI-inhoud</string>
     <string name="report_email_chooser">Inhoudsmelding verzenden</string>
     <string name="report_no_email_app">Er is geen e-mailapp beschikbaar. Neem contact op via apps@inetconnector.com.</string>
+    <string name="report_send">Melding verzenden</string>
+    <string name="report_sent_title">Melding verzonden</string>
+    <string name="report_sent_message">Bedankt. Je meldings-ID is %1$s.</string>
+    <string name="report_failed_title">Melding niet verzonden</string>
+    <string name="report_failed_message">De melding kon niet worden verzonden. Controleer je verbinding en probeer het opnieuw.\n\n%1$s</string>
+    <string name="trial_intro_title">Probeer InetMind 3 dagen gratis</string>
+    <string name="trial_intro_message">Gebruik alle Play Store-functies drie dagen gratis. Daarna kun je InetMind permanent ontgrendelen met een eenmalige aankoop (%1$s; Google Play toont de definitieve lokale prijs).\n\nOm herhaalde proefperioden te voorkomen, stuurt InetMind een pseudonieme installatie-ID, appversie en taal naar InetConnector. Chats, bestanden, modellen en prompts worden nooit verzonden om de proefperiode te activeren.\n\n<a href="%2$s">Lees het privacybeleid</a></string>
+    <string name="trial_start_button">Proefperiode van 3 dagen starten</string>
+    <string name="trial_expired_title">Proefperiode afgelopen</string>
+    <string name="trial_expired_message">Je proefperiode van drie dagen is afgelopen. Ontgrendel InetMind permanent met een eenmalige aankoop (%1$s; Google Play toont de definitieve lokale prijs).</string>
+    <string name="unlock_button">Permanent ontgrendelen</string>
+    <string name="restore_purchase_button">Aankoop herstellen</string>
+    <string name="unlock_price_fallback">EUR 4,99</string>
+    <string name="trial_activation_failed_message">De proefperiode kon niet worden geactiveerd. Bij de start is eenmalig een internetverbinding nodig.\n\n%1$s</string>
+    <string name="purchase_error_title">Toegang niet beschikbaar</string>
+    <string name="purchase_unavailable_message">Google Play kon de permanente ontgrendeling niet laden. Installeer de Play Store-versie, controleer je verbinding en probeer het opnieuw.\n\n%1$s</string>
+    <string name="purchase_pending_message">De betaling is in behandeling. Toegang wordt ontgrendeld nadat Google Play de betaling heeft bevestigd.</string>
+    <string name="purchase_failed_message">De aankoop kon niet worden voltooid.\n\n%1$s</string>
     <string name="dialog_knowledge_title">Offline referenties</string>
     <string name="dialog_knowledge_empty">Er zijn geen offline referentiemodules geïnstalleerd.</string>
     <string name="dialog_knowledge_import">Bestand importeren</string>

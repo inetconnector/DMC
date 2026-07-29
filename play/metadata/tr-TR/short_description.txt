@@ -1,1 +1,1 @@
-Uzun bağlam, görsel analiz ve çevrimdışı bilgi sunan özel yerel yapay zeka.
+Uzun bağlam, görsel analiz ve akış sunan özel yerel yapay zeka.

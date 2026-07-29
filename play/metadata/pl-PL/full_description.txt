@@ -9,8 +9,8 @@ Deterministic Multiresolution Context (DMC) zachowuje ważne fragmenty długiej 
 WEJŚCIA MULTIMODALNE
 Dołączaj obrazy, rób zdjęcia, dodawaj dokumenty tekstowe lub PDF i korzystaj z wprowadzania głosowego. Obsługa obrazu i dźwięku zależy od wybranego modelu. Odpowiedzi są wyświetlane strumieniowo podczas obliczeń.
 
-MODUŁY WIEDZY OFFLINE
-Importuj obsługiwane pakiety referencyjne i włączaj lub wyłączaj je w razie potrzeby. InetMind nie zawiera oficjalnych danych klasyfikacyjnych. Pobierz je od odpowiedniego wydawcy i przestrzegaj warunków licencji. Zaimportowane moduły pozostają na urządzeniu.
+TRZY DNI PRÓBY, JEDNORAZOWE ODBLOKOWANIE
+Wypróbuj aplikację bezpłatnie przez trzy dni. Następnie jeden zakup trwale odblokowuje pełny dostęp. Nie ma abonamentu. Google Play przed zakupem wyświetla cenę obowiązującą w Twoim kraju. Po Twoim wyraźnym potwierdzeniu przesyłane są wyłącznie pseudonimowy identyfikator instalacji, wersja aplikacji i język w celu udostępnienia jednorazowego okresu próbnego, nigdy czaty, pliki, modele ani polecenia.
 
 NAJWAŻNIEJSZE FUNKCJE
 - Lokalne zarządzanie modelami GGUF
@@ -21,4 +21,4 @@ NAJWAŻNIEJSZE FUNKCJE
 - Konfigurowalne generowanie i próbkowanie
 - Wnioskowanie Android ukierunkowane na CPU
 
-Zgodność, szybkość i maksymalny kontekst zależą od modelu, kwantyzacji, dostępnej pamięci i urządzenia. InetMind jest narzędziem AI ogólnego przeznaczenia. Importowane klasyfikacje medyczne są materiałem referencyjnym i nie zastępują profesjonalnej porady, diagnozy ani leczenia.
+Zgodność, szybkość i maksymalny kontekst zależą od modelu, kwantyzacji, dostępnej pamięci i urządzenia. InetMind jest narzędziem AI ogólnego przeznaczenia i nie zawiera funkcji wiedzy medycznej, diagnozy ani leczenia.

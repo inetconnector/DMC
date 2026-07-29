@@ -2,7 +2,7 @@
     <string name="app_name">InetMind</string>
     <string name="privacy_policy_title">Privacy policy</string>
     <string name="report_response_title">Report AI response</string>
-    <string name="report_response_message">Choose a reason. The response text is added to an email draft only after you confirm. Review the draft before sending it to the developer.</string>
+    <string name="report_response_message">Choose a reason. After confirmation, up to 4,000 characters of this response are sent directly to InetConnector. Other chats and model data remain on this device.</string>
     <string name="report_reason_harmful">Harmful or dangerous</string>
     <string name="report_reason_hateful">Hateful or abusive</string>
     <string name="report_reason_sexual">Sexual content</string>
@@ -10,10 +10,28 @@
     <string name="report_reason_inaccurate">Seriously inaccurate</string>
     <string name="report_reason_other">Other</string>
     <string name="report_prepare_email">Prepare report</string>
+    <string name="report_send">Send report</string>
     <string name="report_cancel">Cancel</string>
     <string name="report_email_subject">InetMind AI content report</string>
     <string name="report_email_chooser">Send content report</string>
     <string name="report_no_email_app">No email app is available. Contact apps@inetconnector.com.</string>
+    <string name="report_sent_title">Report sent</string>
+    <string name="report_sent_message">Thank you. Your report ID is %1$s.</string>
+    <string name="report_failed_title">Report not sent</string>
+    <string name="report_failed_message">The report could not be sent. Check your connection and try again.\n\n%1$s</string>
+    <string name="trial_intro_title">Try InetMind free for 3 days</string>
+    <string name="trial_intro_message">Use all Play Store features free for three days. After that, permanently unlock InetMind with a one-time purchase (%1$s; the final local price is shown by Google Play).\n\nTo prevent repeated trials, InetMind sends a pseudonymous installation identifier, app version and language to InetConnector. Chats, files, models and prompts are never sent for trial activation.\n\n<a href="%2$s">Read the privacy policy</a></string>
+    <string name="trial_start_button">Start 3-day trial</string>
+    <string name="trial_expired_title">Trial ended</string>
+    <string name="trial_expired_message">Your three-day trial has ended. Permanently unlock InetMind with a one-time purchase (%1$s; the final local price is shown by Google Play).</string>
+    <string name="unlock_button">Unlock permanently</string>
+    <string name="restore_purchase_button">Restore purchase</string>
+    <string name="unlock_price_fallback">EUR 4.99</string>
+    <string name="trial_activation_failed_message">The trial could not be activated. An internet connection is required once at the start.\n\n%1$s</string>
+    <string name="purchase_error_title">Access unavailable</string>
+    <string name="purchase_unavailable_message">Google Play could not load the permanent unlock. Install the Play Store version, check your connection and try again.\n\n%1$s</string>
+    <string name="purchase_pending_message">The payment is pending. Access will be unlocked after Google Play confirms the payment.</string>
+    <string name="purchase_failed_message">The purchase could not be completed.\n\n%1$s</string>
     <string name="dictation_prompt">Speak now</string>
     <string name="error_no_gguf_in_models_dir">No GGUF model found in app models directory: %1$s</string>
     <string name="error_no_mobile_gguf">No mobile GGUF found (max 5 GiB). Please use a smaller model such as Gemma 4 E2B/E4B Q4_0 or a 3B/4B Q4_K_M model.</string>

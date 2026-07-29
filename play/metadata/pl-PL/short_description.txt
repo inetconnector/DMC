@@ -1,1 +1,1 @@
-Prywatna lokalna AI z długim kontekstem, analizą obrazów i wiedzą offline.
+Prywatna lokalna AI z długim kontekstem, obrazami i streamingiem.

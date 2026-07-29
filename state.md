@@ -1,6 +1,6 @@
 # State
 
-Last updated: 2026-07-27
+Last updated: 2026-07-29
 
 This file is the live development log for the repository.
 Update this file and `README.md` together whenever behavior changes.
@@ -12,11 +12,10 @@ Update this file and `README.md` together whenever behavior changes.
   licence-compliant offline-reference implementation.
 - Commit: use `git rev-parse --short HEAD` for the current revision; this file
   deliberately avoids embedding a hash that becomes stale in its own commit.
-- Tracked state: Android dictation/SSE fixes, reproducible Web UI integration,
-  native DMC runtime and continuation, DMC regression gates, and refreshed
-  documentation are integrated on `master` and `develop`. Generated APK/AAB
-  files remain in the ignored `publish/` directory, on the DiskStation, and as
-  downloadable GitHub Release assets.
+- Working tree target: Android `1.1.0 (3)` with physically separated `full`
+  and `play` distribution flavors. The final release commit and immutable
+  annotated tag are prepared only after all checks below pass. Generated
+  APK/AAB files remain in the ignored `publish/` directory.
 - Active target: DMC (Deterministic Multiresolution Context)
 - `docs/LARGE_CONTEXT.md` and `docs/GROSSER_KONTEXT.md` document the implemented
   Android long-context pipeline in accessible English and German, including
@@ -35,17 +34,16 @@ Update this file and `README.md` together whenever behavior changes.
 - `docs/GOOGLE_PLAY_DMC.md` is the DMC-specific Google Play service-account and
   publication handoff. `.gplay/config.yaml` pins `com.inetconnector.dmc` but
   contains no credential path or secret.
-- Five German and two English privacy-checked Play Store screenshots from
+- Four German and two English privacy-checked Play Store screenshots from
   Samsung `SM-S931B` are versioned under `play/screenshots/`. They are direct
   1080x1920 (9:16), 24-bit RGB PNG captures without alpha. They cover local
   chat performance, the clean welcome screen, camera/file attachments, model
-  metadata with the 131072-token context and vision/audio modalities, and the
-  installed ICD-10-GM 2026 module with 12606 entries. The temporary display
+  metadata with the 131072-token context and vision/audio modalities. The temporary display
   size, rotation, app locale, and locale-config overrides were restored.
 - `play/metadata/` contains validated InetMind title, short-description, and
   full-description files for `en-US`, `de-DE`, `fr-FR`, `es-ES`, `it-IT`,
-  `nl-NL`, `pl-PL`, `pt-BR`, and `tr-TR`. Release notes exist for `1.0.0` and
-  `1.0.1`. `play/graphics/` contains the final 512x512 icon, InetMind-branded
+  `nl-NL`, `pl-PL`, `pt-BR`, and `tr-TR`. Release notes exist for `1.0.0`,
+  `1.0.1`, and `1.1.0`. `play/graphics/` contains the final 512x512 icon, InetMind-branded
   1024x500 feature graphic, and editable SVG sources.
 - The Play Console app `com.inetconnector.dmc` now exists as the draft
   originally created as "Offline KI - OLLAMA UI -DMC". The intended public
@@ -63,15 +61,38 @@ Update this file and `README.md` together whenever behavior changes.
   screenshots, icon, and feature graphic can be synced. A remote metadata pull
   consequently still returns only `en-US` with the old draft title
   "Offline KI - OLLAMA UI -DMC".
-- The bilingual, tracker-free privacy policy is versioned in
+- The full flavor's bilingual, tracker-free privacy policy is versioned in
   `privacy/index.html` and published by GitHub Pages at
   `https://inetconnector.github.io/DMC/privacy/`. GitHub reported the latest
   Pages build as `built`, and the public URL returned HTTP 200.
-- `play/DATA_SAFETY.md` contains the conservative Play Data safety answer
-  matrix. It accounts for ML Kit diagnostics/per-installation identifiers,
-  optional user-sent report emails, device speech-recognizer behavior, and
-  user-configured external endpoints instead of incorrectly claiming that no
-  data can ever be collected.
+- The medical-free Play policy is versioned separately at
+  `privacy/play/index.html` and configured in `playRelease` as
+  `https://inetconnector.github.io/DMC/privacy/play/`. That public URL still
+  returned HTTP 404 before this branch was published, so production submission
+  remains blocked until it returns HTTP 200.
+- `play/DATA_SAFETY.md` contains the conservative Play-flavor Data safety
+  answer matrix. It accounts for ML Kit diagnostics/per-installation
+  identifiers, the trial service, in-app AI-response reports, device
+  speech-recognizer behavior, and user-configured external endpoints instead
+  of incorrectly claiming that no data can ever be collected.
+- The `playRelease` source set physically excludes all offline medical
+  knowledge classes and assets. Its sanitized Web UI does not expose the
+  offline-reference manager or medical-source text. The `fullRelease` source
+  set retains all existing optional knowledge-module functionality.
+- Play access is free for one server-backed three-day trial and then uses the
+  permanent, non-consumable product `inetmind_full_unlock`. The production API
+  is live at `https://apps.inetconnector.com/inetmind/v1`; health, trial
+  activation, and in-app report smoke tests passed and synthetic records were
+  removed.
+- The shared Play service account can manage releases but received
+  `403 forbidden` when creating `inetmind_full_unlock` and when changing store
+  presence. Do not upload version code 3 to production until the product exists
+  at base price `4.99 EUR`, the localized listing is synchronized, mandatory
+  declarations are completed, and the Play privacy URL is public.
+- The Play screenshot submission now contains four German and two English
+  screenshots. The prior ICD-10 module screenshot was removed because it
+  represented the separately distributed full flavor and must not advertise a
+  capability absent from `playRelease`.
 - The fresh APK, AAB, and a ZIP of `play/` were copied to
   `\\diskstation.fritz.box\Dani\offline-knowledge-modules\` and read back with
   matching SHA-256 hashes.
@@ -387,6 +408,41 @@ Update this file and `README.md` together whenever behavior changes.
   report endpoint is available and wired into the native dialog with abuse
   protection, retention/deletion handling, and updated privacy/Data safety
   disclosures. Do not use an undisclosed third-party form relay as a shortcut.
+- Re-audited Google Play on 2026-07-28 with the configured `dmc` service-account
+  profile. Remote state remains internal release `1.0.1`, version code `2`,
+  status `completed`; production, alpha, and beta are empty. The service account
+  sees the package and tracks, but a nine-locale metadata commit and a separate
+  contact-details edit both returned `403 forbidden`. The latter edit was
+  explicitly deleted. A fresh remote pull still contains only `en-US` with the
+  old title and empty descriptions. No one-time products or subscriptions are
+  configured.
+- The local Play submission was revalidated in strict mode: the signed AAB,
+  nine listings, nine localized release notes, five German screenshots, and two
+  English screenshots pass automated artifact/metadata checks. The report has
+  no automated blockers, one expected warning for the empty production track,
+  and manual Data safety/policy gates. This does not override the known
+  generated-content reporting policy blocker.
+- APK `1.0.1 (2)` was rechecked with Android build tools. It is package
+  `com.inetconnector.dmc`, label `InetMind`, min SDK 33, target SDK 36, and has
+  a valid v2 signature from the expected InetConnector certificate
+  (`SHA-256 649A7EC870A7D18E5AF0AF12F0AC63B27F15DB864E28FECA9DA5FCF94AB8EC0F`).
+  The AAB passes `jarsigner -verify`; its signer expires in 2051.
+- There are nine complete local Play listings (`de-DE`, `en-US`, `es-ES`,
+  `fr-FR`, `it-IT`, `nl-NL`, `pl-PL`, `pt-BR`, `tr-TR`). Native Android
+  resources have complete English and German strings, but the other seven
+  locale files currently override only 15 reporting strings and inherit 99
+  native model/import dialogs from English. Do not claim complete native
+  localization until those strings are translated and device-checked.
+- Monetization requires a user decision before implementation. Google Play's
+  managed free trial for paid apps is currently limited to paid games and 60
+  minutes, so it cannot provide the requested three-day trial for InetMind.
+  A paid `4.99 EUR` app can ship without a three-day trial. To provide both a
+  three-day trial and a one-time `4.99 EUR` price under the single package, the
+  app must instead be free to install and implement a non-consumable Play
+  Billing unlock plus trial-state handling. Changing a published app from free
+  back to paid is not supported, so do not select the pricing model without
+  explicit user approval. Separate near-identical Full/Trial Play apps are not
+  the default because of Google's repetitive-content policy.
 - The published `android-v1.0.0` tag predates the checked-in llama.cpp
   submodule pointer. Do not move that public tag. Publish the next Android
   patch release from the reproducible submodule-based source state.
@@ -642,6 +698,47 @@ Update this file and `README.md` together whenever behavior changes.
   `A75A112F618BB4089BB12A8918204F5C838C5A4709BA147557531253E8F654E6`.
   Device verification reported `versionName=1.0.1`, `versionCode=2`,
   `MainActivity` in the foreground, and no fatal startup exception.
+
+## Android Play 1.1.0 Verification (2026-07-29)
+
+- `playRelease` and `fullRelease` compile with version name `1.1.0` and version
+  code `3`; the pinned submodule is clean at
+  `455bf5cf4f661430550db9c8a0f24227b5e3a217`.
+- A clean signed Play build regenerated the production Web UI and notices,
+  completed R8, `lintVitalPlayRelease`, APK assembly, and AAB assembly.
+- `scripts/windows/verify-android-dmc.ps1` found the required DMC native
+  markers. `scripts/windows/verify-android-play.ps1` passed for both the APK and
+  AAB: excluded medical catalog/classes/markers are absent and the billing
+  product/API markers are present.
+- `:app:testPlayDebugUnitTest`, `:app:testFullDebugUnitTest`,
+  `:app:lintVitalPlayRelease`, and `:app:lintVitalFullRelease` passed.
+  The knowledge text test was moved to `src/testFull` so Play tests do not
+  depend on classes intentionally absent from that flavor.
+- Full `lintPlayRelease` now has no code, manifest, or layout errors. It still
+  exits nonzero for 99 `MissingTranslation` findings in pre-existing native
+  model/file dialogs for seven secondary locales plus 104 warnings. Android
+  falls back to English for those strings; this was not hidden behind a lint
+  baseline. Store listing/release text and all new trial/report strings are
+  localized in all nine supported locales.
+- `gplay metadata validate --dir play/metadata` passed for nine locales.
+  Screenshot validation passed for `de-DE` and `en-US`.
+- Pre-tag validation artifacts were generated at:
+  - APK:
+    `publish/com.inetconnector.dmc/1.1.0+3/com.inetconnector.dmc-1.1.0+3-play-release.apk`
+  - AAB:
+    `publish/com.inetconnector.dmc/1.1.0+3/com.inetconnector.dmc-1.1.0+3-play-release.aab`
+  - APK signature scheme v2 verified. AAB JAR signature verified. The upload
+    certificate SHA-256 is
+    `649A7EC870A7D18E5AF0AF12F0AC63B27F15DB864E28FECA9DA5FCF94AB8EC0F`.
+  - The final APK/AAB are rebuilt from the committed release source. Their
+    exact SHA-256 values are recorded in the annotated release tag, avoiding
+    a circular source-commit/artifact-hash dependency in this tracked file.
+- `build-android.bat` no longer uses the interactive Windows `timeout` command
+  while waiting for release outputs and explicitly warns when signing is not
+  configured instead of printing misleading input-redirection errors.
+- The planned annotated source tag is `android-play-v1.1.0`. Once created, it
+  must remain immutable and point to the verified release commit; generated
+  APK/AAB files and all credentials remain outside Git.
 
 ## Planned Checks
 

@@ -9,8 +9,8 @@ Deterministic Multiresolution Context (DMC) preserves important parts of long hi
 MULTIMODAL INPUT
 Attach images, take a photo, add text documents or PDFs, and use voice input. Image and audio capabilities depend on the selected model. Responses stream into the conversation while the model is working.
 
-OFFLINE KNOWLEDGE MODULES
-Import supported reference packages and enable or disable them as needed. Official classification data is not bundled with InetMind; obtain it from the respective publisher and follow its licence terms. Imported modules remain on the device.
+THREE-DAY TRIAL, ONE-TIME UNLOCK
+Try the app free for three days. Afterwards, a single purchase permanently unlocks full access. There is no subscription. Google Play displays the price that applies in your country before purchase. After your explicit confirmation, only a pseudonymous installation identifier, app version and language are transmitted to provide the one-time trial, never chats, files, models or prompts.
 
 BUILT FOR CONTROL
 - Local GGUF model management
@@ -21,4 +21,4 @@ BUILT FOR CONTROL
 - Configurable generation and sampling settings
 - CPU-focused Android inference
 
-Model compatibility, speed and maximum context vary by model, quantization, available memory and device. InetMind is a general-purpose AI tool. Imported medical classifications are reference data and do not replace professional medical advice, diagnosis or treatment.
+Model compatibility, speed and maximum context vary by model, quantization, available memory and device. InetMind is a general-purpose AI tool and contains no medical knowledge, diagnosis or treatment functionality.

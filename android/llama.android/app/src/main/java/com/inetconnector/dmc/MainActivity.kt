@@ -27,9 +27,11 @@ import android.os.Handler
 import android.os.Looper
 import android.os.SystemClock
 import android.provider.OpenableColumns
+import android.text.Html
 import android.util.Base64
 import android.util.Log
 import android.graphics.Color
+import android.text.method.LinkMovementMethod
 import android.widget.EditText
 import android.view.LayoutInflater
 import android.view.View
@@ -120,6 +122,10 @@ import com.inetconnector.dmc.knowledge.KnowledgeModuleStore
 import com.inetconnector.dmc.knowledge.KnowledgePackageImporter
 import com.inetconnector.dmc.knowledge.KnowledgeSource
 import com.inetconnector.dmc.knowledge.KnowledgeSourceCatalog
+import com.inetconnector.dmc.billing.BillingSnapshot
+import com.inetconnector.dmc.billing.PlayBillingManager
+import com.inetconnector.dmc.billing.PurchaseOutcome
+import com.inetconnector.dmc.billing.TrialAccessService
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.locks.ReentrantLock
@@ -143,7 +149,6 @@ class MainActivity : AppCompatActivity() {
         private const val PREF_KEY_FAILED_MODEL_PATHS = "failed_model_paths"
         private const val PREF_KEY_SELECTED_KNOWLEDGE_SOURCES = "selected_knowledge_sources"
         private const val CX_FILE_EXPLORER_PACKAGE = "com.cxinventor.file.explorer"
-        private const val PRIVACY_POLICY_URL = "https://inetconnector.github.io/DMC/privacy/"
         private const val SUPPORT_EMAIL = "apps@inetconnector.com"
         private const val ACTION_DEBUG_IMPORT_KNOWLEDGE =
             "com.inetconnector.dmc.action.DEBUG_IMPORT_KNOWLEDGE"
@@ -164,6 +169,11 @@ class MainActivity : AppCompatActivity() {
     private val knowledgeStore by lazy { KnowledgeModuleStore(applicationContext) }
     private val knowledgeImporter by lazy { KnowledgePackageImporter(applicationContext, knowledgeStore) }
     private val knowledgeSourceCatalog by lazy { KnowledgeSourceCatalog(applicationContext) }
+    private var billingManager: PlayBillingManager? = null
+    private var trialAccessService: TrialAccessService? = null
+    private var accessDialog: AlertDialog? = null
+    @Volatile
+    private var inferenceFlowStarted = false
     @Volatile
     private var localServersStarted = false
 
@@ -282,7 +292,24 @@ class MainActivity : AppCompatActivity() {
             (Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_WRITE_URI_PERMISSION)
         if (persistableFlags != 0) {
             runCatching {
-                contentResolver.takePersistableUriPermission(uri, persistableFlags)
+                when (persistableFlags) {
+                    Intent.FLAG_GRANT_READ_URI_PERMISSION ->
+                        contentResolver.takePersistableUriPermission(
+                            uri,
+                            Intent.FLAG_GRANT_READ_URI_PERMISSION,
+                        )
+                    Intent.FLAG_GRANT_WRITE_URI_PERMISSION ->
+                        contentResolver.takePersistableUriPermission(
+                            uri,
+                            Intent.FLAG_GRANT_WRITE_URI_PERMISSION,
+                        )
+                    else ->
+                        contentResolver.takePersistableUriPermission(
+                            uri,
+                            Intent.FLAG_GRANT_READ_URI_PERMISSION or
+                                Intent.FLAG_GRANT_WRITE_URI_PERMISSION,
+                        )
+                }
             }.onFailure {
                 Log.d(TAG, "Picker did not grant persistable access for $uri", it)
             }
@@ -309,10 +336,28 @@ class MainActivity : AppCompatActivity() {
         setupWebView()
         Log.i(TAG, "onCreate: webview configured")
 
-        if (handleDebugKnowledgeImport(intent)) {
+        if (BuildConfig.ENABLE_OFFLINE_KNOWLEDGE && handleDebugKnowledgeImport(intent)) {
             return
         }
 
+        if (BuildConfig.ENABLE_PLAY_BILLING) {
+            trialAccessService = TrialAccessService(applicationContext, BuildConfig.INETMIND_API_BASE_URL)
+            billingManager = PlayBillingManager(
+                applicationContext,
+                BuildConfig.PLAY_PRODUCT_ID,
+                ::handlePurchaseOutcome
+            )
+            lifecycleScope.launch {
+                resolvePlayAccess()
+            }
+        } else {
+            startInferenceFlow()
+        }
+    }
+
+    private fun startInferenceFlow() {
+        if (inferenceFlowStarted) return
+        inferenceFlowStarted = true
         lifecycleScope.launch(Dispatchers.IO) {
             try {
                 Log.i(TAG, "startup coroutine: acquiring inference engine")
@@ -340,6 +385,174 @@ class MainActivity : AppCompatActivity() {
                 }
             }
         }
+    }
+
+    private suspend fun resolvePlayAccess() {
+        val billing = billingManager ?: return
+        val snapshot = runCatching { billing.querySnapshot() }
+            .getOrElse {
+                BillingSnapshot(
+                    unlocked = false,
+                    formattedPrice = null,
+                    available = false,
+                    message = it.message
+                )
+            }
+        if (snapshot.unlocked) {
+            startInferenceFlow()
+            return
+        }
+
+        val trial = trialAccessService ?: return
+        if (!trial.hasBeenActivated()) {
+            showTrialActivationDialog(snapshot)
+            return
+        }
+
+        val status = withContext(Dispatchers.IO) {
+            runCatching { trial.activateOrRefresh(appVersionLabel()) }.getOrNull()
+                ?: trial.cachedStatus()
+        }
+        if (status?.active == true) {
+            startInferenceFlow()
+        } else {
+            showTrialExpiredDialog(snapshot)
+        }
+    }
+
+    private fun showTrialActivationDialog(snapshot: BillingSnapshot) {
+        if (isFinishing || isDestroyed) return
+        accessDialog?.dismiss()
+        val price = snapshot.formattedPrice ?: getString(R.string.unlock_price_fallback)
+        val message = Html.fromHtml(
+            getString(
+                R.string.trial_intro_message,
+                price,
+                BuildConfig.PRIVACY_POLICY_URL
+            ),
+            Html.FROM_HTML_MODE_LEGACY
+        )
+        accessDialog = AlertDialog.Builder(this)
+            .setTitle(R.string.trial_intro_title)
+            .setMessage(message)
+            .setCancelable(false)
+            .setPositiveButton(R.string.trial_start_button) { _, _ ->
+                activateTrial(snapshot)
+            }
+            .setNeutralButton(R.string.unlock_button) { _, _ ->
+                launchUnlockPurchase(snapshot)
+            }
+            .setNegativeButton(R.string.dialog_exit) { _, _ ->
+                finishAndRemoveTask()
+            }
+            .create()
+            .also { dialog ->
+                dialog.setOnShowListener {
+                    dialog.findViewById<TextView>(android.R.id.message)?.movementMethod =
+                        LinkMovementMethod.getInstance()
+                }
+                dialog.show()
+            }
+    }
+
+    private fun activateTrial(snapshot: BillingSnapshot) {
+        val trial = trialAccessService ?: return
+        setStartupSplashVisible(true)
+        lifecycleScope.launch(Dispatchers.IO) {
+            val result = runCatching { trial.activateOrRefresh(appVersionLabel()) }
+            launch(Dispatchers.Main) {
+                if (result.getOrNull()?.active == true) {
+                    startInferenceFlow()
+                } else {
+                    setStartupSplashVisible(false)
+                    showAccessError(
+                        getString(
+                            R.string.trial_activation_failed_message,
+                            result.exceptionOrNull()?.message.orEmpty()
+                        )
+                    ) {
+                        showTrialActivationDialog(snapshot)
+                    }
+                }
+            }
+        }
+    }
+
+    private fun showTrialExpiredDialog(snapshot: BillingSnapshot) {
+        if (isFinishing || isDestroyed) return
+        accessDialog?.dismiss()
+        val price = snapshot.formattedPrice ?: getString(R.string.unlock_price_fallback)
+        accessDialog = AlertDialog.Builder(this)
+            .setTitle(R.string.trial_expired_title)
+            .setMessage(getString(R.string.trial_expired_message, price))
+            .setCancelable(false)
+            .setPositiveButton(R.string.unlock_button) { _, _ ->
+                launchUnlockPurchase(snapshot)
+            }
+            .setNeutralButton(R.string.restore_purchase_button) { _, _ ->
+                lifecycleScope.launch { resolvePlayAccess() }
+            }
+            .setNegativeButton(R.string.dialog_exit) { _, _ ->
+                finishAndRemoveTask()
+            }
+            .create()
+            .also { it.show() }
+    }
+
+    private fun launchUnlockPurchase(snapshot: BillingSnapshot) {
+        val result = billingManager?.launchPurchase(this)
+        if (result == null || result.responseCode != com.android.billingclient.api.BillingClient.BillingResponseCode.OK) {
+            showAccessError(
+                getString(
+                    R.string.purchase_unavailable_message,
+                    result?.debugMessage ?: snapshot.message.orEmpty()
+                )
+            ) {
+                lifecycleScope.launch { resolvePlayAccess() }
+            }
+        }
+    }
+
+    private fun handlePurchaseOutcome(outcome: PurchaseOutcome, message: String?) {
+        runOnUiThread {
+            when (outcome) {
+                PurchaseOutcome.PURCHASED -> {
+                    accessDialog?.dismiss()
+                    startInferenceFlow()
+                }
+                PurchaseOutcome.PENDING -> showAccessError(
+                    getString(R.string.purchase_pending_message)
+                ) {
+                    lifecycleScope.launch { resolvePlayAccess() }
+                }
+                PurchaseOutcome.CANCELLED ->
+                    lifecycleScope.launch { resolvePlayAccess() }
+                PurchaseOutcome.FAILED -> showAccessError(
+                    getString(R.string.purchase_failed_message, message.orEmpty())
+                ) {
+                    lifecycleScope.launch { resolvePlayAccess() }
+                }
+            }
+        }
+    }
+
+    private fun showAccessError(message: String, onClose: () -> Unit) {
+        if (isFinishing || isDestroyed) return
+        AlertDialog.Builder(this)
+            .setTitle(R.string.purchase_error_title)
+            .setMessage(message)
+            .setCancelable(false)
+            .setPositiveButton(R.string.dialog_retry) { _, _ -> onClose() }
+            .setNegativeButton(R.string.dialog_exit) { _, _ -> finishAndRemoveTask() }
+            .show()
+    }
+
+    private fun appVersionLabel(): String {
+        val info = packageManager.getPackageInfo(
+            packageName,
+            PackageManager.PackageInfoFlags.of(0)
+        )
+        return "${info.versionName} (${info.longVersionCode})"
     }
 
     private fun createApiServer(port: Int): LocalApiServer {
@@ -466,6 +679,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     override fun onDestroy() {
+        billingManager?.close()
         runCatching { apiServer.stop() }
         runCatching { analysisServer.stop() }
         runCatching { engine.destroy() }
@@ -605,7 +819,9 @@ class MainActivity : AppCompatActivity() {
         webView.clearHistory()
         webView.addJavascriptInterface(AndroidSpeechBridge(), "AndroidSpeechBridge")
         webView.addJavascriptInterface(AndroidModelBridge(), "AndroidModelBridge")
-        webView.addJavascriptInterface(AndroidKnowledgeBridge(), "AndroidKnowledgeBridge")
+        if (BuildConfig.ENABLE_OFFLINE_KNOWLEDGE) {
+            webView.addJavascriptInterface(AndroidKnowledgeBridge(), "AndroidKnowledgeBridge")
+        }
         webView.addJavascriptInterface(AndroidLegalBridge(), "AndroidLegalBridge")
         webView.setDownloadListener { url, _userAgent, contentDisposition, mimeType, _contentLength ->
             enqueueWebDownload(url, contentDisposition, mimeType)
@@ -831,7 +1047,7 @@ class MainActivity : AppCompatActivity() {
     private inner class AndroidLegalBridge {
         @JavascriptInterface
         fun openPrivacyPolicy() {
-            runOnUiThread { openExternalUrl(PRIVACY_POLICY_URL) }
+            runOnUiThread { openExternalUrl(BuildConfig.PRIVACY_POLICY_URL) }
         }
 
         @JavascriptInterface
@@ -869,53 +1085,56 @@ class MainActivity : AppCompatActivity() {
 
     private fun showContentReportDialog(content: String) {
         val reasons = arrayOf(
-            getString(R.string.report_reason_harmful),
-            getString(R.string.report_reason_hateful),
-            getString(R.string.report_reason_sexual),
-            getString(R.string.report_reason_illegal),
-            getString(R.string.report_reason_inaccurate),
-            getString(R.string.report_reason_other)
+            "harmful" to getString(R.string.report_reason_harmful),
+            "hateful" to getString(R.string.report_reason_hateful),
+            "sexual" to getString(R.string.report_reason_sexual),
+            "illegal" to getString(R.string.report_reason_illegal),
+            "inaccurate" to getString(R.string.report_reason_inaccurate),
+            "other" to getString(R.string.report_reason_other)
         )
         var selectedReason = reasons.lastIndex
 
         AlertDialog.Builder(this)
             .setTitle(R.string.report_response_title)
             .setMessage(R.string.report_response_message)
-            .setSingleChoiceItems(reasons, selectedReason) { _, which ->
+            .setSingleChoiceItems(reasons.map { it.second }.toTypedArray(), selectedReason) { _, which ->
                 selectedReason = which
             }
             .setNegativeButton(R.string.report_cancel, null)
-            .setPositiveButton(R.string.report_prepare_email) { _, _ ->
+            .setPositiveButton(R.string.report_send) { _, _ ->
                 val excerpt = content.trim().take(4_000)
-                val packageInfo = packageManager.getPackageInfo(
-                    packageName,
-                    PackageManager.PackageInfoFlags.of(0)
-                )
-                val body = buildString {
-                    appendLine("Reason: ${reasons[selectedReason]}")
-                    appendLine("App: InetMind")
-                    appendLine("Package: $packageName")
-                    appendLine("Version: ${packageInfo.versionName} (${packageInfo.longVersionCode})")
-                    appendLine()
-                    appendLine("Reported response:")
-                    append(excerpt)
-                }
-                val uri = Uri.parse("mailto:$SUPPORT_EMAIL").buildUpon()
-                    .appendQueryParameter("subject", getString(R.string.report_email_subject))
-                    .appendQueryParameter("body", body)
-                    .build()
-                runCatching {
-                    startActivity(
-                        Intent.createChooser(
-                            Intent(Intent.ACTION_SENDTO, uri),
-                            getString(R.string.report_email_chooser)
+                val service = trialAccessService
+                    ?: TrialAccessService(applicationContext, BuildConfig.INETMIND_API_BASE_URL)
+                lifecycleScope.launch(Dispatchers.IO) {
+                    val result = runCatching {
+                        service.submitReport(
+                            reason = reasons[selectedReason].first,
+                            excerpt = excerpt,
+                            appVersion = appVersionLabel()
                         )
-                    )
-                }.onFailure {
-                    AlertDialog.Builder(this)
-                        .setMessage(getString(R.string.report_no_email_app))
-                        .setPositiveButton(android.R.string.ok, null)
-                        .show()
+                    }
+                    launch(Dispatchers.Main) {
+                        AlertDialog.Builder(this@MainActivity)
+                            .setTitle(
+                                if (result.isSuccess) {
+                                    R.string.report_sent_title
+                                } else {
+                                    R.string.report_failed_title
+                                }
+                            )
+                            .setMessage(
+                                if (result.isSuccess) {
+                                    getString(R.string.report_sent_message, result.getOrThrow())
+                                } else {
+                                    getString(
+                                        R.string.report_failed_message,
+                                        result.exceptionOrNull()?.message.orEmpty()
+                                    )
+                                }
+                            )
+                            .setPositiveButton(android.R.string.ok, null)
+                            .show()
+                    }
                 }
             }
             .show()
@@ -2922,7 +3141,11 @@ class MainActivity : AppCompatActivity() {
         if (prompt.isBlank() && artifactReply == null) {
             Log.w(TAG, "Chat request resolved to an empty prompt; falling back to raw user text is not possible")
         }
-        val knowledgeContext = if (prompt.isBlank() || artifactReply != null) {
+        val knowledgeContext = if (
+            !BuildConfig.ENABLE_OFFLINE_KNOWLEDGE ||
+            prompt.isBlank() ||
+            artifactReply != null
+        ) {
             ""
         } else {
             runCatching { knowledgeStore.buildEvidenceContext(prompt) }

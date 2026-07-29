@@ -2,7 +2,7 @@
 <resources>
     <string name="privacy_policy_title">Politique de confidentialité</string>
     <string name="report_response_title">Signaler une réponse de l’IA</string>
-    <string name="report_response_message">Choisissez un motif. Le texte de la réponse ne sera ajouté à un brouillon d’e-mail qu’après votre confirmation. Vérifiez-le avant de l’envoyer au développeur.</string>
+    <string name="report_response_message">Choisissez un motif. Après confirmation, jusqu’à 4 000 caractères de cette réponse sont envoyés directement à InetConnector. Les autres conversations et données du modèle restent sur cet appareil.</string>
     <string name="report_reason_harmful">Nuisible ou dangereux</string>
     <string name="report_reason_hateful">Haineux ou abusif</string>
     <string name="report_reason_sexual">Contenu sexuel</string>
@@ -14,6 +14,24 @@
     <string name="report_email_subject">Signalement de contenu IA InetMind</string>
     <string name="report_email_chooser">Envoyer le signalement</string>
     <string name="report_no_email_app">Aucune application de messagerie n’est disponible. Contactez apps@inetconnector.com.</string>
+    <string name="report_send">Envoyer le signalement</string>
+    <string name="report_sent_title">Signalement envoyé</string>
+    <string name="report_sent_message">Merci. L’identifiant de votre signalement est %1$s.</string>
+    <string name="report_failed_title">Signalement non envoyé</string>
+    <string name="report_failed_message">Le signalement n’a pas pu être envoyé. Vérifiez votre connexion et réessayez.\n\n%1$s</string>
+    <string name="trial_intro_title">Essayez InetMind gratuitement pendant 3 jours</string>
+    <string name="trial_intro_message">Utilisez gratuitement toutes les fonctions de la version Play Store pendant trois jours. Ensuite, déverrouillez définitivement InetMind par un achat unique (%1$s ; le prix local définitif est affiché par Google Play).\n\nPour empêcher la répétition des essais, InetMind envoie à InetConnector un identifiant d’installation pseudonyme, la version de l’application et la langue. Les conversations, fichiers, modèles et requêtes ne sont jamais transmis pour activer l’essai.\n\n<a href="%2$s">Lire la politique de confidentialité</a></string>
+    <string name="trial_start_button">Démarrer l’essai de 3 jours</string>
+    <string name="trial_expired_title">Période d’essai terminée</string>
+    <string name="trial_expired_message">Votre essai de trois jours est terminé. Déverrouillez définitivement InetMind par un achat unique (%1$s ; le prix local définitif est affiché par Google Play).</string>
+    <string name="unlock_button">Déverrouiller définitivement</string>
+    <string name="restore_purchase_button">Restaurer l’achat</string>
+    <string name="unlock_price_fallback">4,99 EUR</string>
+    <string name="trial_activation_failed_message">L’essai n’a pas pu être activé. Une connexion Internet est nécessaire une fois au démarrage.\n\n%1$s</string>
+    <string name="purchase_error_title">Accès indisponible</string>
+    <string name="purchase_unavailable_message">Google Play n’a pas pu charger le déverrouillage définitif. Installez la version Play Store, vérifiez votre connexion et réessayez.\n\n%1$s</string>
+    <string name="purchase_pending_message">Le paiement est en attente. L’accès sera déverrouillé après confirmation du paiement par Google Play.</string>
+    <string name="purchase_failed_message">L’achat n’a pas pu être effectué.\n\n%1$s</string>
     <string name="dialog_knowledge_title">Références hors ligne</string>
     <string name="dialog_knowledge_empty">Aucun module de référence hors ligne n’est installé.</string>
     <string name="dialog_knowledge_import">Importer un fichier</string>

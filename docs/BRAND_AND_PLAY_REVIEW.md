@@ -1,6 +1,6 @@
 # InetMind brand and Google Play review
 
-Last reviewed: 2026-07-23
+Last reviewed: 2026-07-29
 
 ## Decision
 
@@ -48,19 +48,12 @@ paid marketing launch, order a professional similarity search covering:
 ### AI-generated content
 
 Google Play requires generative-AI apps to provide an in-app way to report or
-flag offensive generated content without leaving the app. InetMind now shows a
-flag action below every nonempty assistant response. The Android dialog collects
-a reason in-app and, after confirmation, prepares an email draft containing at
-most 4,000 characters. The user can review or discard the draft before anything
-is sent.
-
-This is a useful reporting path but is not yet sufficient for a strict reading
-of the policy because delivery switches to the user's mail app. Treat this as a
-production blocker. Before production submission, provide an InetConnector-
-controlled HTTPS endpoint, submit the report from the native dialog, add abuse
-protection and retention/deletion handling, and update both the privacy policy
-and Data safety form. Do not add an undocumented third-party form relay merely
-to bypass this requirement.
+flag offensive generated content without leaving the app. InetMind shows a
+localized flag action below every nonempty assistant response. The Android
+dialog submits the selected reason and optional details directly to the
+InetConnector-controlled HTTPS endpoint. The endpoint applies bounded input,
+rate limiting and documented retention; it does not transmit the user's whole
+chat automatically.
 
 ### Data safety
 
@@ -85,24 +78,25 @@ declarations cannot simply be copied to InetMind:
   on-device.
 
 InetMind therefore uses the narrower, verifiable claim that core prompts,
-chats, models, attachments, and knowledge modules are processed locally and are
-not automatically sent to an InetConnector server. User-triggered downloads,
-external endpoints, speech providers, ML Kit diagnostics, support, and content
+chats, models, and attachments are processed locally and are not automatically
+sent to an InetConnector server. User-triggered downloads, external endpoints,
+speech providers, ML Kit diagnostics, trial activation, support, and content
 reports are disclosed separately.
 
-### Health content
+### Play flavor scope
 
-Optional ICD and generic offline reference modules can expose health
-information. Complete the Play Health apps declaration and retain the
-store/in-app disclaimer that reference data does not provide diagnosis,
-treatment or professional medical advice.
+The Google Play flavor contains no medical knowledge modules, medical import
+path, diagnosis feature, or treatment feature. Those optional capabilities
+remain confined to the separately distributed `full` flavor. Play Console
+answers and store text must describe only `playRelease`; they must not claim or
+advertise the full flavor's medical functionality.
 
 ### Privacy policy
 
-The version-controlled bilingual policy is `privacy/index.html` and is
-published at:
+The version-controlled bilingual policy for `playRelease` is
+`privacy/play/index.html` and is published at:
 
-<https://inetconnector.github.io/DMC/privacy/>
+<https://inetconnector.github.io/DMC/privacy/play/>
 
 It is linked from Android settings and should be entered into the Play Console
 privacy-policy field.

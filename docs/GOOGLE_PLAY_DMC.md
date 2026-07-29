@@ -21,10 +21,15 @@ remains `com.inetconnector.dmc`.
 
 - Play app `com.inetconnector.dmc` exists.
 - Signed version `1.0.1 (2)` is processed with status `completed` in the
-  internal test track. It contains the InetMind branding, privacy links,
-  generated-content reporting, disabled Android backup, and the maintained
-  privacy/Data safety disclosures.
-- Localized release notes for nine locales are attached to that release.
+  internal test track.
+- The next candidate is `1.1.0 (3)`. Its `playRelease` flavor contains no
+  medical knowledge modules, no medical import path, and no diagnosis or
+  treatment functionality. The separate `fullRelease` flavor retains optional
+  offline knowledge modules and is not the Play artifact.
+- The Play app is free to install. It starts one server-backed three-day trial,
+  then requires the permanent non-consumable product
+  `inetmind_full_unlock`, configured with a `4.99 EUR` base price.
+- Localized release notes for all nine locales are versioned for `1.1.0`.
 - Validated store listings for the same nine locales, German and English phone
   screenshots, the icon, and the feature graphic are versioned under `play/`.
 - The shared service account can list the app and manage releases. A live
@@ -33,11 +38,14 @@ remains `com.inetconnector.dmc`.
   propagated. App contact details were rejected at edit validation for the same
   reason; the temporary edit was discarded. The local files validate
   successfully; no secret or generated bundle is committed.
-- Price `4.99 EUR`, Data safety, content declarations, target audience, ads,
-  app access, and the final production review remain Console-only work.
-- The privacy policy is published at
-  `https://inetconnector.github.io/DMC/privacy/`. Enter this exact URL in the
-  Play Console privacy-policy field.
+- Product creation still returns `403 forbidden` for the shared service
+  account. Store-presence writes also return `403`. Production is blocked until
+  those permissions are corrected and the product exists.
+- Data safety, content declarations, target audience, ads, app access, and the
+  final production review remain Console-only work.
+- The Play privacy policy is versioned at `privacy/play/index.html` and must be
+  public at `https://inetconnector.github.io/DMC/privacy/play/`. Do not submit
+  while that URL returns 404.
 
 A dedicated service account is optional. Google Play allows the existing
 publishing service account to receive access to several selected apps. This
@@ -63,8 +71,8 @@ access can be tested, create the app manually in Google Play Console:
 2. Use **InetMind - Local AI** as the initial English name or
    **InetMind - Lokale KI** when German is the default language.
 3. Choose **App**, not Game, and select the default language.
-4. Select **Paid** before the first publication if DMC is to cost `4.99 EUR`.
-   A Play app that has once been offered for free cannot later become paid.
+4. Select **Free**. The three-day trial and permanent unlock are implemented
+   inside the app with Google Play Billing; they are not a paid-app trial.
 5. Complete the declarations shown by Play Console. The package name is bound
    when the first AAB for `com.inetconnector.dmc` is uploaded.
 
@@ -168,6 +176,7 @@ Build a fresh signed AAB with the existing Android upload key, not the service
 account key:
 
 ```powershell
+$env:ANDROID_DISTRIBUTION = "play"
 $env:ANDROID_BUILD_VARIANT = "release"
 .\build-android.bat
 ```
@@ -177,7 +186,7 @@ Then validate the exact current artifact before any upload:
 ```powershell
 gplay validate `
   --package com.inetconnector.dmc `
-  --bundle ".\publish\com.inetconnector.dmc\1.0.1+2\com.inetconnector.dmc-1.0.1+2-release.aab" `
+  --bundle ".\publish\com.inetconnector.dmc\1.1.0+3\com.inetconnector.dmc-1.1.0+3-play-release.aab" `
   --track internal `
   --strict
 ```
@@ -216,55 +225,68 @@ Use the high-level command only after the validation report is clean:
 gplay release `
   --package com.inetconnector.dmc `
   --track internal `
-  --bundle ".\publish\com.inetconnector.dmc\1.0.1+2\com.inetconnector.dmc-1.0.1+2-release.aab" `
+  --bundle ".\publish\com.inetconnector.dmc\1.1.0+3\com.inetconnector.dmc-1.1.0+3-play-release.aab" `
   --listings-dir .\play\metadata `
   --screenshots-dir .\play\screenshots `
-  --release-notes '@.\play\release-notes\1.0.1.json' `
+  --release-notes '@.\play\release-notes\1.1.0.json' `
   --wait
 ```
 
-Version code `1` has already been uploaded and cannot be reused. The current
-candidate uses version code `2`; every later bundle must increment it again.
+Version codes `1` and `2` have already been uploaded and cannot be reused. The
+current candidate uses version code `3`; every later bundle must increment it.
 
 After granting **Manage store presence**, push the local listings and media.
 Use a fresh edit for the graphics and commit only after `images sync` reports
 no errors. The expected graphics layout is
 `play/graphics/<locale>/images/{icon.png,featureGraphic.png}`.
 
-After internal testing, complete the Play Console declarations, configure the
-merchant/payments profile, set the app price to `4.99 EUR`, review generated
-local prices, and only then prepare production. New personal developer accounts
-may need a closed test with 12 continuously opted-in testers for 14 days before
-production access is granted.
+Before internal testing of the trial gate, create and activate the one-time
+product from `play/monetization/inetmind_full_unlock.json` with a `4.99 EUR`
+base price and verify a real licensed test purchase plus restore. Do not upload
+version code 3 while the product is missing: after three days the candidate
+would have no valid purchase route. After testing, complete the Play Console
+declarations, review generated local prices, and only then prepare production.
 
 ## 8. Complete policy declarations
 
 These declarations are not inferred safely from an AAB and must match the
 current app behavior:
 
-- Enter `https://inetconnector.github.io/DMC/privacy/` as the privacy-policy
-  URL.
+- Enter `https://inetconnector.github.io/DMC/privacy/play/` as the
+  privacy-policy URL, after verifying HTTP 200.
 - Complete Data safety from `play/DATA_SAFETY.md`. Do not select "no data
   collected": bundled ML Kit components document diagnostics, usage analytics,
-  and a per-installation identifier.
+  and a per-installation identifier; the trial service and optional response
+  reports are disclosed separately.
 - Declare no ads and no account/login requirement.
-- Complete the Health apps declaration because optional ICD modules can expose
-  medical reference information. The app is a general-purpose reference tool,
-  not a diagnostic or treatment device.
+- Declare that `playRelease` has no health or medical functionality. Never use
+  the separate full flavor or its optional modules when answering Play Console
+  questions.
 - Complete the generative-AI declaration. InetMind provides a localized flag
-  action below assistant responses; the reason is selected in-app and an email
-  report is sent only if the user confirms it in the chosen mail app. Because
-  Google explicitly requires reporting to the developer without leaving the
-  app, replace email delivery with an InetConnector-controlled in-app HTTPS
-  endpoint before production. The current path is suitable for testing, not a
-  claim of final production compliance.
+  action below assistant responses and submits confirmed reports directly to
+  the controlled HTTPS endpoint without leaving the app.
 - Review target audience and content rating conservatively. The app is not
   designed for children.
-- Confirm that models and official classification data are downloaded or
-  imported separately and retain their publishers' licences.
+- Confirm that users obtain compatible models separately and that model
+  licences remain the user's responsibility.
 
-The public policy text is versioned in `privacy/index.html`; the brand and
+The Play policy text is versioned in `privacy/play/index.html`; the brand and
 policy rationale is in `docs/BRAND_AND_PLAY_REVIEW.md`.
+
+## 9. Tag the exact release source
+
+Create the final annotated tag only after the signed `playRelease` artifact,
+medical-free artifact gate, metadata validation, product, privacy URL, and
+mandatory Console declarations have all been verified:
+
+```powershell
+git status --short
+git tag -a android-play-v1.1.0 -m "InetMind Android Play 1.1.0 (3)"
+git push origin android-play-v1.1.0
+```
+
+Never move or reuse the tag. If any source changes after tagging, increment the
+version and create a new tag.
 
 ## Security checklist
 

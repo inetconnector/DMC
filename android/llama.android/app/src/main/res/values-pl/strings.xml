@@ -2,7 +2,7 @@
 <resources>
     <string name="privacy_policy_title">Polityka prywatności</string>
     <string name="report_response_title">Zgłoś odpowiedź AI</string>
-    <string name="report_response_message">Wybierz powód. Tekst odpowiedzi zostanie dodany do wersji roboczej wiadomości e-mail dopiero po potwierdzeniu. Sprawdź ją przed wysłaniem do dewelopera.</string>
+    <string name="report_response_message">Wybierz powód. Po potwierdzeniu maksymalnie 4000 znaków tej odpowiedzi zostanie wysłanych bezpośrednio do InetConnector. Pozostałe czaty i dane modelu pozostaną na tym urządzeniu.</string>
     <string name="report_reason_harmful">Szkodliwe lub niebezpieczne</string>
     <string name="report_reason_hateful">Nienawistne lub obraźliwe</string>
     <string name="report_reason_sexual">Treści seksualne</string>
@@ -14,6 +14,24 @@
     <string name="report_email_subject">Zgłoszenie treści AI InetMind</string>
     <string name="report_email_chooser">Wyślij zgłoszenie treści</string>
     <string name="report_no_email_app">Brak dostępnej aplikacji e-mail. Skontaktuj się z apps@inetconnector.com.</string>
+    <string name="report_send">Wyślij zgłoszenie</string>
+    <string name="report_sent_title">Zgłoszenie wysłane</string>
+    <string name="report_sent_message">Dziękujemy. Identyfikator zgłoszenia: %1$s.</string>
+    <string name="report_failed_title">Zgłoszenie nie zostało wysłane</string>
+    <string name="report_failed_message">Nie udało się wysłać zgłoszenia. Sprawdź połączenie i spróbuj ponownie.\n\n%1$s</string>
+    <string name="trial_intro_title">Wypróbuj InetMind bezpłatnie przez 3 dni</string>
+    <string name="trial_intro_message">Korzystaj bezpłatnie ze wszystkich funkcji wersji z Google Play przez trzy dni. Następnie odblokuj InetMind na stałe poprzez jednorazowy zakup (%1$s; ostateczną cenę lokalną wyświetli Google Play).\n\nAby zapobiec wielokrotnym okresom próbnym, InetMind wysyła do InetConnector pseudonimowy identyfikator instalacji, wersję aplikacji i język. Czaty, pliki, modele i polecenia nigdy nie są przesyłane w celu aktywacji okresu próbnego.\n\n<a href="%2$s">Przeczytaj politykę prywatności</a></string>
+    <string name="trial_start_button">Rozpocznij 3-dniowy okres próbny</string>
+    <string name="trial_expired_title">Okres próbny zakończony</string>
+    <string name="trial_expired_message">Trzydniowy okres próbny dobiegł końca. Odblokuj InetMind na stałe poprzez jednorazowy zakup (%1$s; ostateczną cenę lokalną wyświetli Google Play).</string>
+    <string name="unlock_button">Odblokuj na stałe</string>
+    <string name="restore_purchase_button">Przywróć zakup</string>
+    <string name="unlock_price_fallback">4,99 EUR</string>
+    <string name="trial_activation_failed_message">Nie udało się aktywować okresu próbnego. Przy pierwszym uruchomieniu wymagane jest jednorazowe połączenie z Internetem.\n\n%1$s</string>
+    <string name="purchase_error_title">Dostęp niedostępny</string>
+    <string name="purchase_unavailable_message">Google Play nie mógł wczytać trwałego odblokowania. Zainstaluj wersję z Google Play, sprawdź połączenie i spróbuj ponownie.\n\n%1$s</string>
+    <string name="purchase_pending_message">Płatność oczekuje. Dostęp zostanie odblokowany po potwierdzeniu płatności przez Google Play.</string>
+    <string name="purchase_failed_message">Nie udało się dokończyć zakupu.\n\n%1$s</string>
     <string name="dialog_knowledge_title">Źródła offline</string>
     <string name="dialog_knowledge_empty">Nie zainstalowano żadnych modułów źródeł offline.</string>
     <string name="dialog_knowledge_import">Importuj plik</string>

@@ -166,19 +166,32 @@ for %%I in ("%~dp0.") do set "ROOT=%%~fI"
 set "APP_ID=com.inetconnector.dmc"
 set "ANDROID_DIR=%ROOT%\android\llama.android"
 set "WRAPPER_JAR=%ANDROID_DIR%\gradle\wrapper\gradle-wrapper.jar"
-set "OUTPUT_DEBUG_APK=%ANDROID_DIR%\app\build\outputs\apk\debug\app-debug.apk"
-set "OUTPUT_RELEASE_APK=%ANDROID_DIR%\app\build\outputs\apk\release\app-release.apk"
-set "OUTPUT_RELEASE_UNSIGNED_APK=%ANDROID_DIR%\app\build\outputs\apk\release\app-release-unsigned.apk"
 set "VARIANT=debug"
+set "DISTRIBUTION=full"
+set "GRADLE_FLAVOR=Full"
 set "GRADLE_OFFLINE_ARGS="
+set "CLEAN_TASK="
 if /I "%ANDROID_BUILD_OFFLINE%"=="1" set "GRADLE_OFFLINE_ARGS=--offline"
+if /I "%ANDROID_CLEAN_BUILD%"=="1" set "CLEAN_TASK=:app:clean"
 
 if /I "%APP_INSTALL_VARIANT%"=="release" set "VARIANT=release"
+if /I "%ANDROID_DISTRIBUTION%"=="play" (
+  set "DISTRIBUTION=play"
+  set "GRADLE_FLAVOR=Play"
+)
+if defined ANDROID_DISTRIBUTION if /I not "%ANDROID_DISTRIBUTION%"=="full" if /I not "%ANDROID_DISTRIBUTION%"=="play" (
+  echo [ERROR] ANDROID_DISTRIBUTION must be full or play.
+  goto :fail
+)
+set "OUTPUT_DEBUG_APK=%ANDROID_DIR%\app\build\outputs\apk\%DISTRIBUTION%\debug\app-%DISTRIBUTION%-debug.apk"
+set "OUTPUT_RELEASE_APK=%ANDROID_DIR%\app\build\outputs\apk\%DISTRIBUTION%\release\app-%DISTRIBUTION%-release.apk"
+set "OUTPUT_RELEASE_UNSIGNED_APK=%ANDROID_DIR%\app\build\outputs\apk\%DISTRIBUTION%\release\app-%DISTRIBUTION%-release-unsigned.apk"
 
 echo ============================================================
 echo Local Android Install - %APP_ID%
 echo ============================================================
 echo Root: %ROOT%
+echo Distribution: %DISTRIBUTION%
 echo Variant: %VARIANT%
 
 if not exist "%WRAPPER_JAR%" (
@@ -229,15 +242,15 @@ echo [INFO] Building Android app...
 pushd "%ANDROID_DIR%"
 if /I "%VARIANT%"=="release" (
   if defined GRADLE_EXE (
-    call "%GRADLE_EXE%" --no-daemon %GRADLE_OFFLINE_ARGS% -PaiChatHostToolchainFile=%HOST_TOOLCHAIN_FILE% :app:clean :app:assembleRelease :app:bundleRelease --console=plain
+    call "%GRADLE_EXE%" --no-daemon %GRADLE_OFFLINE_ARGS% -PaiChatHostToolchainFile=%HOST_TOOLCHAIN_FILE% %CLEAN_TASK% :app:assemble%GRADLE_FLAVOR%Release :app:bundle%GRADLE_FLAVOR%Release --console=plain
   ) else (
-    "%JAVA_EXE%" -classpath gradle\wrapper\gradle-wrapper.jar org.gradle.wrapper.GradleWrapperMain --no-daemon %GRADLE_OFFLINE_ARGS% -PaiChatHostToolchainFile=%HOST_TOOLCHAIN_FILE% :app:clean :app:assembleRelease :app:bundleRelease --console=plain
+    "%JAVA_EXE%" -classpath gradle\wrapper\gradle-wrapper.jar org.gradle.wrapper.GradleWrapperMain --no-daemon %GRADLE_OFFLINE_ARGS% -PaiChatHostToolchainFile=%HOST_TOOLCHAIN_FILE% %CLEAN_TASK% :app:assemble%GRADLE_FLAVOR%Release :app:bundle%GRADLE_FLAVOR%Release --console=plain
   )
 ) else (
   if defined GRADLE_EXE (
-    call "%GRADLE_EXE%" --no-daemon %GRADLE_OFFLINE_ARGS% -PaiChatHostToolchainFile=%HOST_TOOLCHAIN_FILE% :app:clean :app:assembleDebug --console=plain
+    call "%GRADLE_EXE%" --no-daemon %GRADLE_OFFLINE_ARGS% -PaiChatHostToolchainFile=%HOST_TOOLCHAIN_FILE% %CLEAN_TASK% :app:assemble%GRADLE_FLAVOR%Debug --console=plain
   ) else (
-    "%JAVA_EXE%" -classpath gradle\wrapper\gradle-wrapper.jar org.gradle.wrapper.GradleWrapperMain --no-daemon %GRADLE_OFFLINE_ARGS% -PaiChatHostToolchainFile=%HOST_TOOLCHAIN_FILE% :app:clean :app:assembleDebug --console=plain
+    "%JAVA_EXE%" -classpath gradle\wrapper\gradle-wrapper.jar org.gradle.wrapper.GradleWrapperMain --no-daemon %GRADLE_OFFLINE_ARGS% -PaiChatHostToolchainFile=%HOST_TOOLCHAIN_FILE% %CLEAN_TASK% :app:assemble%GRADLE_FLAVOR%Debug --console=plain
   )
 )
 set "BUILD_EXIT=%ERRORLEVEL%"
@@ -273,13 +286,10 @@ if not defined APK_PATH (
 echo [INFO] Installing APK on device %DEVICE_ID%...
 "%ADB%" -s "%DEVICE_ID%" install -r -d "%APK_PATH%" >nul 2>nul
 if errorlevel 1 (
-  echo [WARN] Direct install failed. Trying a clean reinstall without the existing package...
-  "%ADB%" -s "%DEVICE_ID%" uninstall %APP_ID% >nul 2>nul
-  "%ADB%" -s "%DEVICE_ID%" install -r -d "%APK_PATH%"
-  if errorlevel 1 (
-    echo [ERROR] APK install failed.
-    goto :fail
-  )
+  echo [ERROR] Data-preserving APK update failed.
+  echo [HINT] The installed app may use a different signing certificate.
+  echo [HINT] No uninstall was attempted, so chats, models and settings remain intact.
+  goto :fail
 )
 
 echo [INFO] Granting runtime permissions...

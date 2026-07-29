@@ -9,8 +9,8 @@ Deterministic Multiresolution Context (DMC) bewaart belangrijke delen van lange 
 MULTIMODALE INVOER
 Voeg afbeeldingen toe, maak een foto, voeg tekstbestanden of pdf's toe en gebruik spraakinvoer. Beeld- en audiomogelijkheden hangen af van het gekozen model. Antwoorden worden tijdens de berekening direct gestreamd.
 
-OFFLINE KENNISMODULES
-Importeer ondersteunde referentiepakketten en schakel ze naar behoefte in of uit. Officiële classificatiegegevens zijn niet inbegrepen in InetMind. Download ze bij de betreffende uitgever en volg de licentievoorwaarden. Geïmporteerde modules blijven op het apparaat.
+DRIE DAGEN PROBEREN, EENMALIG ONTGRENDELEN
+Probeer de app drie dagen gratis. Daarna ontgrendelt één aankoop permanent de volledige toegang. Er is geen abonnement. Google Play toont vóór de aankoop de prijs die in jouw land geldt. Na je uitdrukkelijke bevestiging worden alleen een pseudonieme installatie-ID, de appversie en de taal verzonden om de eenmalige proefperiode aan te bieden, nooit chats, bestanden, modellen of prompts.
 
 BELANGRIJKSTE FUNCTIES
 - Lokaal beheer van GGUF-modellen
@@ -21,4 +21,4 @@ BELANGRIJKSTE FUNCTIES
 - Instelbare generatie- en samplingopties
 - CPU-gerichte Android-inferentie
 
-Compatibiliteit, snelheid en maximale context verschillen per model, kwantisatie, beschikbaar geheugen en apparaat. InetMind is een algemeen AI-hulpmiddel. Geïmporteerde medische classificaties zijn referentiemateriaal en vervangen geen professioneel medisch advies, diagnose of behandeling.
+Compatibiliteit, snelheid en maximale context verschillen per model, kwantisatie, beschikbaar geheugen en apparaat. InetMind is een algemeen AI-hulpmiddel en bevat geen medische kennis-, diagnose- of behandelfuncties.

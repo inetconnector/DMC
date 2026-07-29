@@ -2,7 +2,7 @@
 <resources>
     <string name="privacy_policy_title">Política de privacidade</string>
     <string name="report_response_title">Denunciar resposta de IA</string>
-    <string name="report_response_message">Escolha um motivo. O texto da resposta só será adicionado a um rascunho de e-mail após sua confirmação. Revise-o antes de enviá-lo ao desenvolvedor.</string>
+    <string name="report_response_message">Escolha um motivo. Após a confirmação, até 4.000 caracteres desta resposta serão enviados diretamente à InetConnector. As outras conversas e os dados do modelo permanecerão neste dispositivo.</string>
     <string name="report_reason_harmful">Prejudicial ou perigoso</string>
     <string name="report_reason_hateful">Odioso ou abusivo</string>
     <string name="report_reason_sexual">Conteúdo sexual</string>
@@ -14,6 +14,24 @@
     <string name="report_email_subject">Denúncia de conteúdo de IA do InetMind</string>
     <string name="report_email_chooser">Enviar denúncia de conteúdo</string>
     <string name="report_no_email_app">Nenhum aplicativo de e-mail está disponível. Entre em contato com apps@inetconnector.com.</string>
+    <string name="report_send">Enviar denúncia</string>
+    <string name="report_sent_title">Denúncia enviada</string>
+    <string name="report_sent_message">Obrigado. O ID da sua denúncia é %1$s.</string>
+    <string name="report_failed_title">Denúncia não enviada</string>
+    <string name="report_failed_message">Não foi possível enviar a denúncia. Verifique a conexão e tente novamente.\n\n%1$s</string>
+    <string name="trial_intro_title">Teste o InetMind grátis por 3 dias</string>
+    <string name="trial_intro_message">Use gratuitamente todos os recursos da versão da Play Store por três dias. Depois, desbloqueie o InetMind permanentemente com uma compra única (%1$s; o preço local final será exibido pelo Google Play).\n\nPara impedir testes repetidos, o InetMind envia à InetConnector um identificador de instalação pseudônimo, a versão do app e o idioma. Conversas, arquivos, modelos e comandos nunca são enviados para ativar o teste.\n\n<a href="%2$s">Leia a política de privacidade</a></string>
+    <string name="trial_start_button">Iniciar teste de 3 dias</string>
+    <string name="trial_expired_title">Período de teste encerrado</string>
+    <string name="trial_expired_message">Seu teste de três dias terminou. Desbloqueie o InetMind permanentemente com uma compra única (%1$s; o preço local final será exibido pelo Google Play).</string>
+    <string name="unlock_button">Desbloquear permanentemente</string>
+    <string name="restore_purchase_button">Restaurar compra</string>
+    <string name="unlock_price_fallback">EUR 4,99</string>
+    <string name="trial_activation_failed_message">Não foi possível ativar o teste. É necessária uma conexão com a Internet uma única vez no início.\n\n%1$s</string>
+    <string name="purchase_error_title">Acesso indisponível</string>
+    <string name="purchase_unavailable_message">O Google Play não conseguiu carregar o desbloqueio permanente. Instale a versão da Play Store, verifique a conexão e tente novamente.\n\n%1$s</string>
+    <string name="purchase_pending_message">O pagamento está pendente. O acesso será desbloqueado depois que o Google Play confirmar o pagamento.</string>
+    <string name="purchase_failed_message">Não foi possível concluir a compra.\n\n%1$s</string>
     <string name="dialog_knowledge_title">Referências off-line</string>
     <string name="dialog_knowledge_empty">Nenhum módulo de referência off-line está instalado.</string>
     <string name="dialog_knowledge_import">Importar arquivo</string>

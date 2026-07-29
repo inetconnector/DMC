@@ -2,7 +2,7 @@
     <string name="app_name">InetMind</string>
     <string name="privacy_policy_title">Datenschutzerklärung</string>
     <string name="report_response_title">KI-Antwort melden</string>
-    <string name="report_response_message">Wähle einen Grund. Der Antworttext wird erst nach deiner Bestätigung in einen E-Mail-Entwurf eingefügt. Prüfe den Entwurf, bevor du ihn an den Entwickler sendest.</string>
+    <string name="report_response_message">Wähle einen Grund. Nach deiner Bestätigung werden bis zu 4.000 Zeichen dieser Antwort direkt an InetConnector gesendet. Andere Chats und Modelldaten bleiben auf diesem Gerät.</string>
     <string name="report_reason_harmful">Schädlich oder gefährlich</string>
     <string name="report_reason_hateful">Hasserfüllt oder beleidigend</string>
     <string name="report_reason_sexual">Sexueller Inhalt</string>
@@ -10,10 +10,28 @@
     <string name="report_reason_inaccurate">Schwerwiegend falsch</string>
     <string name="report_reason_other">Sonstiges</string>
     <string name="report_prepare_email">Meldung vorbereiten</string>
+    <string name="report_send">Meldung senden</string>
     <string name="report_cancel">Abbrechen</string>
     <string name="report_email_subject">InetMind-Meldung zu KI-Inhalten</string>
     <string name="report_email_chooser">Inhaltsmeldung senden</string>
     <string name="report_no_email_app">Es ist keine E-Mail-App verfügbar. Kontaktiere apps@inetconnector.com.</string>
+    <string name="report_sent_title">Meldung gesendet</string>
+    <string name="report_sent_message">Vielen Dank. Deine Meldungs-ID lautet %1$s.</string>
+    <string name="report_failed_title">Meldung nicht gesendet</string>
+    <string name="report_failed_message">Die Meldung konnte nicht gesendet werden. Prüfe die Verbindung und versuche es erneut.\n\n%1$s</string>
+    <string name="trial_intro_title">InetMind 3 Tage kostenlos testen</string>
+    <string name="trial_intro_message">Nutze alle Play-Store-Funktionen drei Tage kostenlos. Danach kannst du InetMind mit einem einmaligen Kauf dauerhaft freischalten (%1$s; den endgültigen lokalen Preis zeigt Google Play).\n\nUm wiederholte Testzeiträume zu verhindern, sendet InetMind eine pseudonyme Installationskennung, App-Version und Sprache an InetConnector. Chats, Dateien, Modelle und Eingaben werden zur Trial-Aktivierung niemals übertragen.\n\n<a href="%2$s">Datenschutzerklärung lesen</a></string>
+    <string name="trial_start_button">3-Tage-Test starten</string>
+    <string name="trial_expired_title">Testzeitraum beendet</string>
+    <string name="trial_expired_message">Dein dreitägiger Testzeitraum ist beendet. Schalte InetMind mit einem einmaligen Kauf dauerhaft frei (%1$s; den endgültigen lokalen Preis zeigt Google Play).</string>
+    <string name="unlock_button">Dauerhaft freischalten</string>
+    <string name="restore_purchase_button">Kauf wiederherstellen</string>
+    <string name="unlock_price_fallback">4,99 EUR</string>
+    <string name="trial_activation_failed_message">Der Testzeitraum konnte nicht aktiviert werden. Beim Start ist einmalig eine Internetverbindung erforderlich.\n\n%1$s</string>
+    <string name="purchase_error_title">Zugriff nicht verfügbar</string>
+    <string name="purchase_unavailable_message">Google Play konnte die dauerhafte Freischaltung nicht laden. Installiere die Play-Store-Version, prüfe die Verbindung und versuche es erneut.\n\n%1$s</string>
+    <string name="purchase_pending_message">Die Zahlung ist noch ausstehend. Der Zugriff wird freigeschaltet, sobald Google Play die Zahlung bestätigt.</string>
+    <string name="purchase_failed_message">Der Kauf konnte nicht abgeschlossen werden.\n\n%1$s</string>
     <string name="dialog_model_required_title">Modell erforderlich</string>
     <string name="dialog_model_required_message">Bitte wähle eine GGUF-Datei. Die App empfiehlt automatisch die beste Wahl fuer das erkannte Geraet und den verfuegbaren Arbeitsspeicher.</string>
     <string name="dialog_model_required_choose">Modell waehlen</string>
