@@ -1,4 +1,4 @@
-InetMind porta conversazioni IA avanzate direttamente sul tuo dispositivo Android. Esegui localmente modelli linguistici GGUF compatibili, mantieni nel contesto conversazioni lunghe e visualizza le risposte mentre vengono generate.
+Local AI - DMC porta conversazioni IA avanzate direttamente sul tuo dispositivo Android. Esegui localmente modelli linguistici GGUF compatibili, mantieni nel contesto conversazioni lunghe e visualizza le risposte mentre vengono generate.
 
 IA LOCALE
 Il modello, le conversazioni e gli allegati restano sul dispositivo durante l'inferenza IA locale. Non serve un account cloud. La rete viene usata per download o connessioni esterne avviati dall'utente e per dati tecnici di diagnostica e utilizzo delle funzioni Google ML Kit incluse. ML Kit elabora sul dispositivo il contenuto di immagini e testo.
@@ -21,4 +21,4 @@ FUNZIONI PRINCIPALI
 - Opzioni configurabili di generazione e campionamento
 - Inferenza Android orientata alla CPU
 
-Compatibilità, velocità e contesto massimo variano in base al modello, alla quantizzazione, alla memoria disponibile e al dispositivo. InetMind è uno strumento IA generico e non contiene funzioni di conoscenza, diagnosi o trattamento medico.
+Compatibilità, velocità e contesto massimo variano in base al modello, alla quantizzazione, alla memoria disponibile e al dispositivo. Local AI - DMC è uno strumento IA generico e non contiene funzioni di conoscenza, diagnosi o trattamento medico.

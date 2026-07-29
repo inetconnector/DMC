@@ -1,4 +1,4 @@
-InetMind brengt krachtige AI-gesprekken rechtstreeks naar je Android-apparaat. Voer compatibele GGUF-taalmodellen lokaal uit, houd lange gesprekken in context en zie antwoorden verschijnen terwijl ze worden gegenereerd.
+Local AI - DMC brengt krachtige AI-gesprekken rechtstreeks naar je Android-apparaat. Voer compatibele GGUF-taalmodellen lokaal uit, houd lange gesprekken in context en zie antwoorden verschijnen terwijl ze worden gegenereerd.
 
 LOKALE AI
 Het model, gesprekken en bijlagen blijven tijdens lokale AI-inferentie op het apparaat. Een cloudaccount is niet nodig. Netwerktoegang vindt plaats voor downloads of externe verbindingen die je zelf start en voor technische diagnose- en gebruiksgegevens van de ingebouwde Google ML Kit-functies. ML Kit verwerkt beeld- en tekstinhoud op het apparaat.
@@ -21,4 +21,4 @@ BELANGRIJKSTE FUNCTIES
 - Instelbare generatie- en samplingopties
 - CPU-gerichte Android-inferentie
 
-Compatibiliteit, snelheid en maximale context verschillen per model, kwantisatie, beschikbaar geheugen en apparaat. InetMind is een algemeen AI-hulpmiddel en bevat geen medische kennis-, diagnose- of behandelfuncties.
+Compatibiliteit, snelheid en maximale context verschillen per model, kwantisatie, beschikbaar geheugen en apparaat. Local AI - DMC is een algemeen AI-hulpmiddel en bevat geen medische kennis-, diagnose- of behandelfuncties.

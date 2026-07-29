@@ -1,6 +1,6 @@
-# Google Play publishing for InetMind / DMC
+# Google Play publishing for Local AI - DMC
 
-This guide configures Google Play Developer API access for the InetMind Android
+This guide configures Google Play Developer API access for the Local AI - DMC Android
 app. DMC remains the native long-context engine and the public Android package
 remains `com.inetconnector.dmc`.
 
@@ -8,9 +8,9 @@ remains `com.inetconnector.dmc`.
 
 | Purpose | Value |
 | --- | --- |
-| Play app name | InetMind - Local AI / InetMind - Lokale KI |
+| Play app name | Local AI - DMC |
 | Android package | `com.inetconnector.dmc` |
-| Suggested Cloud project name | InetMind Play Publishing |
+| Suggested Cloud project name | Local AI DMC Play Publishing |
 | Suggested Cloud project ID | `inetconnector-dmc-play` (must be globally unique) |
 | Service account name/ID | Existing shared publisher account or `inetmind-gplay` |
 | Local gplay profile | `dmc` |
@@ -20,32 +20,30 @@ remains `com.inetconnector.dmc`.
 ## Current publication state
 
 - Play app `com.inetconnector.dmc` exists.
-- Signed version `1.0.1 (2)` is processed with status `completed` in the
-  internal test track.
-- The next candidate is `1.1.0 (3)`. Its `playRelease` flavor contains no
+- Signed version `1.1.0 (3)` is processed with status `completed` in the
+  internal test track and is stored as a validated `draft` in production.
+  It is not public yet.
+- Its `playRelease` flavor contains no
   medical knowledge modules, no medical import path, and no diagnosis or
   treatment functionality. The separate `fullRelease` flavor retains optional
   offline knowledge modules and is not the Play artifact.
 - The Play app is free to install. It starts one server-backed three-day trial,
   then requires the permanent non-consumable product
-  `inetmind_full_unlock`, configured with a `4.99 EUR` base price.
+  `inetmind_full_unlock`. The product is active in all nine listing languages;
+  the confirmed German end-user price is `4.99 EUR`.
 - Localized release notes for all nine locales are versioned for `1.1.0`.
 - Validated store listings for the same nine locales, German and English phone
   screenshots, the icon, and the feature graphic are versioned under `play/`.
-- The shared service account can list the app and manage releases. A live
-  metadata commit still returned `403 forbidden` on 2026-07-23, so
-  app-specific **Manage store presence** is not yet effective or has not
-  propagated. App contact details were rejected at edit validation for the same
-  reason; the temporary edit was discarded. The local files validate
-  successfully; no secret or generated bundle is committed.
-- Product creation still returns `403 forbidden` for the shared service
-  account. Store-presence writes also return `403`. Production is blocked until
-  those permissions are corrected and the product exists.
-- Data safety, content declarations, target audience, ads, app access, and the
-  final production review remain Console-only work.
-- The Play privacy policy is versioned at `privacy/play/index.html` and must be
-  public at `https://inetconnector.github.io/DMC/privacy/play/`. Do not submit
-  while that URL returns 404.
+- The shared service account has effective publishing permissions. All nine
+  localized listings, four German and two English screenshots, the 512x512
+  icon, and the 1024x500 feature graphic were uploaded and verified remotely.
+- The Play privacy policy is public with HTTP 200 at
+  `https://inetconnector.github.io/DMC/privacy/play/`.
+- Canonical release validation reports zero automated blockers. Data safety,
+  AI-generated-content, target audience, ads, app access, content rating, and
+  the final policy review remain Console-only confirmations. The production
+  draft must not be changed to `completed` until those declarations have been
+  manually reviewed.
 
 A dedicated service account is optional. Google Play allows the existing
 publishing service account to receive access to several selected apps. This
@@ -68,8 +66,7 @@ The Android Publisher API cannot create a normal public Play app. Before API
 access can be tested, create the app manually in Google Play Console:
 
 1. Select **Create app**.
-2. Use **InetMind - Local AI** as the initial English name or
-   **InetMind - Lokale KI** when German is the default language.
+2. Use **Local AI - DMC** as the name in every supported locale.
 3. Choose **App**, not Game, and select the default language.
 4. Select **Free**. The three-day trial and permanent unlock are implemented
    inside the app with Google Play Billing; they are not a paid-app trial.
@@ -119,7 +116,7 @@ Copy the service-account email ending in
 `@<project-id>.iam.gserviceaccount.com`, then open **Users and permissions** in
 Google Play Console and invite it.
 
-Restrict app access to **InetMind - Local AI** / `com.inetconnector.dmc` and
+Restrict app access to **Local AI - DMC** / `com.inetconnector.dmc` and
 grant only what the publishing workflow needs:
 
 - View app information.
@@ -201,7 +198,7 @@ gplay metadata validate --dir .\play\metadata
 Play media must include a 512x512 PNG icon, a 1024x500 feature graphic, and at
 least two phone screenshots. Validate the complete submission before upload.
 
-Five reviewed German and two English phone screenshots are versioned under
+Four reviewed German and two English phone screenshots are versioned under
 `play/screenshots/`. They are direct 1080x1920, 24-bit RGB captures from
 Samsung SM-S931B and can be checked locally with:
 
@@ -235,17 +232,20 @@ gplay release `
 Version codes `1` and `2` have already been uploaded and cannot be reused. The
 current candidate uses version code `3`; every later bundle must increment it.
 
-After granting **Manage store presence**, push the local listings and media.
-Use a fresh edit for the graphics and commit only after `images sync` reports
-no errors. The expected graphics layout is
+Push the local listings and media through a fresh edit. Verify the uploaded
+hashes before committing. The installed CLI currently probes the retired
+`promoGraphic` type and may report a Google API 400 for that unused type even
+when all supported assets upload successfully; validate the edit and query the
+required asset types directly rather than treating that unrelated probe as an
+upload failure. The expected graphics layout is
 `play/graphics/<locale>/images/{icon.png,featureGraphic.png}`.
 
-Before internal testing of the trial gate, create and activate the one-time
-product from `play/monetization/inetmind_full_unlock.json` with a `4.99 EUR`
-base price and verify a real licensed test purchase plus restore. Do not upload
-version code 3 while the product is missing: after three days the candidate
-would have no valid purchase route. After testing, complete the Play Console
-declarations, review generated local prices, and only then prepare production.
+The one-time product from
+`play/monetization/inetmind_full_unlock.json` is active. Google regional price
+conversion was configured so the German end-user price is exactly `4.99 EUR`.
+Before public rollout, verify one real licensed test purchase plus restore,
+complete the Play Console declarations, and review all generated regional
+prices.
 
 ## 8. Complete policy declarations
 
@@ -262,7 +262,7 @@ current app behavior:
 - Declare that `playRelease` has no health or medical functionality. Never use
   the separate full flavor or its optional modules when answering Play Console
   questions.
-- Complete the generative-AI declaration. InetMind provides a localized flag
+- Complete the generative-AI declaration. Local AI - DMC provides a localized flag
   action below assistant responses and submits confirmed reports directly to
   the controlled HTTPS endpoint without leaving the app.
 - Review target audience and content rating conservatively. The app is not
@@ -281,7 +281,7 @@ mandatory Console declarations have all been verified:
 
 ```powershell
 git status --short
-git tag -a android-play-v1.1.0 -m "InetMind Android Play 1.1.0 (3)"
+git tag -a android-play-v1.1.0 -m "Local AI - DMC Android Play 1.1.0 (3)"
 git push origin android-play-v1.1.0
 ```
 

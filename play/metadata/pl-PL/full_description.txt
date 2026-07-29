@@ -1,4 +1,4 @@
-InetMind przenosi zaawansowane rozmowy z AI bezpośrednio na urządzenie z Androidem. Uruchamiaj lokalnie zgodne modele językowe GGUF, zachowuj kontekst długich rozmów i obserwuj odpowiedzi już w trakcie ich generowania.
+Local AI - DMC przenosi zaawansowane rozmowy z AI bezpośrednio na urządzenie z Androidem. Uruchamiaj lokalnie zgodne modele językowe GGUF, zachowuj kontekst długich rozmów i obserwuj odpowiedzi już w trakcie ich generowania.
 
 LOKALNA AI
 Model, rozmowy i załączniki pozostają na urządzeniu podczas lokalnego wnioskowania AI. Konto w chmurze nie jest wymagane. Sieć jest używana do pobierania lub połączeń zewnętrznych uruchamianych przez użytkownika oraz do technicznych danych diagnostycznych i użytkowych wbudowanych funkcji Google ML Kit. ML Kit przetwarza obrazy i tekst na urządzeniu.
@@ -21,4 +21,4 @@ NAJWAŻNIEJSZE FUNKCJE
 - Konfigurowalne generowanie i próbkowanie
 - Wnioskowanie Android ukierunkowane na CPU
 
-Zgodność, szybkość i maksymalny kontekst zależą od modelu, kwantyzacji, dostępnej pamięci i urządzenia. InetMind jest narzędziem AI ogólnego przeznaczenia i nie zawiera funkcji wiedzy medycznej, diagnozy ani leczenia.
+Zgodność, szybkość i maksymalny kontekst zależą od modelu, kwantyzacji, dostępnej pamięci i urządzenia. Local AI - DMC jest narzędziem AI ogólnego przeznaczenia i nie zawiera funkcji wiedzy medycznej, diagnozy ani leczenia.

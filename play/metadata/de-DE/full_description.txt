@@ -1,4 +1,4 @@
-InetMind bringt leistungsfähige KI-Unterhaltungen direkt auf dein Android-Gerät. Führe kompatible GGUF-Sprachmodelle lokal aus, behalte lange Gespräche im Kontext und lies Antworten bereits während der Erzeugung.
+Local AI - DMC bringt leistungsfähige KI-Unterhaltungen direkt auf dein Android-Gerät. Führe kompatible GGUF-Sprachmodelle lokal aus, behalte lange Gespräche im Kontext und lies Antworten bereits während der Erzeugung.
 
 LOKALE KI
 Modell, Unterhaltungen und Anhänge bleiben bei der lokalen KI-Verarbeitung auf deinem Gerät. Für Chats ist kein Cloud-Konto erforderlich. Netzwerkzugriffe erfolgen bei von dir gestarteten Downloads oder externen Verbindungen sowie für technische Diagnose- und Nutzungsdaten der eingebundenen Google-ML-Kit-Funktionen. Bild- und Textinhalte werden von ML Kit auf dem Gerät verarbeitet.
@@ -21,4 +21,4 @@ KONTROLLE UND FLEXIBILITÄT
 - Einstellbare Generierungs- und Sampling-Optionen
 - CPU-orientierte Android-Inferenz
 
-Modellkompatibilität, Geschwindigkeit und maximaler Kontext unterscheiden sich je nach Modell, Quantisierung, verfügbarem Speicher und Gerät. InetMind ist ein allgemeines KI-Werkzeug und enthält keine medizinische Wissens-, Diagnose- oder Behandlungsfunktion.
+Modellkompatibilität, Geschwindigkeit und maximaler Kontext unterscheiden sich je nach Modell, Quantisierung, verfügbarem Speicher und Gerät. Local AI - DMC ist ein allgemeines KI-Werkzeug und enthält keine medizinische Wissens-, Diagnose- oder Behandlungsfunktion.

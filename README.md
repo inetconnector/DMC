@@ -1,6 +1,7 @@
-# InetMind / DMC
+# Local AI - DMC
 
-**InetMind** is the consumer-facing Android app in this repository.
+**Local AI - DMC** is the Google Play name of the consumer-facing Android app
+in this repository.
 **Deterministic Multiresolution Context (DMC)** is its native long-context
 engine and the clean-room technical target of the project.
 
@@ -29,8 +30,8 @@ to validate than a more ad hoc retrieval system.
 - The local runtime in `scripts/windows/` runs `llama.cpp` on your own machine.
 - The Android app lives in `android/llama.android/` and is built from the root
   helper scripts.
-- The Android package remains `com.inetconnector.dmc`; the visible app and
-  Google Play name is **InetMind - Local AI** / **InetMind - Lokale KI**.
+- The Android package remains `com.inetconnector.dmc`; the Google Play name in
+  every supported locale is **Local AI - DMC**.
 - The current Google Play candidate is `1.1.0 (3)`. Its immutable source tag
   is `android-play-v1.1.0`.
 - The design focuses on long context first, quality second, speed third.
@@ -91,7 +92,7 @@ The standalone Android app now lives in `android/llama.android/` and is
 checked in alongside the DMC stack.
 
 For Google Play automation, the repository includes a non-secret package pin
-at `.gplay/config.yaml` and the InetMind/DMC-specific setup guide
+at `.gplay/config.yaml` and the Local-AI-DMC-specific setup guide
 [`docs/GOOGLE_PLAY_DMC.md`](docs/GOOGLE_PLAY_DMC.md). Service-account JSON keys
 must remain outside the repository; use
 `scripts/windows/setup-gplay-dmc.ps1` to register and verify the app-scoped
@@ -105,24 +106,27 @@ privacy-checked 1080x1920 captures from a Samsung S25. Subjects and suggested
 accessibility text are documented in
 [`play/screenshots/README.md`](play/screenshots/README.md).
 
-Version `1.0.1 (2)` remains active on the internal test track. The next
-candidate is `1.1.0 (3)` and is built in two deliberately separate flavors:
+Version `1.1.0 (3)` is active on the internal test track and is also prepared
+as a validated production draft. It is built in two deliberately separate
+flavors:
 
 - `playRelease` is the Google Play artifact. It contains no offline medical
   modules, medical import path, diagnosis feature, or treatment feature. It is
   free to install, starts one server-backed three-day trial, and then requires
-  the non-consumable Play Billing product `inetmind_full_unlock` (base price
-  `4.99 EUR`) for permanent use.
+  the active non-consumable Play Billing product `inetmind_full_unlock` for
+  permanent use. Its confirmed German end-user price is `4.99 EUR`.
 - `fullRelease` retains the existing optional offline knowledge-module system
   for direct distribution. It does not activate Play Billing or the trial gate.
 
 The Play app now reports generated responses directly to the
-InetConnector-controlled HTTPS endpoint without leaving the app. Localized
-listings and release notes for all nine supported locales validate locally.
-Production is intentionally not submitted yet: the shared service account
-still receives `403 forbidden` when creating the one-time product or changing
-store presence, and the dedicated Play privacy URL must return HTTP 200 before
-submission. These are release blockers, not silently skipped steps.
+InetConnector-controlled HTTPS endpoint without leaving the app. The active
+Play Billing product, nine localized listings, nine localized release notes,
+four German screenshots, two English screenshots, icon, and feature graphic
+are present in Google Play. The dedicated Play privacy URL returns HTTP 200.
+The signed `1.1.0 (3)` AAB has no automated Play readiness blocker and is
+stored as a production draft. Public rollout is intentionally held until the
+Console-only Data safety and policy declarations have been manually confirmed;
+the Android Publisher API cannot read or certify those answers.
 
 The maintained Play submission sources are:
 
@@ -145,7 +149,7 @@ models require several gigabytes of free storage.
 On Android, every file-opening flow prefers CX File Explorer when
 `com.cxinventor.file.explorer` is installed: model files and archives,
 offline-reference ZIP/XML files, images, audio, text, PDF, and general WebView
-attachments. If CX is absent or cannot handle a requested MIME type, InetMind uses
+attachments. If CX is absent or cannot handle a requested MIME type, the app uses
 Android DocumentsUI automatically. Save/export dialogs remain on DocumentsUI
 because the current CX version does not implement Android's `CREATE_DOCUMENT`
 contract; camera capture is unchanged.
@@ -293,28 +297,27 @@ device provisioning and QA. It accepts only an existing package inside the
 app's private cache, invokes the normal validated transactional importer, and
 is disabled automatically in non-debuggable release builds.
 
-The current signed InetMind/DMC release was built successfully at:
-
-`android/llama.android/app/build/outputs/apk/release/app-release.apk`
+The current signed Local AI - DMC Play release was built successfully from the
+immutable `android-play-v1.1.0` source tag.
 
 Versioned release artifacts:
 
-- `publish/com.inetconnector.dmc/1.0.1+2/com.inetconnector.dmc-1.0.1+2-release.apk`
-- `publish/com.inetconnector.dmc/1.0.1+2/com.inetconnector.dmc-1.0.1+2-release.aab`
+- `publish/com.inetconnector.dmc/1.1.0+3/com.inetconnector.dmc-1.1.0+3-play-release.apk`
+- `publish/com.inetconnector.dmc/1.1.0+3/com.inetconnector.dmc-1.1.0+3-play-release.aab`
 
 Release APK SHA-256:
 
-`45882B5CD40792FDA3273C94B0DA6296BFD3C04C9AFBD8CF09CE0F921F6A1707`
+`3959525E5FA1EB25D88D19F21464B1B2BCC989BB289773B210119AD7425A2E80`
 
 Release AAB SHA-256:
 
-`5D3B820572CB866C729D5CF362A23E34BAD6BDC94926075C3B33FF467B4E7905`
+`1A50A820AF9E93A5FE1A613DC9CC82330F0B699381F4126DB5DE034942D6E80B`
 
 Published APK/AAB files are kept under the ignored `publish/` directory and
 must not be committed. The current signed release and Play submission archive
 are mirrored to the branch directory on the DiskStation after verification.
-Google Play internal testing currently serves `1.0.1 (2)` with status
-`completed`.
+Google Play internal testing currently serves `1.1.0 (3)` with status
+`completed`; production contains the same version with status `draft`.
 
 If you want to check the launch without starting the server, use:
 

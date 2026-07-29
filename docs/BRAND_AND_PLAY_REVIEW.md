@@ -1,4 +1,4 @@
-# InetMind brand and Google Play review
+# Local AI - DMC brand and Google Play review
 
 Last reviewed: 2026-07-29
 
@@ -6,13 +6,12 @@ Last reviewed: 2026-07-29
 
 The Android product is presented as:
 
-- English: **InetMind - Local AI**
-- German: **InetMind - Lokale KI**
+- All supported Play locales: **Local AI - DMC**
 - Technical context engine: **Deterministic Multiresolution Context (DMC)**
 - Immutable Android/Google Play package: `com.inetconnector.dmc`
 
 The repository can continue to use DMC as its technical project and algorithm
-name. The consumer-facing app name is InetMind.
+name. The Google Play app name is Local AI - DMC.
 
 ## Why the old name was changed
 
@@ -29,10 +28,10 @@ still mention an existing Ollama model source where that is factually relevant.
 
 ## Name screening
 
-An exact-name web search and searches limited to publicly indexed EUIPO, DPMA
-and WIPO results did not identify an obvious software or AI product named
-`InetMind` on 2026-07-23. By contrast, alternatives such as ContextVault,
-ContextForge, ContextWeave and MindSpan already had clear software or AI uses.
+The current Store name combines the descriptive phrase `Local AI` with the
+project's established technical acronym `DMC`. It avoids the unrelated Ollama
+brand and accurately describes the local inference product. This naming
+decision is not a formal trademark clearance.
 
 This is a preliminary collision screen, not a formal trademark clearance.
 Search-engine coverage of trademark registers is incomplete. Before a large
@@ -48,7 +47,7 @@ paid marketing launch, order a professional similarity search covering:
 ### AI-generated content
 
 Google Play requires generative-AI apps to provide an in-app way to report or
-flag offensive generated content without leaving the app. InetMind shows a
+flag offensive generated content without leaving the app. Local AI - DMC shows a
 localized flag action below every nonempty assistant response. The Android
 dialog submits the selected reason and optional details directly to the
 InetConnector-controlled HTTPS endpoint. The endpoint applies bounded input,
@@ -66,18 +65,18 @@ collected. The maintained answer matrix is in `play/DATA_SAFETY.md`.
 
 The public Activity Launcher Pro listing and several competing offline-AI
 listings currently declare that no data is collected or shared. Those
-declarations cannot simply be copied to InetMind:
+declarations cannot simply be copied to Local AI - DMC:
 
 - Activity Launcher Pro has a different dependency and data-flow profile.
 - Some offline-AI listings make broad "100% offline" claims while also offering
   model downloads, custom endpoints, web search, ads, analytics, or separate
   speech/vision services.
-- InetMind bundles Google ML Kit for local image analysis. Google's own SDK
+- Local AI - DMC bundles Google ML Kit for local image analysis. Google's own SDK
   disclosure lists technical diagnostics, usage analytics, and a
   per-installation identifier even though image/text inputs and outputs remain
   on-device.
 
-InetMind therefore uses the narrower, verifiable claim that core prompts,
+Local AI - DMC therefore uses the narrower, verifiable claim that core prompts,
 chats, models, and attachments are processed locally and are not automatically
 sent to an InetConnector server. User-triggered downloads, external endpoints,
 speech providers, ML Kit diagnostics, trial activation, support, and content

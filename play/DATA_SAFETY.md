@@ -1,4 +1,4 @@
-# Google Play Data Safety - InetMind
+# Google Play Data Safety - Local AI - DMC
 
 Last audited: 2026-07-28
 

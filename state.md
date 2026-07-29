@@ -40,36 +40,29 @@ Update this file and `README.md` together whenever behavior changes.
   chat performance, the clean welcome screen, camera/file attachments, model
   metadata with the 131072-token context and vision/audio modalities. The temporary display
   size, rotation, app locale, and locale-config overrides were restored.
-- `play/metadata/` contains validated InetMind title, short-description, and
+- `play/metadata/` contains validated title, short-description, and
   full-description files for `en-US`, `de-DE`, `fr-FR`, `es-ES`, `it-IT`,
-  `nl-NL`, `pl-PL`, `pt-BR`, and `tr-TR`. Release notes exist for `1.0.0`,
-  `1.0.1`, and `1.1.0`. `play/graphics/` contains the final 512x512 icon, InetMind-branded
+  `nl-NL`, `pl-PL`, `pt-BR`, and `tr-TR`. All nine remote listings now use
+  **Local AI - DMC**. Release notes exist for `1.0.0`, `1.0.1`, and `1.1.0`.
+  `play/graphics/` contains the final 512x512 icon, the Local-AI-DMC-branded
   1024x500 feature graphic, and editable SVG sources.
-- The Play Console app `com.inetconnector.dmc` now exists as the draft
-  originally created as "Offline KI - OLLAMA UI -DMC". The intended public
-  name is now **InetMind - Local AI** / **InetMind - Lokale KI**; the package
-  remains immutable. The existing publishing service account can access it and
-  read the alpha, beta, internal, and production tracks. A local `dmc` profile
-  alias references the same external credential as the existing
-  `activitylauncher` profile without changing the default profile.
-- Signed version `1.0.1 (2)` was uploaded on 2026-07-23 and is processed with
-  status `completed` on the internal track; it replaces internal version code
-  `1`. Google remotely reports the release name `1.0.1` and version code `2`.
-  The shared service account can manage releases but a live metadata commit
-  still returned `403 forbidden`; Play Console must make the app-specific
-  **Manage store presence** permission effective before `play/metadata/`,
-  screenshots, icon, and feature graphic can be synced. A remote metadata pull
-  consequently still returns only `en-US` with the old draft title
-  "Offline KI - OLLAMA UI -DMC".
+- The Play Console app is `com.inetconnector.dmc`; the package is immutable.
+  The existing publishing service account now has effective publishing and
+  monetization permissions. The local `dmc` profile alias references the same
+  external credential as the existing `activitylauncher` profile without
+  storing a credential in this repository.
+- Signed version `1.1.0 (3)` has status `completed` on the internal track and
+  is stored as a validated `draft` in production. The same immutable source is
+  tagged `android-play-v1.1.0`. Production is not public until the Console-only
+  declarations below are manually confirmed.
 - The full flavor's bilingual, tracker-free privacy policy is versioned in
   `privacy/index.html` and published by GitHub Pages at
   `https://inetconnector.github.io/DMC/privacy/`. GitHub reported the latest
   Pages build as `built`, and the public URL returned HTTP 200.
 - The medical-free Play policy is versioned separately at
   `privacy/play/index.html` and configured in `playRelease` as
-  `https://inetconnector.github.io/DMC/privacy/play/`. That public URL still
-  returned HTTP 404 before this branch was published, so production submission
-  remains blocked until it returns HTTP 200.
+  `https://inetconnector.github.io/DMC/privacy/play/`. It was published through
+  GitHub Pages commit `f1aa9e9` and returns HTTP 200.
 - `play/DATA_SAFETY.md` contains the conservative Play-flavor Data safety
   answer matrix. It accounts for ML Kit diagnostics/per-installation
   identifiers, the trial service, in-app AI-response reports, device
@@ -80,15 +73,14 @@ Update this file and `README.md` together whenever behavior changes.
   offline-reference manager or medical-source text. The `fullRelease` source
   set retains all existing optional knowledge-module functionality.
 - Play access is free for one server-backed three-day trial and then uses the
-  permanent, non-consumable product `inetmind_full_unlock`. The production API
-  is live at `https://apps.inetconnector.com/inetmind/v1`; health, trial
-  activation, and in-app report smoke tests passed and synthetic records were
-  removed.
-- The shared Play service account can manage releases but received
-  `403 forbidden` when creating `inetmind_full_unlock` and when changing store
-  presence. Do not upload version code 3 to production until the product exists
-  at base price `4.99 EUR`, the localized listing is synchronized, mandatory
-  declarations are completed, and the Play privacy URL is public.
+  permanent, non-consumable product `inetmind_full_unlock`. The product is
+  `ACTIVE`, has nine localized listings, and its confirmed German end-user
+  price is `4.99 EUR`. The production API is live at
+  `https://apps.inetconnector.com/inetmind/v1`; health, trial activation, and
+  in-app report smoke tests passed and synthetic records were removed.
+- All six screenshots, both locale copies of the icon and feature graphic, and
+  all nine localized store listings are present remotely. Their remote hashes
+  match the version-controlled assets.
 - The Play screenshot submission now contains four German and two English
   screenshots. The prior ICD-10 module screenshot was removed because it
   represented the separately distributed full flavor and must not advertise a
@@ -395,33 +387,19 @@ Update this file and `README.md` together whenever behavior changes.
   one Svelte state-capture warning, one Rollup circular re-export warning, and
   a large-chunk warning; these are non-fatal but remain technical debt.
 - Google Play metadata validation and both German/English screenshot validators
-  pass. A live metadata push still fails at edit commit with `403 forbidden`
-  despite the service account being able to list the app and tracks. Recheck
-  that **Manage store presence** is enabled for this exact app and allow for
-  Play permission propagation before retrying. A separate attempt to set
-  support email, phone, website, and default language was rejected at edit
-  validation with the same 403; its uncommitted edit was explicitly deleted.
-- The current generated-content report UI collects a reason in-app but delivers
-  through an external mail composer. Google Play's current AI-generated content
-  policy says reporting to the developer must work without leaving the app.
-  Production therefore remains blocked until an InetConnector-controlled HTTPS
-  report endpoint is available and wired into the native dialog with abuse
-  protection, retention/deletion handling, and updated privacy/Data safety
-  disclosures. Do not use an undisclosed third-party form relay as a shortcut.
-- Re-audited Google Play on 2026-07-28 with the configured `dmc` service-account
-  profile. Remote state remains internal release `1.0.1`, version code `2`,
-  status `completed`; production, alpha, and beta are empty. The service account
-  sees the package and tracks, but a nine-locale metadata commit and a separate
-  contact-details edit both returned `403 forbidden`. The latter edit was
-  explicitly deleted. A fresh remote pull still contains only `en-US` with the
-  old title and empty descriptions. No one-time products or subscriptions are
-  configured.
-- The local Play submission was revalidated in strict mode: the signed AAB,
-  nine listings, nine localized release notes, five German screenshots, and two
-  English screenshots pass automated artifact/metadata checks. The report has
-  no automated blockers, one expected warning for the empty production track,
-  and manual Data safety/policy gates. This does not override the known
-  generated-content reporting policy blocker.
+  pass. The earlier `403 forbidden` store-presence and monetization failures
+  were resolved after the service-account permissions became effective.
+- Generated-content reports are submitted directly from the app to the
+  InetConnector-controlled HTTPS endpoint after explicit confirmation. The
+  prior external-mail-composer policy blocker is resolved.
+- Re-audited Google Play on 2026-07-29. All nine localized listings use
+  `Local AI - DMC`; the active one-time product has a German consumer price of
+  `4.99 EUR`; the public Play privacy URL returns HTTP 200; and all six
+  screenshots, icon, and feature graphic are present remotely.
+- The canonical Play release validation for the signed `1.1.0 (3)` AAB reports
+  zero automated blockers. Internal status is `completed`; production status
+  is `draft`. The only remaining release gate is manual confirmation of the
+  Console-only Data safety and policy declarations.
 - APK `1.0.1 (2)` was rechecked with Android build tools. It is package
   `com.inetconnector.dmc`, label `InetMind`, min SDK 33, target SDK 36, and has
   a valid v2 signature from the expected InetConnector certificate
@@ -433,16 +411,9 @@ Update this file and `README.md` together whenever behavior changes.
   locale files currently override only 15 reporting strings and inherit 99
   native model/import dialogs from English. Do not claim complete native
   localization until those strings are translated and device-checked.
-- Monetization requires a user decision before implementation. Google Play's
-  managed free trial for paid apps is currently limited to paid games and 60
-  minutes, so it cannot provide the requested three-day trial for InetMind.
-  A paid `4.99 EUR` app can ship without a three-day trial. To provide both a
-  three-day trial and a one-time `4.99 EUR` price under the single package, the
-  app must instead be free to install and implement a non-consumable Play
-  Billing unlock plus trial-state handling. Changing a published app from free
-  back to paid is not supported, so do not select the pricing model without
-  explicit user approval. Separate near-identical Full/Trial Play apps are not
-  the default because of Google's repetitive-content policy.
+- Monetization is implemented as a free-to-install app with one server-backed
+  three-day trial followed by the active non-consumable Play Billing product
+  `inetmind_full_unlock`. There is no subscription and no second Trial package.
 - The published `android-v1.0.0` tag predates the checked-in llama.cpp
   submodule pointer. Do not move that public tag. Publish the next Android
   patch release from the reproducible submodule-based source state.
@@ -739,6 +710,27 @@ Update this file and `README.md` together whenever behavior changes.
 - The annotated source tag is `android-play-v1.1.0`. It is immutable and points
   to the verified release commit; generated APK/AAB files and all credentials
   remain outside Git.
+- Store publication work completed through the official `gplay` API:
+  - all nine localized listings were pushed with title `Local AI - DMC`;
+  - the active product `inetmind_full_unlock` has nine listings and German
+    consumer price `4.99 EUR`;
+  - four German and two English phone screenshots, the 512x512 icon, and the
+    newly branded 1024x500 feature graphic were uploaded and remotely verified
+    by SHA-256;
+  - the public Play privacy policy was published to GitHub Pages and returned
+    HTTP 200;
+  - internal track `1.1.0 (3)` is `completed`;
+  - production track `1.1.0 (3)` is a validated `draft`.
+- `gplay validate` reported `ready: true`, zero blocking findings, one expected
+  warning because production remains `draft`, and two manual follow-ups.
+  `gplay preflight` found no errors; its only warning used an outdated 150 MiB
+  local threshold for the 162,363,966-byte AAB. Google Play accepted the AAB on
+  the internal track.
+- Do not switch production from `draft` to `completed` until a human has
+  confirmed the current Play Console forms for Data safety, AI-generated
+  content/reporting, target audience, content rating, ads, app access, and
+  policy messages. Those values cannot be read back or certified through the
+  current Android Publisher API.
 
 ## Planned Checks
 
