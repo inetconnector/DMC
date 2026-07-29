@@ -32,7 +32,7 @@ to validate than a more ad hoc retrieval system.
 - The Android package remains `com.inetconnector.dmc`; the visible app and
   Google Play name is **InetMind - Local AI** / **InetMind - Lokale KI**.
 - The current Google Play candidate is `1.1.0 (3)`. Its immutable source tag
-  is planned as `android-play-v1.1.0`.
+  is `android-play-v1.1.0`.
 - The design focuses on long context first, quality second, speed third.
 - DMC's original code is licensed under MIT. Bundled third-party components
   retain their own licenses and terms; see `THIRD_PARTY_NOTICES.md`.

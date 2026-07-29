@@ -736,9 +736,9 @@ Update this file and `README.md` together whenever behavior changes.
 - `build-android.bat` no longer uses the interactive Windows `timeout` command
   while waiting for release outputs and explicitly warns when signing is not
   configured instead of printing misleading input-redirection errors.
-- The planned annotated source tag is `android-play-v1.1.0`. Once created, it
-  must remain immutable and point to the verified release commit; generated
-  APK/AAB files and all credentials remain outside Git.
+- The annotated source tag is `android-play-v1.1.0`. It is immutable and points
+  to the verified release commit; generated APK/AAB files and all credentials
+  remain outside Git.
 
 ## Planned Checks
 
