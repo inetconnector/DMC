@@ -44,6 +44,9 @@ remains `com.inetconnector.dmc`.
   the final policy review remain Console-only confirmations. The production
   draft must not be changed to `completed` until those declarations have been
   manually reviewed.
+- The approved target audience is **18 and over only**. **Restrict minor
+  access** must be enabled in Play Console. Exact answers and reviewer text are maintained in
+  `play/CONSOLE_DECLARATIONS.md`.
 
 A dedicated service account is optional. Google Play allows the existing
 publishing service account to receive access to several selected apps. This
@@ -252,6 +255,9 @@ prices.
 These declarations are not inferred safely from an AAB and must match the
 current app behavior:
 
+- Use `play/CONSOLE_DECLARATIONS.md` as the complete Console checklist.
+- Select only **18 and over** as the target age group and enable
+  **Restrict minor access**. Do not select any younger age group.
 - Enter `https://inetconnector.github.io/DMC/privacy/play/` as the
   privacy-policy URL, after verifying HTTP 200.
 - Complete Data safety from `play/DATA_SAFETY.md`. Do not select "no data
@@ -266,7 +272,9 @@ current app behavior:
   action below assistant responses and submits confirmed reports directly to
   the controlled HTTPS endpoint without leaving the app.
 - Review target audience and content rating conservatively. The app is not
-  designed for children.
+  designed for children. The IARC rating remains the result of the separate,
+  truthful content questionnaire and must not be forced to 18 by inaccurate
+  answers.
 - Confirm that users obtain compatible models separately and that model
   licences remain the user's responsibility.
 

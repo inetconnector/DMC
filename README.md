@@ -132,6 +132,9 @@ The maintained Play submission sources are:
 
 - [`play/DATA_SAFETY.md`](play/DATA_SAFETY.md) for the exact Data safety answer
   matrix;
+- [`play/CONSOLE_DECLARATIONS.md`](play/CONSOLE_DECLARATIONS.md) for the
+  complete Console-only declaration sheet, including the **18 and over only**
+  target audience and minor-access restriction;
 - [`docs/BRAND_AND_PLAY_REVIEW.md`](docs/BRAND_AND_PLAY_REVIEW.md) for the name,
   trademark-screening limits, and policy review;
 - [`privacy/play/index.html`](privacy/play/index.html), intended for

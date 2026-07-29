@@ -102,7 +102,8 @@ does not receive payment-card or bank-account data through this implementation.
 - Answer **No health functionality** for the Play flavor. If the Console asks a
   differently worded question, verify the exact wording rather than inferring.
 - Select an age group suitable for general-purpose local generative AI; do not
-  target children.
+  target children. The approved target selection is **18 and over only**;
+  **Restrict minor access** must be enabled in Play Console.
 - Set ads to **No**.
 - Set the public support email to `apps@inetconnector.com`.
 - Use the Play privacy URL above, not the privacy policy for the full flavor.

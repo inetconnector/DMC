@@ -55,6 +55,10 @@ Update this file and `README.md` together whenever behavior changes.
   is stored as a validated `draft` in production. The same immutable source is
   tagged `android-play-v1.1.0`. Production is not public until the Console-only
   declarations below are manually confirmed.
+- The approved Play target audience is **18 and over only**.
+  **Restrict minor access** must be enabled in Play Console.
+  `play/CONSOLE_DECLARATIONS.md` contains the complete Console answer sheet and
+  reviewer note; these Console-only settings are not yet saved remotely.
 - The full flavor's bilingual, tracker-free privacy policy is versioned in
   `privacy/index.html` and published by GitHub Pages at
   `https://inetconnector.github.io/DMC/privacy/`. GitHub reported the latest
@@ -731,6 +735,11 @@ Update this file and `README.md` together whenever behavior changes.
   content/reporting, target audience, content rating, ads, app access, and
   policy messages. Those values cannot be read back or certified through the
   current Android Publisher API.
+- A completed production promotion was attempted after publishing permissions
+  became effective. Google rejected validation with
+  `Only releases with status draft may be created on draft app.` The edit was
+  explicitly deleted. This proves that the remaining blocker is the unfinished
+  Play Console app setup, not service-account authorization or the AAB.
 
 ## Planned Checks
 
