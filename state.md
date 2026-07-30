@@ -81,10 +81,11 @@ Update this file and `README.md` together whenever behavior changes.
   Pages build as `built`, and the public URL returned HTTP 200.
 - The medical-free Play policy is versioned separately at
   `privacy/play/index.html` and configured in `playRelease` as
-  `https://inetconnector.github.io/DMC/privacy/play/`. It was published through
-  GitHub Pages commit `f1aa9e9` and returns HTTP 200. The working tree now adds
-  the review-access disclosure; that revision still needs to be committed and
-  published.
+  `https://inetconnector.github.io/DMC/privacy/play/`. The reviewer-access
+  disclosure is committed on the project branch and was published separately
+  to `gh-pages` in commit `f676b2c192776c6c7e1c82637d54a67911a7dc8c`.
+  GitHub reported the build as `built`; the public URL returns HTTP 200 and the
+  30 July 2026 revision was read back successfully.
 - `play/DATA_SAFETY.md` contains the conservative Play-flavor Data safety
   answer matrix. It accounts for ML Kit diagnostics/per-installation
   identifiers, the trial service, in-app AI-response reports, device
