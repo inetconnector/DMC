@@ -32,8 +32,9 @@ to validate than a more ad hoc retrieval system.
   helper scripts.
 - The Android package remains `com.inetconnector.dmc`; the Google Play name in
   every supported locale is **Local AI - DMC**.
-- The current Google Play candidate is `1.1.0 (3)`. Its immutable source tag
-  is `android-play-v1.1.0`.
+- The current Google Play candidate is `1.1.1 (4)`, adding reusable reviewer
+  access. The previous signed release `1.1.0 (3)` remains tagged
+  `android-play-v1.1.0` and is active on the internal track.
 - The design focuses on long context first, quality second, speed third.
 - DMC's original code is licensed under MIT. Bundled third-party components
   retain their own licenses and terms; see `THIRD_PARTY_NOTICES.md`.
@@ -106,15 +107,18 @@ privacy-checked 1080x1920 captures from a Samsung S25. Subjects and suggested
 accessibility text are documented in
 [`play/screenshots/README.md`](play/screenshots/README.md).
 
-Version `1.1.0 (3)` is active on the internal test track and is also prepared
-as a validated production draft. It is built in two deliberately separate
-flavors:
+Version `1.1.0 (3)` remains active on the internal test track and is also
+prepared as a validated production draft. Candidate `1.1.1 (4)` adds a secure,
+reusable Google Play reviewer code that unlocks every premium function without
+a purchase or trial. Both versions use two deliberately separate flavors:
 
 - `playRelease` is the Google Play artifact. It contains no offline medical
   modules, medical import path, diagnosis feature, or treatment feature. It is
   free to install, starts one server-backed three-day trial, and then requires
   the active non-consumable Play Billing product `inetmind_full_unlock` for
-  permanent use. Its confirmed German end-user price is `4.99 EUR`.
+  permanent use. Its confirmed German end-user price is `4.99 EUR`. Authorized
+  Google Play reviewers can instead exchange the reusable Console-only review
+  code for an installation-bound signed entitlement.
 - `fullRelease` retains the existing optional offline knowledge-module system
   for direct distribution. It does not activate Play Billing or the trial gate.
 
@@ -124,9 +128,13 @@ Play Billing product, nine localized listings, nine localized release notes,
 four German screenshots, two English screenshots, icon, and feature graphic
 are present in Google Play. The dedicated Play privacy URL returns HTTP 200.
 The signed `1.1.0 (3)` AAB has no automated Play readiness blocker and is
-stored as a production draft. Public rollout is intentionally held until the
-Console-only Data safety and policy declarations have been manually confirmed;
-the Android Publisher API cannot read or certify those answers.
+stored as a production draft. The `1.1.1 (4)` source, server endpoint, R8
+release build, `lintVital`, DMC marker gate and medical-free Play verification
+pass; its local AAB still requires the private upload-keystore password before
+it can be uploaded. The complete Data safety answer set is saved in Play
+Console. Public rollout remains held until the bundle is signed and uploaded,
+then App access, the dependent 18+ target-audience declaration and the saved
+Console changes can be submitted together.
 The remotely verified public app details use `apps@inetconnector.com`,
 `+49 931 2078432`, and `https://github.com/inetconnector/DMC`.
 
@@ -179,7 +187,7 @@ Release signing uses `DMC_RELEASE_STORE_FILE`,
 `DMC_RELEASE_STORE_PASSWORD`, `DMC_RELEASE_KEY_ALIAS`, and
 `DMC_RELEASE_KEY_PASSWORD`. Secrets remain outside Git. The signed Play bundle
 is written below
-`publish/com.inetconnector.dmc/1.1.0+3/` and is never committed.
+`publish/com.inetconnector.dmc/1.1.1+4/` and is never committed.
 
 Both helpers rebuild the Svelte Web UI and synchronize the resulting `dist/`
 files into the Android assets before Gradle runs. This prevents an APK from
@@ -302,8 +310,10 @@ device provisioning and QA. It accepts only an existing package inside the
 app's private cache, invokes the normal validated transactional importer, and
 is disabled automatically in non-debuggable release builds.
 
-The current signed Local AI - DMC Play release was built successfully from the
-immutable `android-play-v1.1.0` source tag.
+The currently uploaded signed Local AI - DMC Play release was built
+successfully from the immutable `android-play-v1.1.0` source tag. Candidate
+`1.1.1 (4)` is intentionally not tagged until its signed bundle and Console
+handoff are complete.
 
 Versioned release artifacts:
 
@@ -323,6 +333,9 @@ must not be committed. The current signed release and Play submission archive
 are mirrored to the branch directory on the DiskStation after verification.
 Google Play internal testing currently serves `1.1.0 (3)` with status
 `completed`; production contains the same version with status `draft`.
+The local `1.1.1 (4)` candidate is under
+`publish/com.inetconnector.dmc/1.1.1+4/`, but its APK/AAB are unsigned until
+the existing upload-keystore password is supplied.
 
 If you want to check the launch without starting the server, use:
 

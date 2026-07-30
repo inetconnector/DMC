@@ -61,6 +61,10 @@ try {
         handleTrialStatus($db, $body);
     }
 
+    if ($path === 'review/access') {
+        handleReviewAccess($db, $body, $config, $rateKey);
+    }
+
     if ($path === 'reports') {
         enforceRateLimit($db, 'report:' . $rateKey, 10, 24 * 60 * 60);
         handleReport($db, $body);
@@ -176,6 +180,107 @@ function handleTrialStatus(PDO $db, array $body): never
         'expiresAt' => milliseconds((int) $trial['expires_at']),
         'serverTime' => milliseconds($now),
     ]);
+}
+
+function handleReviewAccess(PDO $db, array $body, array $config, string $rateKey): never
+{
+    $installationId = strtolower(requireString($body, 'installationId', 64));
+    if (!preg_match('/^[a-f0-9]{64}$/', $installationId)) {
+        respond(400, ['error' => 'Invalid installation identifier.']);
+    }
+    $appVersion = optionalString($body, 'appVersion', 64, 'unknown');
+    $locale = optionalString($body, 'locale', 35, 'und');
+    $codeHash = (string) ($config['reviewAccessCodeHash'] ?? '');
+    $tokenSecret = (string) ($config['reviewTokenSecret'] ?? '');
+    if ($codeHash === '' || strlen($tokenSecret) < 32) {
+        respond(503, ['error' => 'Review access is unavailable.']);
+    }
+
+    if (isset($body['accessCode'])) {
+        enforceRateLimit($db, 'review-code:' . $rateKey, 20, 24 * 60 * 60);
+        $accessCode = requireString($body, 'accessCode', 128);
+        if (!password_verify($accessCode, $codeHash)) {
+            respond(403, ['error' => 'Invalid review access code.']);
+        }
+        $accessToken = issueReviewAccessToken($installationId, $tokenSecret);
+        respond(200, [
+            'active' => true,
+            'accessToken' => $accessToken,
+            'appVersion' => $appVersion,
+            'locale' => $locale,
+            'serverTime' => milliseconds(time()),
+        ]);
+    }
+
+    if (isset($body['accessToken'])) {
+        enforceRateLimit($db, 'review-token:' . $rateKey, 240, 24 * 60 * 60);
+        $accessToken = requireString($body, 'accessToken', 1024);
+        if (!verifyReviewAccessToken($accessToken, $installationId, $tokenSecret)) {
+            respond(403, ['error' => 'Invalid review access token.']);
+        }
+        respond(200, [
+            'active' => true,
+            'appVersion' => $appVersion,
+            'locale' => $locale,
+            'serverTime' => milliseconds(time()),
+        ]);
+    }
+
+    respond(400, ['error' => 'Review access code or token required.']);
+}
+
+function issueReviewAccessToken(string $installationId, string $secret): string
+{
+    $payload = json_encode([
+        'version' => 1,
+        'installationId' => $installationId,
+        'issuedAt' => time(),
+    ], JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR);
+    $encodedPayload = base64UrlEncode($payload);
+    $signature = hash_hmac('sha256', $encodedPayload, $secret);
+    return $encodedPayload . '.' . $signature;
+}
+
+function verifyReviewAccessToken(
+    string $token,
+    string $installationId,
+    string $secret
+): bool {
+    if (!preg_match('/^([A-Za-z0-9_-]{20,900})\.([a-f0-9]{64})$/', $token, $matches)) {
+        return false;
+    }
+    $encodedPayload = $matches[1];
+    $expectedSignature = hash_hmac('sha256', $encodedPayload, $secret);
+    if (!hash_equals($expectedSignature, $matches[2])) {
+        return false;
+    }
+    $decodedPayload = base64UrlDecode($encodedPayload);
+    if ($decodedPayload === null) {
+        return false;
+    }
+    try {
+        $payload = json_decode($decodedPayload, true, 8, JSON_THROW_ON_ERROR);
+    } catch (JsonException) {
+        return false;
+    }
+    return is_array($payload)
+        && ($payload['version'] ?? null) === 1
+        && hash_equals((string) ($payload['installationId'] ?? ''), $installationId);
+}
+
+function base64UrlEncode(string $value): string
+{
+    return rtrim(strtr(base64_encode($value), '+/', '-_'), '=');
+}
+
+function base64UrlDecode(string $value): ?string
+{
+    $padding = (4 - strlen($value) % 4) % 4;
+    $decoded = base64_decode(
+        strtr($value . str_repeat('=', $padding), '-_', '+/'),
+        true
+    );
+    return is_string($decoded) ? $decoded : null;
 }
 
 function handleReport(PDO $db, array $body): never

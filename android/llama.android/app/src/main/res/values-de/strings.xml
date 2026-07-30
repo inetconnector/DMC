@@ -32,6 +32,13 @@
     <string name="purchase_unavailable_message">Google Play konnte die dauerhafte Freischaltung nicht laden. Installiere die Play-Store-Version, prüfe die Verbindung und versuche es erneut.\n\n%1$s</string>
     <string name="purchase_pending_message">Die Zahlung ist noch ausstehend. Der Zugriff wird freigeschaltet, sobald Google Play die Zahlung bestätigt.</string>
     <string name="purchase_failed_message">Der Kauf konnte nicht abgeschlossen werden.\n\n%1$s</string>
+    <string name="review_access_button">Google-Play-Prüfzugang</string>
+    <string name="review_access_title">Prüfzugang</string>
+    <string name="review_access_message">Dieser Zugang ist autorisierten Google-Play-Prüfern vorbehalten. Gib den wiederverwendbaren Prüfcode aus der Play Console ein.</string>
+    <string name="review_access_hint">Prüfcode</string>
+    <string name="review_access_activate">Für Prüfung freischalten</string>
+    <string name="review_access_code_required">Gib den Prüfcode ein.</string>
+    <string name="review_access_failed_message">Der Prüfzugang konnte nicht aktiviert werden. Prüfe Code und Verbindung und versuche es erneut.\n\n%1$s</string>
     <string name="dialog_model_required_title">Modell erforderlich</string>
     <string name="dialog_model_required_message">Bitte wähle eine GGUF-Datei. Die App empfiehlt automatisch die beste Wahl fuer das erkannte Geraet und den verfuegbaren Arbeitsspeicher.</string>
     <string name="dialog_model_required_choose">Modell waehlen</string>

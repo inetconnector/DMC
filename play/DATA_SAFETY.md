@@ -1,6 +1,6 @@
 # Google Play Data Safety - Local AI - DMC
 
-Last audited: 2026-07-28
+Last audited: 2026-07-30
 
 Package: `com.inetconnector.dmc`
 Play flavor: `playRelease`
@@ -36,6 +36,13 @@ For the user-confirmed three-day trial, the app sends:
 The identifier is collected, not shared, and is required for app functionality
 and fraud prevention. Chats, files, models and prompts are not included. Trial
 records are deleted no later than 400 days after their last access.
+
+Authorized Google Play reviewers can send the same identifier, app version and
+language together with the Console-only review code. The server verifies the
+code and returns an installation-bound signed entitlement. The cleartext code
+and entitlement are not stored server-side; the entitlement remains locally in
+the app. This does not add a new user-data category or change the purposes
+above.
 
 ### Optional user-generated content
 

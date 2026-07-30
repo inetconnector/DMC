@@ -1,6 +1,6 @@
 # State
 
-Last updated: 2026-07-29
+Last updated: 2026-07-30
 
 This file is the live development log for the repository.
 Update this file and `README.md` together whenever behavior changes.
@@ -12,10 +12,12 @@ Update this file and `README.md` together whenever behavior changes.
   licence-compliant offline-reference implementation.
 - Commit: use `git rev-parse --short HEAD` for the current revision; this file
   deliberately avoids embedding a hash that becomes stale in its own commit.
-- Working tree target: Android `1.1.0 (3)` with physically separated `full`
-  and `play` distribution flavors. The final release commit and immutable
-  annotated tag are prepared only after all checks below pass. Generated
-  APK/AAB files remain in the ignored `publish/` directory.
+- Working tree target: Android `1.1.1 (4)` with physically separated `full`
+  and `play` distribution flavors. This candidate adds a reusable,
+  server-verified Google Play reviewer entitlement. The final release commit
+  and immutable annotated tag are prepared only after signing and all checks
+  below pass. Generated APK/AAB files remain in the ignored `publish/`
+  directory.
 - Active target: DMC (Deterministic Multiresolution Context)
 - `docs/LARGE_CONTEXT.md` and `docs/GROSSER_KONTEXT.md` document the implemented
   Android long-context pipeline in accessible English and German, including
@@ -43,7 +45,8 @@ Update this file and `README.md` together whenever behavior changes.
 - `play/metadata/` contains validated title, short-description, and
   full-description files for `en-US`, `de-DE`, `fr-FR`, `es-ES`, `it-IT`,
   `nl-NL`, `pl-PL`, `pt-BR`, and `tr-TR`. All nine remote listings now use
-  **Local AI - DMC**. Release notes exist for `1.0.0`, `1.0.1`, and `1.1.0`.
+  **Local AI - DMC**. Release notes exist for `1.0.0`, `1.0.1`, `1.1.0`, and
+  `1.1.1`.
   `play/graphics/` contains the final 512x512 icon, the Local-AI-DMC-branded
   1024x500 feature graphic, and editable SVG sources.
 - The Play Console app is `com.inetconnector.dmc`; the package is immutable.
@@ -53,12 +56,21 @@ Update this file and `README.md` together whenever behavior changes.
   storing a credential in this repository.
 - Signed version `1.1.0 (3)` has status `completed` on the internal track and
   is stored as a validated `draft` in production. The same immutable source is
-  tagged `android-play-v1.1.0`. Production is not public until the Console-only
-  declarations below are manually confirmed.
+  tagged `android-play-v1.1.0`. Candidate `1.1.1 (4)` builds successfully but
+  is currently unsigned because the existing upload-keystore password is not
+  present in the local environment. It has not been uploaded.
 - The approved Play target audience is **18 and over only**.
   **Restrict minor access** must be enabled in Play Console.
   `play/CONSOLE_DECLARATIONS.md` contains the complete Console answer sheet and
-  reviewer note; these Console-only settings are not yet saved remotely.
+  reviewer instructions. Advertising ID, government-app, financial-function,
+  and health-app declarations are saved remotely. The Data safety form now has
+  all top-level answers, data types and per-type handling answers saved as a
+  Console draft: optional user-generated content; required crash logs,
+  diagnostics, other performance data and device IDs; no developer sharing.
+  App access and the dependent 18+ target-audience form remain open until the
+  signed `1.1.1 (4)` bundle containing reviewer access is uploaded. The saved
+  Data safety changes still need to be submitted with the other Console
+  changes.
 - Public app details are now stored and remotely verified through the Android
   Publisher API: support email `apps@inetconnector.com`, phone
   `+49 931 2078432`, website `https://github.com/inetconnector/DMC`, and default
@@ -70,7 +82,9 @@ Update this file and `README.md` together whenever behavior changes.
 - The medical-free Play policy is versioned separately at
   `privacy/play/index.html` and configured in `playRelease` as
   `https://inetconnector.github.io/DMC/privacy/play/`. It was published through
-  GitHub Pages commit `f1aa9e9` and returns HTTP 200.
+  GitHub Pages commit `f1aa9e9` and returns HTTP 200. The working tree now adds
+  the review-access disclosure; that revision still needs to be committed and
+  published.
 - `play/DATA_SAFETY.md` contains the conservative Play-flavor Data safety
   answer matrix. It accounts for ML Kit diagnostics/per-installation
   identifiers, the trial service, in-app AI-response reports, device
@@ -86,6 +100,13 @@ Update this file and `README.md` together whenever behavior changes.
   price is `4.99 EUR`. The production API is live at
   `https://apps.inetconnector.com/inetmind/v1`; health, trial activation, and
   in-app report smoke tests passed and synthetic records were removed.
+- The production API now also serves `POST /inetmind/v1/review/access`.
+  A long reusable code is stored only as a password hash in the private Plesk
+  configuration; a separate private HMAC secret signs installation-bound
+  entitlements. The cleartext code is retained only for the Play Console
+  handoff in the active task. Production smoke tests passed for activation,
+  token reuse, and HTTP 403 on an invalid code. The deployed `index.php` hash
+  matches the repository source, and timestamped server/config backups exist.
 - All six screenshots, both locale copies of the icon and feature graphic, and
   all nine localized store listings are present remotely. Their remote hashes
   match the version-controlled assets.
@@ -108,6 +129,18 @@ Update this file and `README.md` together whenever behavior changes.
   only under ignored `runtime/knowledge/phone-backup/`.
 
 ## Verified Working
+
+- `:app:compilePlayDebugKotlin`, `:app:testPlayDebugUnitTest`,
+  `:app:compileFullDebugKotlin`, and `:app:testFullDebugUnitTest` pass for
+  candidate `1.1.1 (4)`.
+- The complete Play release build regenerated the Web UI and notices, compiled
+  both native ABIs, ran R8 and `lintVitalPlayRelease`, assembled APK/AAB, and
+  passed the DMC marker and medical-free Play artifact checks. The generated
+  bundle is unsigned because release-signing credentials were not available;
+  do not upload it as-is.
+- All nine resource files contain the seven reviewer-access strings, all nine
+  `1.1.1` release-note locales validate, Play metadata validation reports zero
+  errors, and the bilingual privacy source contains the new disclosure.
 
 - The DMC reference stack exists in `dmc/` and `cpp/`.
 - The Android native library directly includes `cpp/dmc_reference.hpp`; DMC is

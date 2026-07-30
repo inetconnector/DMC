@@ -32,6 +32,13 @@
     <string name="purchase_unavailable_message">Google Play no pudo cargar el desbloqueo permanente. Instala la versión de Play Store, comprueba la conexión e inténtalo de nuevo.\n\n%1$s</string>
     <string name="purchase_pending_message">El pago está pendiente. El acceso se desbloqueará cuando Google Play confirme el pago.</string>
     <string name="purchase_failed_message">No se pudo completar la compra.\n\n%1$s</string>
+    <string name="review_access_button">Acceso para revisores de Google Play</string>
+    <string name="review_access_title">Acceso de revisión</string>
+    <string name="review_access_message">Este acceso está reservado para revisores autorizados de Google Play. Introduce el código reutilizable proporcionado en Play Console.</string>
+    <string name="review_access_hint">Código de revisión</string>
+    <string name="review_access_activate">Desbloquear para revisión</string>
+    <string name="review_access_code_required">Introduce el código de revisión.</string>
+    <string name="review_access_failed_message">No se pudo activar el acceso de revisión. Comprueba el código y la conexión e inténtalo de nuevo.\n\n%1$s</string>
     <string name="dialog_knowledge_title">Referencias sin conexión</string>
     <string name="dialog_knowledge_empty">No hay módulos de referencia sin conexión instalados.</string>
     <string name="dialog_knowledge_import">Importar archivo</string>

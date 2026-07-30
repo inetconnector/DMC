@@ -392,6 +392,7 @@ FodyWeavers.xsd
 
 # Local writable Gradle cache used by restricted/offline build environments.
 /.gradle-sandbox/
+/.gradle-build-home/
 
 # Google Play publishing: commit only the non-secret package pin. Service
 # account JSON files and machine-local gplay state must never enter Git.

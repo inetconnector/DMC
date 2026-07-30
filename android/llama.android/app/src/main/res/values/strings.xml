@@ -32,6 +32,13 @@
     <string name="purchase_unavailable_message">Google Play could not load the permanent unlock. Install the Play Store version, check your connection and try again.\n\n%1$s</string>
     <string name="purchase_pending_message">The payment is pending. Access will be unlocked after Google Play confirms the payment.</string>
     <string name="purchase_failed_message">The purchase could not be completed.\n\n%1$s</string>
+    <string name="review_access_button">Google Play reviewer access</string>
+    <string name="review_access_title">Reviewer access</string>
+    <string name="review_access_message">This access is reserved for authorized Google Play reviewers. Enter the reusable review code supplied in Play Console.</string>
+    <string name="review_access_hint">Review code</string>
+    <string name="review_access_activate">Unlock for review</string>
+    <string name="review_access_code_required">Enter the review code.</string>
+    <string name="review_access_failed_message">Reviewer access could not be activated. Check the code and connection, then try again.\n\n%1$s</string>
     <string name="dictation_prompt">Speak now</string>
     <string name="error_no_gguf_in_models_dir">No GGUF model found in app models directory: %1$s</string>
     <string name="error_no_mobile_gguf">No mobile GGUF found (max 5 GiB). Please use a smaller model such as Gemma 4 E2B/E4B Q4_0 or a 3B/4B Q4_K_M model.</string>

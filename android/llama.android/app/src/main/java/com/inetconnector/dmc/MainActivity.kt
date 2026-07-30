@@ -28,6 +28,7 @@ import android.os.Looper
 import android.os.SystemClock
 import android.provider.OpenableColumns
 import android.text.Html
+import android.text.InputType
 import android.util.Base64
 import android.util.Log
 import android.graphics.Color
@@ -388,6 +389,15 @@ class MainActivity : AppCompatActivity() {
     }
 
     private suspend fun resolvePlayAccess() {
+        val trial = trialAccessService ?: return
+        if (trial.hasReviewAccess()) {
+            withContext(Dispatchers.IO) {
+                runCatching { trial.refreshReviewAccess(appVersionLabel()) }
+            }
+            startInferenceFlow()
+            return
+        }
+
         val billing = billingManager ?: return
         val snapshot = runCatching { billing.querySnapshot() }
             .getOrElse {
@@ -403,7 +413,6 @@ class MainActivity : AppCompatActivity() {
             return
         }
 
-        val trial = trialAccessService ?: return
         if (!trial.hasBeenActivated()) {
             showTrialActivationDialog(snapshot)
             return
@@ -434,7 +443,7 @@ class MainActivity : AppCompatActivity() {
         )
         accessDialog = AlertDialog.Builder(this)
             .setTitle(R.string.trial_intro_title)
-            .setMessage(message)
+            .setView(buildAccessMessageView(message, snapshot, trialExpired = false))
             .setCancelable(false)
             .setPositiveButton(R.string.trial_start_button) { _, _ ->
                 activateTrial(snapshot)
@@ -447,10 +456,6 @@ class MainActivity : AppCompatActivity() {
             }
             .create()
             .also { dialog ->
-                dialog.setOnShowListener {
-                    dialog.findViewById<TextView>(android.R.id.message)?.movementMethod =
-                        LinkMovementMethod.getInstance()
-                }
                 dialog.show()
             }
     }
@@ -482,9 +487,10 @@ class MainActivity : AppCompatActivity() {
         if (isFinishing || isDestroyed) return
         accessDialog?.dismiss()
         val price = snapshot.formattedPrice ?: getString(R.string.unlock_price_fallback)
+        val message = getString(R.string.trial_expired_message, price)
         accessDialog = AlertDialog.Builder(this)
             .setTitle(R.string.trial_expired_title)
-            .setMessage(getString(R.string.trial_expired_message, price))
+            .setView(buildAccessMessageView(message, snapshot, trialExpired = true))
             .setCancelable(false)
             .setPositiveButton(R.string.unlock_button) { _, _ ->
                 launchUnlockPurchase(snapshot)
@@ -497,6 +503,103 @@ class MainActivity : AppCompatActivity() {
             }
             .create()
             .also { it.show() }
+    }
+
+    private fun buildAccessMessageView(
+        message: CharSequence,
+        snapshot: BillingSnapshot,
+        trialExpired: Boolean
+    ): View {
+        val density = resources.displayMetrics.density
+        val horizontalPadding = (24 * density).roundToInt()
+        val bottomPadding = (8 * density).roundToInt()
+        return LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            setPadding(horizontalPadding, 0, horizontalPadding, bottomPadding)
+            addView(
+                TextView(this@MainActivity).apply {
+                    text = message
+                    movementMethod = LinkMovementMethod.getInstance()
+                    setTextAppearance(android.R.style.TextAppearance_Material_Body1)
+                },
+                LinearLayout.LayoutParams(
+                    LinearLayout.LayoutParams.MATCH_PARENT,
+                    LinearLayout.LayoutParams.WRAP_CONTENT
+                )
+            )
+            addView(
+                Button(this@MainActivity).apply {
+                    setText(R.string.review_access_button)
+                    setOnClickListener {
+                        accessDialog?.dismiss()
+                        showReviewAccessDialog(snapshot, trialExpired)
+                    }
+                },
+                LinearLayout.LayoutParams(
+                    LinearLayout.LayoutParams.MATCH_PARENT,
+                    LinearLayout.LayoutParams.WRAP_CONTENT
+                ).apply {
+                    topMargin = (12 * density).roundToInt()
+                }
+            )
+        }
+    }
+
+    private fun showReviewAccessDialog(
+        snapshot: BillingSnapshot,
+        trialExpired: Boolean
+    ) {
+        val trial = trialAccessService ?: return
+        val input = EditText(this).apply {
+            hint = getString(R.string.review_access_hint)
+            inputType = InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_VARIATION_PASSWORD
+            isSingleLine = true
+        }
+        val dialog = AlertDialog.Builder(this)
+            .setTitle(R.string.review_access_title)
+            .setMessage(R.string.review_access_message)
+            .setView(input)
+            .setCancelable(false)
+            .setPositiveButton(R.string.review_access_activate, null)
+            .setNegativeButton(R.string.dialog_cancel) { _, _ ->
+                if (trialExpired) {
+                    showTrialExpiredDialog(snapshot)
+                } else {
+                    showTrialActivationDialog(snapshot)
+                }
+            }
+            .create()
+        accessDialog = dialog
+        dialog.setOnShowListener {
+            val activateButton = dialog.getButton(DialogInterface.BUTTON_POSITIVE)
+            activateButton.setOnClickListener {
+                val code = input.text?.toString().orEmpty().trim()
+                if (code.isBlank()) {
+                    input.error = getString(R.string.review_access_code_required)
+                    return@setOnClickListener
+                }
+                input.error = null
+                activateButton.isEnabled = false
+                lifecycleScope.launch(Dispatchers.IO) {
+                    val result = runCatching {
+                        trial.activateReviewAccess(code, appVersionLabel())
+                    }
+                    launch(Dispatchers.Main) {
+                        if (result.getOrNull()?.active == true) {
+                            dialog.dismiss()
+                            startInferenceFlow()
+                        } else {
+                            activateButton.isEnabled = true
+                            input.error = getString(
+                                R.string.review_access_failed_message,
+                                result.exceptionOrNull()?.message.orEmpty()
+                            )
+                        }
+                    }
+                }
+            }
+        }
+        dialog.show()
     }
 
     private fun launchUnlockPurchase(snapshot: BillingSnapshot) {

@@ -17,6 +17,11 @@ data class TrialStatus(
     val serverTimeMillis: Long
 )
 
+data class ReviewAccessStatus(
+    val active: Boolean,
+    val accessToken: String?
+)
+
 class TrialAccessService(
     context: Context,
     private val apiBaseUrl: String
@@ -25,6 +30,9 @@ class TrialAccessService(
     private val prefs = appContext.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
 
     fun hasBeenActivated(): Boolean = prefs.getBoolean(KEY_ACTIVATED, false)
+
+    fun hasReviewAccess(): Boolean =
+        prefs.getString(KEY_REVIEW_ACCESS_TOKEN, null).isNullOrBlank().not()
 
     fun cachedStatus(): TrialStatus? {
         if (!hasBeenActivated()) return null
@@ -72,6 +80,26 @@ class TrialAccessService(
         return status
     }
 
+    fun activateReviewAccess(code: String, appVersion: String): ReviewAccessStatus {
+        require(code.isNotBlank()) { "Review access code is required." }
+        return requestReviewAccess(
+            appVersion = appVersion,
+            accessCode = code.trim(),
+            accessToken = null
+        )
+    }
+
+    fun refreshReviewAccess(appVersion: String): ReviewAccessStatus {
+        val token = prefs.getString(KEY_REVIEW_ACCESS_TOKEN, null)
+            ?.takeIf { it.isNotBlank() }
+            ?: return ReviewAccessStatus(active = false, accessToken = null)
+        return requestReviewAccess(
+            appVersion = appVersion,
+            accessCode = null,
+            accessToken = token
+        )
+    }
+
     fun submitReport(
         reason: String,
         excerpt: String,
@@ -95,6 +123,32 @@ class TrialAccessService(
         return MessageDigest.getInstance("SHA-256")
             .digest(source.toByteArray(StandardCharsets.UTF_8))
             .joinToString("") { "%02x".format(it.toInt() and 0xff) }
+    }
+
+    private fun requestReviewAccess(
+        appVersion: String,
+        accessCode: String?,
+        accessToken: String?
+    ): ReviewAccessStatus {
+        val request = JSONObject()
+            .put("installationId", installationId())
+            .put("appVersion", appVersion.take(64))
+            .put("locale", Locale.getDefault().toLanguageTag().take(35))
+        accessCode?.let { request.put("accessCode", it.take(MAX_REVIEW_CODE_CHARS)) }
+        accessToken?.let { request.put("accessToken", it.take(MAX_REVIEW_TOKEN_CHARS)) }
+
+        val response = postJson("$apiBaseUrl/review/access", request)
+        val active = response.getBoolean("active")
+        val returnedToken = response.optString("accessToken")
+            .takeIf { it.isNotBlank() }
+            ?: accessToken
+        if (!active || returnedToken.isNullOrBlank()) {
+            throw IllegalStateException("Review access was not granted.")
+        }
+        prefs.edit()
+            .putString(KEY_REVIEW_ACCESS_TOKEN, returnedToken)
+            .apply()
+        return ReviewAccessStatus(active = true, accessToken = returnedToken)
     }
 
     private fun postJson(url: String, body: JSONObject): JSONObject {
@@ -140,6 +194,9 @@ class TrialAccessService(
         private const val KEY_EXPIRES_AT = "trial_expires_at"
         private const val KEY_SERVER_TIME = "trial_server_time"
         private const val KEY_ELAPSED_REALTIME = "trial_elapsed_realtime"
+        private const val KEY_REVIEW_ACCESS_TOKEN = "review_access_token"
+        private const val MAX_REVIEW_CODE_CHARS = 128
+        private const val MAX_REVIEW_TOKEN_CHARS = 1_024
         private const val CLOCK_ROLLBACK_TOLERANCE_MS = 5L * 60L * 1000L
     }
 }

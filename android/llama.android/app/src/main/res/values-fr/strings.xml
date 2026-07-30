@@ -32,6 +32,13 @@
     <string name="purchase_unavailable_message">Google Play n’a pas pu charger le déverrouillage définitif. Installez la version Play Store, vérifiez votre connexion et réessayez.\n\n%1$s</string>
     <string name="purchase_pending_message">Le paiement est en attente. L’accès sera déverrouillé après confirmation du paiement par Google Play.</string>
     <string name="purchase_failed_message">L’achat n’a pas pu être effectué.\n\n%1$s</string>
+    <string name="review_access_button">Accès des examinateurs Google Play</string>
+    <string name="review_access_title">Accès d’examen</string>
+    <string name="review_access_message">Cet accès est réservé aux examinateurs Google Play autorisés. Saisissez le code réutilisable fourni dans la Play Console.</string>
+    <string name="review_access_hint">Code d’examen</string>
+    <string name="review_access_activate">Déverrouiller pour l’examen</string>
+    <string name="review_access_code_required">Saisissez le code d’examen.</string>
+    <string name="review_access_failed_message">Impossible d’activer l’accès d’examen. Vérifiez le code et la connexion, puis réessayez.\n\n%1$s</string>
     <string name="dialog_knowledge_title">Références hors ligne</string>
     <string name="dialog_knowledge_empty">Aucun module de référence hors ligne n’est installé.</string>
     <string name="dialog_knowledge_import">Importer un fichier</string>

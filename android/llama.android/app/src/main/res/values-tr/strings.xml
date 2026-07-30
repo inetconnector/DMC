@@ -32,6 +32,13 @@
     <string name="purchase_unavailable_message">Google Play kalıcı kilit açma ürününü yükleyemedi. Play Store sürümünü yükleyin, bağlantınızı kontrol edin ve yeniden deneyin.\n\n%1$s</string>
     <string name="purchase_pending_message">Ödeme beklemede. Google Play ödemeyi onayladıktan sonra erişim açılacaktır.</string>
     <string name="purchase_failed_message">Satın alma tamamlanamadı.\n\n%1$s</string>
+    <string name="review_access_button">Google Play inceleyici erişimi</string>
+    <string name="review_access_title">İnceleyici erişimi</string>
+    <string name="review_access_message">Bu erişim yalnızca yetkili Google Play inceleyicileri içindir. Play Console’da sağlanan yeniden kullanılabilir inceleme kodunu girin.</string>
+    <string name="review_access_hint">İnceleme kodu</string>
+    <string name="review_access_activate">İnceleme için kilidi aç</string>
+    <string name="review_access_code_required">İnceleme kodunu girin.</string>
+    <string name="review_access_failed_message">İnceleyici erişimi etkinleştirilemedi. Kodu ve bağlantıyı kontrol edip tekrar deneyin.\n\n%1$s</string>
     <string name="dialog_knowledge_title">Çevrimdışı başvurular</string>
     <string name="dialog_knowledge_empty">Yüklü çevrimdışı başvuru modülü yok.</string>
     <string name="dialog_knowledge_import">Dosya içe aktar</string>

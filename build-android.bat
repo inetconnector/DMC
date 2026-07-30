@@ -112,8 +112,8 @@ goto :wait_for_file_loop
 :main
 for %%I in ("%~dp0.") do set "ROOT=%%~fI"
 set "APP_ID=com.inetconnector.dmc"
-set "APP_VERSION_NAME=1.1.0"
-set "APP_VERSION_CODE=3"
+set "APP_VERSION_NAME=1.1.1"
+set "APP_VERSION_CODE=4"
 set "ANDROID_DIR=%ROOT%\android\llama.android"
 set "WRAPPER_JAR=%ANDROID_DIR%\gradle\wrapper\gradle-wrapper.jar"
 set "VARIANT=debug"

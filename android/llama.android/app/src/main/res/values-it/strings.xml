@@ -32,6 +32,13 @@
     <string name="purchase_unavailable_message">Google Play non ha potuto caricare lo sblocco permanente. Installa la versione Play Store, controlla la connessione e riprova.\n\n%1$s</string>
     <string name="purchase_pending_message">Il pagamento è in sospeso. L’accesso verrà sbloccato dopo la conferma del pagamento da parte di Google Play.</string>
     <string name="purchase_failed_message">Impossibile completare l’acquisto.\n\n%1$s</string>
+    <string name="review_access_button">Accesso revisori Google Play</string>
+    <string name="review_access_title">Accesso per la revisione</string>
+    <string name="review_access_message">Questo accesso è riservato ai revisori Google Play autorizzati. Inserisci il codice riutilizzabile fornito nella Play Console.</string>
+    <string name="review_access_hint">Codice di revisione</string>
+    <string name="review_access_activate">Sblocca per la revisione</string>
+    <string name="review_access_code_required">Inserisci il codice di revisione.</string>
+    <string name="review_access_failed_message">Impossibile attivare l’accesso per la revisione. Controlla il codice e la connessione e riprova.\n\n%1$s</string>
     <string name="dialog_knowledge_title">Riferimenti offline</string>
     <string name="dialog_knowledge_empty">Non sono installati moduli di riferimento offline.</string>
     <string name="dialog_knowledge_import">Importa file</string>

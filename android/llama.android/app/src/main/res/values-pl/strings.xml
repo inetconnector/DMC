@@ -32,6 +32,13 @@
     <string name="purchase_unavailable_message">Google Play nie mógł wczytać trwałego odblokowania. Zainstaluj wersję z Google Play, sprawdź połączenie i spróbuj ponownie.\n\n%1$s</string>
     <string name="purchase_pending_message">Płatność oczekuje. Dostęp zostanie odblokowany po potwierdzeniu płatności przez Google Play.</string>
     <string name="purchase_failed_message">Nie udało się dokończyć zakupu.\n\n%1$s</string>
+    <string name="review_access_button">Dostęp dla recenzentów Google Play</string>
+    <string name="review_access_title">Dostęp do weryfikacji</string>
+    <string name="review_access_message">Ten dostęp jest przeznaczony wyłącznie dla upoważnionych recenzentów Google Play. Wpisz kod wielokrotnego użytku podany w Play Console.</string>
+    <string name="review_access_hint">Kod weryfikacyjny</string>
+    <string name="review_access_activate">Odblokuj do weryfikacji</string>
+    <string name="review_access_code_required">Wpisz kod weryfikacyjny.</string>
+    <string name="review_access_failed_message">Nie udało się aktywować dostępu do weryfikacji. Sprawdź kod i połączenie, a następnie spróbuj ponownie.\n\n%1$s</string>
     <string name="dialog_knowledge_title">Źródła offline</string>
     <string name="dialog_knowledge_empty">Nie zainstalowano żadnych modułów źródeł offline.</string>
     <string name="dialog_knowledge_import">Importuj plik</string>

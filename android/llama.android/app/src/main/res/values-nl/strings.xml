@@ -32,6 +32,13 @@
     <string name="purchase_unavailable_message">Google Play kon de permanente ontgrendeling niet laden. Installeer de Play Store-versie, controleer je verbinding en probeer het opnieuw.\n\n%1$s</string>
     <string name="purchase_pending_message">De betaling is in behandeling. Toegang wordt ontgrendeld nadat Google Play de betaling heeft bevestigd.</string>
     <string name="purchase_failed_message">De aankoop kon niet worden voltooid.\n\n%1$s</string>
+    <string name="review_access_button">Toegang voor Google Play-reviewers</string>
+    <string name="review_access_title">Reviewtoegang</string>
+    <string name="review_access_message">Deze toegang is uitsluitend voor geautoriseerde Google Play-reviewers. Voer de herbruikbare reviewcode uit de Play Console in.</string>
+    <string name="review_access_hint">Reviewcode</string>
+    <string name="review_access_activate">Ontgrendelen voor review</string>
+    <string name="review_access_code_required">Voer de reviewcode in.</string>
+    <string name="review_access_failed_message">Reviewtoegang kon niet worden geactiveerd. Controleer de code en verbinding en probeer het opnieuw.\n\n%1$s</string>
     <string name="dialog_knowledge_title">Offline referenties</string>
     <string name="dialog_knowledge_empty">Er zijn geen offline referentiemodules geïnstalleerd.</string>
     <string name="dialog_knowledge_import">Bestand importeren</string>

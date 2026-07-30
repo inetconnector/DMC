@@ -1,12 +1,12 @@
 # Google Play Console declarations
 
-Last audited: 2026-07-29
+Last audited: 2026-07-30
 
 Package: `com.inetconnector.dmc`
 
 Store name: **Local AI - DMC**
 
-Artifact scope: medical-free `playRelease` version `1.1.0 (3)`
+Artifact scope: medical-free `playRelease` candidate version `1.1.1 (4)`
 
 This file is the human-readable source of truth for Console-only declarations.
 It does not replace the answers stored in Google Play Console. Recheck every
@@ -43,16 +43,20 @@ an 18 rating.
 - Login required: **No**
 - Membership required: **No**
 - External hardware required: **No**
-- Core review access restricted: **No**
+- Core review access restricted by trial/purchase: **Yes**
+- Reusable Google Play reviewer access: **Yes**
+- Reviewer account or username: **Not required**
+- Reviewer access code: **Store only in Play Console; never commit it**
 
-Reviewer note:
+Reviewer instructions (English, as required by Google Play):
 
-> Local AI - DMC runs compatible GGUF language models locally on the Android
-> device. No account or login is required. The app does not bundle a language
-> model; reviewers may import or download a compatible GGUF model from the
-> model manager. The app offers one three-day trial and a permanent one-time
-> Google Play unlock. The Google Play artifact contains no medical knowledge,
-> diagnosis, treatment, or medical import functionality.
+> No account or username is required. Launch the app. On the trial or purchase
+> screen, tap "Google Play reviewer access", enter the reusable review code
+> provided in this Play Console credential, and tap "Unlock for review". All
+> premium functionality is then available without a purchase or trial. The
+> code is reusable, works worldwide, and does not require 2FA. Local AI - DMC
+> runs compatible GGUF language models locally. The app does not bundle a
+> model; use the in-app model downloader or import a compatible GGUF file.
 
 ## Privacy policy
 
@@ -157,7 +161,8 @@ regional authorities, not the developer, determine the displayed rating.
 1. Open **Policy and programmes > App content**.
 2. Save the privacy-policy URL.
 3. Set **Ads** to No.
-4. Set **App access** to unrestricted/no login and add the reviewer note above.
+4. Set **App access** to restricted, create the reusable review credential, and
+   enter the English instructions above plus the private review code.
 5. Set **Target audience** to **18 and over only**.
 6. Enable **Restrict minor access**.
 7. Complete and submit the IARC content rating questionnaire truthfully.
@@ -166,8 +171,8 @@ regional authorities, not the developer, determine the displayed rating.
 10. Declare no health or medical functionality for `playRelease`.
 11. Resolve every remaining App-content task and policy message.
 12. Review all generated regional prices.
-13. Change production `1.1.0 (3)` from `draft` to `completed` and send it for
-    review.
+13. Sign and upload `1.1.1 (4)`, then change its production release from
+    `draft` to `completed` and send it for review.
 
 The Android Publisher API rejects a completed release while the application
 itself remains a draft. Google returned this again on 2026-07-30, including

@@ -23,6 +23,10 @@ remains `com.inetconnector.dmc`.
 - Signed version `1.1.0 (3)` is processed with status `completed` in the
   internal test track and is stored as a validated `draft` in production.
   It is not public yet.
+- Candidate `1.1.1 (4)` adds the reusable Google Play reviewer entitlement.
+  Its source, API endpoint, R8 build, `lintVital`, DMC marker gate, and
+  medical-free artifact verification pass. The local bundle is unsigned until
+  the existing upload-keystore password is supplied.
 - Its `playRelease` flavor contains no
   medical knowledge modules, no medical import path, and no diagnosis or
   treatment functionality. The separate `fullRelease` flavor retains optional
@@ -31,7 +35,7 @@ remains `com.inetconnector.dmc`.
   then requires the permanent non-consumable product
   `inetmind_full_unlock`. The product is active in all nine listing languages;
   the confirmed German end-user price is `4.99 EUR`.
-- Localized release notes for all nine locales are versioned for `1.1.0`.
+- Localized release notes for all nine locales are versioned through `1.1.1`.
 - Validated store listings for the same nine locales, German and English phone
   screenshots, the icon, and the feature graphic are versioned under `play/`.
 - The shared service account has effective publishing permissions. All nine
@@ -50,6 +54,10 @@ remains `com.inetconnector.dmc`.
 - The approved target audience is **18 and over only**. **Restrict minor
   access** must be enabled in Play Console. Exact answers and reviewer text are maintained in
   `play/CONSOLE_DECLARATIONS.md`.
+- The production first-party API accepts the Console-only reusable review code
+  and returns an installation-bound signed entitlement. The code and signing
+  secret exist only in private configuration; the cleartext code must be kept
+  in Play Console and a password manager, never in this repository.
 
 A dedicated service account is optional. Google Play allows the existing
 publishing service account to receive access to several selected apps. This
@@ -189,7 +197,7 @@ Then validate the exact current artifact before any upload:
 ```powershell
 gplay validate `
   --package com.inetconnector.dmc `
-  --bundle ".\publish\com.inetconnector.dmc\1.1.0+3\com.inetconnector.dmc-1.1.0+3-play-release.aab" `
+  --bundle ".\publish\com.inetconnector.dmc\1.1.1+4\com.inetconnector.dmc-1.1.1+4-play-release.aab" `
   --track internal `
   --strict
 ```
@@ -228,15 +236,16 @@ Use the high-level command only after the validation report is clean:
 gplay release `
   --package com.inetconnector.dmc `
   --track internal `
-  --bundle ".\publish\com.inetconnector.dmc\1.1.0+3\com.inetconnector.dmc-1.1.0+3-play-release.aab" `
+  --bundle ".\publish\com.inetconnector.dmc\1.1.1+4\com.inetconnector.dmc-1.1.1+4-play-release.aab" `
   --listings-dir .\play\metadata `
   --screenshots-dir .\play\screenshots `
-  --release-notes '@.\play\release-notes\1.1.0.json' `
+  --release-notes '@.\play\release-notes\1.1.1.json' `
   --wait
 ```
 
-Version codes `1` and `2` have already been uploaded and cannot be reused. The
-current candidate uses version code `3`; every later bundle must increment it.
+Version codes `1`, `2`, and `3` have already been uploaded and cannot be
+reused. The current candidate uses version code `4`; every later bundle must
+increment it.
 
 Push the local listings and media through a fresh edit. Verify the uploaded
 hashes before committing. The installed CLI currently probes the retired
@@ -267,7 +276,10 @@ current app behavior:
   collected": bundled ML Kit components document diagnostics, usage analytics,
   and a per-installation identifier; the trial service and optional response
   reports are disclosed separately.
-- Declare no ads and no account/login requirement.
+- Declare no ads and no user account/login requirement. App access is
+  nevertheless restricted by the trial/purchase gate, so provide the reusable
+  reviewer code and exact English instructions from
+  `play/CONSOLE_DECLARATIONS.md`.
 - Declare that `playRelease` has no health or medical functionality. Never use
   the separate full flavor or its optional modules when answering Play Console
   questions.
@@ -292,8 +304,8 @@ mandatory Console declarations have all been verified:
 
 ```powershell
 git status --short
-git tag -a android-play-v1.1.0 -m "Local AI - DMC Android Play 1.1.0 (3)"
-git push origin android-play-v1.1.0
+git tag -a android-play-v1.1.1 -m "Local AI - DMC Android Play 1.1.1 (4)"
+git push origin android-play-v1.1.1
 ```
 
 Never move or reuse the tag. If any source changes after tagging, increment the
