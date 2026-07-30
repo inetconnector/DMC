@@ -52,7 +52,7 @@
     <h1>Local AI - DMC</h1>
     <p><strong>Datenschutzerklärung / Privacy Policy</strong><br>
       Google-Play-Paket: <code>com.inetconnector.dmc</code><br>
-      Stand / Effective date: 28. Juli 2026 / 28 July 2026
+      Stand / Effective date: 30. Juli 2026 / 30 July 2026
     </p>
     <nav><a href="#de">Deutsch</a><a href="#en">English</a></nav>
   </header>
@@ -72,7 +72,7 @@
       erforderlich. Die Google-Play-Version enthält keine medizinischen
       Wissens-, Diagnose- oder Behandlungsfunktionen.</p>
 
-    <h3>3. Dreitägiger Testzeitraum</h3>
+    <h3>3. Dreitägiger Testzeitraum und Google-Play-Prüfzugang</h3>
     <p>Der Testzeitraum wird erst nach ausdrücklicher Bestätigung aktiviert.
       Dabei übermittelt die App an <code>apps.inetconnector.com</code> eine aus
       der Android-Installationskennung gebildete pseudonyme SHA-256-Kennung,
@@ -81,6 +81,13 @@
       Daten dienen der Bereitstellung und dem Schutz des einmaligen
       Testzeitraums und werden spätestens 400 Tage nach dem letzten Zugriff
       gelöscht.</p>
+    <p>Autorisierte Google-Play-Prüfer können stattdessen den in der Play
+      Console hinterlegten Prüfcode verwenden. Zur Prüfung übermittelt die App
+      den Prüfcode, dieselbe pseudonyme Installationskennung, App-Version und
+      Sprache verschlüsselt an InetConnector. Der Server gibt ein
+      installationsgebundenes, signiertes Zugriffstoken zurück. Prüfcode und
+      Zugriffstoken werden nicht serverseitig gespeichert; das Token verbleibt
+      lokal in der App.</p>
 
     <h3>4. Einmaliger Kauf über Google Play</h3>
     <p>Nach dem Test kann die App einmalig über Google Play dauerhaft
@@ -148,7 +155,7 @@
       The Google Play version contains no medical knowledge, diagnosis or
       treatment functionality.</p>
 
-    <h3>3. Three-day trial</h3>
+    <h3>3. Three-day trial and Google Play review access</h3>
     <p>The trial starts only after explicit confirmation. The app then sends to
       <code>apps.inetconnector.com</code> a pseudonymous SHA-256 identifier
       derived from the Android installation identifier, the app version and
@@ -156,6 +163,12 @@
       start, expiry and last access are stored to provide and protect the
       one-time trial. Records are deleted no later than 400 days after their
       last access.</p>
+    <p>Authorized Google Play reviewers can instead use the review code stored
+      in Play Console. For verification, the app sends the review code, the
+      same pseudonymous installation identifier, app version and language to
+      InetConnector over HTTPS. The server returns an installation-bound,
+      signed access token. The review code and access token are not stored on
+      the server; the token remains locally in the app.</p>
 
     <h3>4. One-time Google Play purchase</h3>
     <p>After the trial, permanent access can be purchased once through Google
