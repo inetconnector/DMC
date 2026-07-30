@@ -12,12 +12,11 @@ Update this file and `README.md` together whenever behavior changes.
   licence-compliant offline-reference implementation.
 - Commit: use `git rev-parse --short HEAD` for the current revision; this file
   deliberately avoids embedding a hash that becomes stale in its own commit.
-- Working tree target: Android `1.1.1 (4)` with physically separated `full`
-  and `play` distribution flavors. This candidate adds a reusable,
-  server-verified Google Play reviewer entitlement. The final release commit
-  and immutable annotated tag are prepared only after signing and all checks
-  below pass. Generated APK/AAB files remain in the ignored `publish/`
-  directory.
+- Released target: Android `1.1.1 (4)` with physically separated `full` and
+  `play` distribution flavors. This release adds a reusable, server-verified
+  Google Play reviewer entitlement. The signed Play bundle is active on the
+  internal track and the production release is under Google review. Generated
+  APK/AAB files remain in the ignored `publish/` directory.
 - Active target: DMC (Deterministic Multiresolution Context)
 - `docs/LARGE_CONTEXT.md` and `docs/GROSSER_KONTEXT.md` document the implemented
   Android long-context pipeline in accessible English and German, including
@@ -54,23 +53,24 @@ Update this file and `README.md` together whenever behavior changes.
   monetization permissions. The local `dmc` profile alias references the same
   external credential as the existing `activitylauncher` profile without
   storing a credential in this repository.
-- Signed version `1.1.0 (3)` has status `completed` on the internal track and
-  is stored as a validated `draft` in production. The same immutable source is
-  tagged `android-play-v1.1.0`. Candidate `1.1.1 (4)` builds successfully but
-  is currently unsigned because the existing upload-keystore password is not
-  present in the local environment. It has not been uploaded.
+- Signed version `1.1.1 (4)` has status `completed` on the internal track.
+  Production version `1.1.1 (4)` plus 18 setup, Store, and policy changes were
+  submitted to Google review on 2026-07-30. The release is tagged
+  `android-play-v1.1.1`; the previous immutable source remains tagged
+  `android-play-v1.1.0`.
 - The approved Play target audience is **18 and over only**.
-  **Restrict minor access** must be enabled in Play Console.
+  **Restrict minor access** is enabled in Play Console.
   `play/CONSOLE_DECLARATIONS.md` contains the complete Console answer sheet and
   reviewer instructions. Advertising ID, government-app, financial-function,
-  and health-app declarations are saved remotely. The Data safety form now has
-  all top-level answers, data types and per-type handling answers saved as a
-  Console draft: optional user-generated content; required crash logs,
-  diagnostics, other performance data and device IDs; no developer sharing.
-  App access and the dependent 18+ target-audience form remain open until the
-  signed `1.1.1 (4)` bundle containing reviewer access is uploaded. The saved
-  Data safety changes still need to be submitted with the other Console
-  changes.
+  and health-app declarations are saved remotely. All ten App-content
+  declarations are complete. Data safety declares optional user-generated
+  content; required crash logs, diagnostics, other performance data and device
+  IDs; and no developer sharing. App access contains the reusable private
+  reviewer code and English instructions. The target audience is only 18+ and
+  Google Play blocks users classified as minors from finding, downloading, or
+  purchasing through the app.
+- Initial setup is complete: the app is free to install, categorized as
+  **Tools**, and has the verified public support email, phone, and website.
 - Public app details are now stored and remotely verified through the Android
   Publisher API: support email `apps@inetconnector.com`, phone
   `+49 931 2078432`, website `https://github.com/inetconnector/DMC`, and default
@@ -115,9 +115,12 @@ Update this file and `README.md` together whenever behavior changes.
   screenshots. The prior ICD-10 module screenshot was removed because it
   represented the separately distributed full flavor and must not advertise a
   capability absent from `playRelease`.
-- The fresh APK, AAB, and a ZIP of `play/` were copied to
-  `\\diskstation.fritz.box\Dani\offline-knowledge-modules\` and read back with
-  matching SHA-256 hashes.
+- The signed `1.1.1 (4)` APK, AAB, and a ZIP of `play/` were copied to
+  `\\diskstation.fritz.box\Dani\offline-knowledge-modules\1.1.1+4\` and read
+  back with matching SHA-256 hashes. APK SHA-256 is
+  `6D4FBB6F34D26AB466E319C8905B5D508D07737CB53F7BDE02BAD95E27D213F4`;
+  AAB SHA-256 is
+  `1B2656967BDC61CA1233E7F31BBABAA5884AFF9B203F80B9B2A2FCA332430543`.
 - On 2026-07-27 the current Orphadata July 2026 German and English alignment
   XML files were downloaded completely from the official Orphadata endpoints,
   converted into two `.dmcknowledge` packages with 11645 records each, and
@@ -133,12 +136,16 @@ Update this file and `README.md` together whenever behavior changes.
 
 - `:app:compilePlayDebugKotlin`, `:app:testPlayDebugUnitTest`,
   `:app:compileFullDebugKotlin`, and `:app:testFullDebugUnitTest` pass for
-  candidate `1.1.1 (4)`.
-- The complete Play release build regenerated the Web UI and notices, compiled
-  both native ABIs, ran R8 and `lintVitalPlayRelease`, assembled APK/AAB, and
-  passed the DMC marker and medical-free Play artifact checks. The generated
-  bundle is unsigned because release-signing credentials were not available;
-  do not upload it as-is.
+  release `1.1.1 (4)`.
+- The complete signed Play release build regenerated the Web UI and notices,
+  compiled both native ABIs, ran R8 and `lintVitalPlayRelease`, assembled
+  APK/AAB, and passed the DMC marker and medical-free Play artifact checks.
+  APK v2 signature verification and AAB JAR signature verification passed; the
+  signing certificate SHA-256 is
+  `649A7EC870A7D18E5AF0AF12F0AC63B27F15DB864E28FECA9DA5FCF94AB8EC0F`.
+- `gplay preflight --max-size 200M --fail-on warning` reported no findings.
+  Strict metadata validation reported `ready: true`, zero blockers, zero
+  warnings, and two expected manual confirmations.
 - All nine resource files contain the seven reviewer-access strings, all nine
   `1.1.1` release-note locales validate, Play metadata validation reports zero
   errors, and the bilingual privacy source contains the new disclosure.
@@ -752,7 +759,8 @@ Update this file and `README.md` together whenever behavior changes.
 - The annotated source tag is `android-play-v1.1.0`. It is immutable and points
   to the verified release commit; generated APK/AAB files and all credentials
   remain outside Git.
-- Store publication work completed through the official `gplay` API:
+- Store publication work previously completed for `1.1.0 (3)` through the
+  official `gplay` API:
   - all nine localized listings were pushed with title `Local AI - DMC`;
   - the active product `inetmind_full_unlock` has nine listings and German
     consumer price `4.99 EUR`;
@@ -768,18 +776,11 @@ Update this file and `README.md` together whenever behavior changes.
   `gplay preflight` found no errors; its only warning used an outdated 150 MiB
   local threshold for the 162,363,966-byte AAB. Google Play accepted the AAB on
   the internal track.
-- Do not switch production from `draft` to `completed` until a human has
-  confirmed the current Play Console forms for Data safety, AI-generated
-  content/reporting, target audience, content rating, ads, app access, and
-  policy messages. Those values cannot be read back or certified through the
-  current Android Publisher API.
-- Completed production promotion was retried on 2026-07-30 after the user
-  entered the 18+ setting and again after all public contact fields were stored.
-  Google rejected both validations with
-  `Only releases with status draft may be created on draft app.` The edit was
-  explicitly deleted each time. This proves that at least one Console-only
-  setup task remains incomplete; the blocker is not service-account
-  authorization, public contact data, the AAB, or the production track.
+- The Play Console review screen reported one non-blocking warning because the
+  native bundle has no native debug-symbol archive. The ReTrace mapping file is
+  attached. The release preview was confirmed and the Console now shows
+  **Änderungen, die überprüft werden** for `1.1.1`, full rollout, all Store
+  assets, and every declaration.
 
 ## Planned Checks
 

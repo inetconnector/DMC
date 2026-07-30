@@ -6,12 +6,24 @@ Package: `com.inetconnector.dmc`
 
 Store name: **Local AI - DMC**
 
-Artifact scope: medical-free `playRelease` candidate version `1.1.1 (4)`
+Artifact scope: medical-free `playRelease` version `1.1.1 (4)`
 
 This file is the human-readable source of truth for Console-only declarations.
 It does not replace the answers stored in Google Play Console. Recheck every
 answer against the current artifact and the exact wording shown by Google
 before submitting an update.
+
+## Submission status
+
+- All ten App-content declarations are complete in Play Console.
+- Target audience is **18 and over only** and **Restrict minor access** is
+  enabled.
+- Reviewer access, Data safety, content rating, ads, AI reporting, health,
+  government, finance, and the remaining policy declarations are saved.
+- App category is **Tools** and the app is **free to install**.
+- Signed version `1.1.1 (4)` is `completed` on the internal track.
+- Production version `1.1.1 (4)` and the accompanying initial-app changes were
+  submitted to Google review on 2026-07-30.
 
 ## Target audience
 
