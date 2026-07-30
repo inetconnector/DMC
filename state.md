@@ -59,6 +59,10 @@ Update this file and `README.md` together whenever behavior changes.
   **Restrict minor access** must be enabled in Play Console.
   `play/CONSOLE_DECLARATIONS.md` contains the complete Console answer sheet and
   reviewer note; these Console-only settings are not yet saved remotely.
+- Public app details are now stored and remotely verified through the Android
+  Publisher API: support email `apps@inetconnector.com`, phone
+  `+49 931 2078432`, website `https://github.com/inetconnector/DMC`, and default
+  language `en-US`.
 - The full flavor's bilingual, tracker-free privacy policy is versioned in
   `privacy/index.html` and published by GitHub Pages at
   `https://inetconnector.github.io/DMC/privacy/`. GitHub reported the latest
@@ -735,11 +739,13 @@ Update this file and `README.md` together whenever behavior changes.
   content/reporting, target audience, content rating, ads, app access, and
   policy messages. Those values cannot be read back or certified through the
   current Android Publisher API.
-- A completed production promotion was attempted after publishing permissions
-  became effective. Google rejected validation with
+- Completed production promotion was retried on 2026-07-30 after the user
+  entered the 18+ setting and again after all public contact fields were stored.
+  Google rejected both validations with
   `Only releases with status draft may be created on draft app.` The edit was
-  explicitly deleted. This proves that the remaining blocker is the unfinished
-  Play Console app setup, not service-account authorization or the AAB.
+  explicitly deleted each time. This proves that at least one Console-only
+  setup task remains incomplete; the blocker is not service-account
+  authorization, public contact data, the AAB, or the production track.
 
 ## Planned Checks
 

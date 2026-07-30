@@ -127,6 +127,8 @@ The signed `1.1.0 (3)` AAB has no automated Play readiness blocker and is
 stored as a production draft. Public rollout is intentionally held until the
 Console-only Data safety and policy declarations have been manually confirmed;
 the Android Publisher API cannot read or certify those answers.
+The remotely verified public app details use `apps@inetconnector.com`,
+`+49 931 2078432`, and `https://github.com/inetconnector/DMC`.
 
 The maintained Play submission sources are:
 

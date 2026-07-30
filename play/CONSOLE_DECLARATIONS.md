@@ -60,7 +60,12 @@ Reviewer note:
   `https://inetconnector.github.io/DMC/privacy/play/`
 - Public HTTP status verified: **200**
 - Contact for privacy and deletion requests: `apps@inetconnector.com`
+- Public support phone: `+49 931 2078432`
+- Public support website: `https://github.com/inetconnector/DMC`
 - Local Android cloud backup: **Disabled**
+
+These contact fields and the `en-US` default language were written through the
+Android Publisher API and read back successfully on 2026-07-30.
 
 ## Data safety
 
@@ -165,7 +170,8 @@ regional authorities, not the developer, determine the displayed rating.
     review.
 
 The Android Publisher API rejects a completed release while the application
-itself remains a draft. On 2026-07-29 Google returned:
+itself remains a draft. Google returned this again on 2026-07-30, including
+after the public contact details were completed:
 
 `Only releases with status draft may be created on draft app.`
 

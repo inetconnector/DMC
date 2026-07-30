@@ -39,6 +39,9 @@ remains `com.inetconnector.dmc`.
   icon, and the 1024x500 feature graphic were uploaded and verified remotely.
 - The Play privacy policy is public with HTTP 200 at
   `https://inetconnector.github.io/DMC/privacy/play/`.
+- Public contact details are stored and remotely verified:
+  `apps@inetconnector.com`, `+49 931 2078432`, and
+  `https://github.com/inetconnector/DMC`.
 - Canonical release validation reports zero automated blockers. Data safety,
   AI-generated-content, target audience, ads, app access, content rating, and
   the final policy review remain Console-only confirmations. The production
