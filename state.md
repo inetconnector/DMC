@@ -121,6 +121,10 @@ Update this file and `README.md` together whenever behavior changes.
   `6D4FBB6F34D26AB466E319C8905B5D508D07737CB53F7BDE02BAD95E27D213F4`;
   AAB SHA-256 is
   `1B2656967BDC61CA1233E7F31BBABAA5884AFF9B203F80B9B2A2FCA332430543`.
+- On 2026-08-02, local reproducible Gradle/pnpm caches, a broken publish-time
+  dependency remainder, stale build logs, and obsolete root debug/archive
+  artifacts were removed. Signed release artifacts, runtime data, and private
+  review materials were retained.
 - On 2026-07-27 the current Orphadata July 2026 German and English alignment
   XML files were downloaded completely from the official Orphadata endpoints,
   converted into two `.dmcknowledge` packages with 11645 records each, and
